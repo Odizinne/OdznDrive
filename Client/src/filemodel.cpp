@@ -107,16 +107,24 @@ QString FileModel::getParentPath() const
     if (m_currentPath.isEmpty() || m_currentPath == "/") {
         return QString();
     }
-    
+
     int lastSlash = m_currentPath.lastIndexOf('/');
-    if (lastSlash <= 0) {
-        return QString();
+
+    // If no slash found, we're in a top-level folder, go back to root (empty string)
+    if (lastSlash < 0) {
+        return QString("");
     }
-    
+
+    // If slash is at position 0, parent is root
+    if (lastSlash == 0) {
+        return QString("");
+    }
+
     return m_currentPath.left(lastSlash);
 }
 
 bool FileModel::canGoUp() const
 {
+    // Can go up if we're not at root (empty or "/")
     return !m_currentPath.isEmpty() && m_currentPath != "/";
 }

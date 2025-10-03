@@ -1,33 +1,33 @@
 import QtQuick
-import QtQuick.Controls
+import QtQuick.Controls.Material
 import QtQuick.Layouts
 import Odizinne.OdznDriveClient
 
 Rectangle {
     id: root
-    color: "#2196F3"
-    
+    color: Material.primary
+
     RowLayout {
         anchors.fill: parent
         anchors.margins: 10
-        spacing: 10
-        
+        spacing: 15
+
         Label {
             text: "OdznDrive"
             font.pixelSize: 20
             font.bold: true
-            color: "white"
+            color: Material.background
         }
-        
+
         Item {
             Layout.fillWidth: true
         }
-        
+
         Label {
             text: "Server URL:"
-            color: "white"
+            color: Material.background
         }
-        
+
         TextField {
             id: urlField
             Layout.preferredWidth: 200
@@ -35,12 +35,12 @@ Rectangle {
             text: "ws://localhost:8888"
             enabled: !ConnectionManager.connected
         }
-        
+
         Label {
             text: "Password:"
-            color: "white"
+            color: Material.background
         }
-        
+
         TextField {
             id: passwordField
             Layout.preferredWidth: 150
@@ -48,11 +48,12 @@ Rectangle {
             echoMode: TextInput.Password
             enabled: !ConnectionManager.connected
         }
-        
-        Button {
+
+        ToolButton {
             text: ConnectionManager.connected ? "Disconnect" : "Connect"
+            flat: false
             highlighted: true
-            
+
             onClicked: {
                 if (ConnectionManager.connected) {
                     ConnectionManager.disconnect()
@@ -64,13 +65,14 @@ Rectangle {
                 }
             }
         }
-        
+
         Rectangle {
             width: 12
             height: 12
             radius: 6
-            color: ConnectionManager.authenticated ? "#4CAF50" : 
-                   ConnectionManager.connected ? "#FFC107" : "#F44336"
+            color: ConnectionManager.authenticated ? Material.color(Material.Green) :
+                   ConnectionManager.connected ? Material.color(Material.Amber) :
+                   Material.color(Material.Red)
         }
     }
 }

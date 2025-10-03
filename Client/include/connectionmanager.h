@@ -4,6 +4,7 @@
 #include <QObject>
 #include <QWebSocket>
 #include <QVariantList>
+#include <QFile>
 #include <qqml.h>
 
 class ConnectionManager : public QObject
@@ -34,6 +35,7 @@ public:
     Q_INVOKABLE void uploadFile(const QString &localPath, const QString &remotePath);
     Q_INVOKABLE void downloadFile(const QString &remotePath, const QString &localPath);
     Q_INVOKABLE void getStorageInfo();
+    Q_INVOKABLE void cancelUpload();
 
 signals:
     void connectedChanged();
@@ -57,6 +59,7 @@ private slots:
     void onTextMessageReceived(const QString &message);
     void onBinaryMessageReceived(const QByteArray &message);
     void onError(QAbstractSocket::SocketError error);
+    void onBytesWritten(qint64 bytes);
 
 private:
     explicit ConnectionManager(QObject *parent = nullptr);
@@ -68,6 +71,7 @@ private:
     void setConnected(bool connected);
     void setAuthenticated(bool authenticated);
     void setStatusMessage(const QString &message);
+    void sendNextChunk();
 
     static ConnectionManager *s_instance;
 
@@ -83,6 +87,11 @@ private:
 
     QString m_uploadLocalPath;
     QString m_uploadRemotePath;
+    QFile *m_uploadFile;
+    qint64 m_uploadTotalSize;
+    qint64 m_uploadSentSize;
+
+    static const qint64 CHUNK_SIZE = 1024 * 1024; // 1MB chunks
 };
 
 #endif // CONNECTIONMANAGER_H

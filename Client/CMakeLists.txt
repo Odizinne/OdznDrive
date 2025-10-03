@@ -21,6 +21,15 @@ set(QML_FILES
     qml/TransferProgress.qml
 )
 
+set(QML_SINGLETONS
+    #qml/Singletons/UserSettings.qml
+    qml/Singletons/Constants.qml
+)
+
+set_source_files_properties(${QML_SINGLETONS}
+    PROPERTIES QT_QML_SINGLETON_TYPE TRUE
+)
+
 qt_add_executable(${PROJECT_NAME}
     ${HEADERS}
     ${SOURCES}
@@ -31,7 +40,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE include)
 qt_add_qml_module(${PROJECT_NAME}
     URI Odizinne.OdznDriveClient
     VERSION 1.0
-    QML_FILES ${QML_FILES}
+    QML_FILES ${QML_FILES} ${QML_SINGLETONS}
 )
 
 target_link_libraries(${PROJECT_NAME} PRIVATE
