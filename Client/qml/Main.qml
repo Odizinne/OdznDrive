@@ -42,7 +42,6 @@ ApplicationWindow {
                 errorDialog.text = error
                 errorDialog.open()
 
-                // Show settings dialog if connection failed
                 if (!ConnectionManager.connected) {
                     settingsDialog.open()
                 }
@@ -242,6 +241,7 @@ ApplicationWindow {
     Dialog {
         id: errorDialog
         title: "Error"
+        width: 300
         property alias text: errorLabel.text
         modal: true
         anchors.centerIn: parent

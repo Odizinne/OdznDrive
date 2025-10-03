@@ -44,9 +44,12 @@ ConnectionManager* ConnectionManager::instance()
 
 void ConnectionManager::connectToServer(const QString &url, const QString &password)
 {
-    if (m_connected) {
-        disconnect();
+    if (m_socket->state() != QAbstractSocket::UnconnectedState) {
+        m_socket->abort();
     }
+
+    setConnected(false);
+    setAuthenticated(false);
 
     m_password = password;
     setStatusMessage("Connecting...");
@@ -264,6 +267,8 @@ void ConnectionManager::onBinaryMessageReceived(const QByteArray &message)
 void ConnectionManager::onError(QAbstractSocket::SocketError error)
 {
     Q_UNUSED(error)
+    setConnected(false);
+    setAuthenticated(false);
     setStatusMessage("Error: " + m_socket->errorString());
     emit errorOccurred(m_socket->errorString());
 }
@@ -272,7 +277,6 @@ void ConnectionManager::onBytesWritten(qint64 bytes)
 {
     Q_UNUSED(bytes)
 
-    // Only send next chunk if socket buffer is reasonably clear
     if (m_uploadFile && m_uploadFile->isOpen()) {
         if (m_socket->bytesToWrite() < CHUNK_SIZE * 2) {
             sendNextChunk();
@@ -417,6 +421,11 @@ void ConnectionManager::handleResponse(const QJsonObject &response)
         setStatusMessage("Error: " + error);
         emit errorOccurred(error);
 
+        // If we got an error and we're not authenticated yet, disconnect
+        if (!m_authenticated) {
+            m_socket->close();
+        }
+
         // Clean up current upload and try next one
         cleanupCurrentUpload();
         m_uploadLocalPath.clear();
@@ -431,6 +440,9 @@ void ConnectionManager::handleResponse(const QJsonObject &response)
         if (data["success"].toBool()) {
             setAuthenticated(true);
             setStatusMessage("Authenticated");
+        } else {
+            // Authentication failed, disconnect
+            m_socket->close();
         }
     } else if (type == "list_directory") {
         QString path = data["path"].toString();

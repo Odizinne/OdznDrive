@@ -324,11 +324,11 @@ Rectangle {
                             implicitHeight: breadcrumbRow.implicitHeight
                             clip: true
 
-                            // Invisible row to measure full width
                             Row {
                                 id: measurementRow
                                 visible: false
                                 spacing: 6
+                                height: parent.height
 
                                 Button {
                                     text: "odzndrive"
