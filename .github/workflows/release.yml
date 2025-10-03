@@ -31,7 +31,7 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           workflow: build.yml
           workflow_conclusion: success
-          name: OdznDriveClient_win64_msvc2022
+          name: OdznDrive_win64_msvc2022
           run_id: ${{ inputs.workflow_run_id }}
           if_no_artifact_found: fail
 
@@ -41,7 +41,7 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           workflow: build.yml
           workflow_conclusion: success
-          name: OdznDriveClient_Installer
+          name: OdznDrive_Installer
           run_id: ${{ inputs.workflow_run_id }}
           if_no_artifact_found: fail
 
@@ -51,7 +51,7 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           workflow: build.yml
           workflow_conclusion: success
-          name: OdznDriveClient_linux_x64
+          name: OdznDrive_linux_x64
           run_id: ${{ inputs.workflow_run_id }}
           if_no_artifact_found: fail
 
@@ -87,8 +87,8 @@ jobs:
             **Server Version:** ${{ steps.server_version.outputs.version }}
             
             ### Downloads
-            - **Windows Client:** `OdznDriveClient_win64_msvc2022.zip` or use the installer
-            - **Linux Client:** `OdznDriveClient_linux_x64.zip`
+            - **Windows Client:** `OdznDrive_win64_msvc2022.zip` or use the installer
+            - **Linux Client:** `OdznDrive_linux_x64.zip`
             - **Linux Server:** `OdznDriveServer_linux_x64.zip`
           draft: true
         env:
@@ -98,8 +98,8 @@ jobs:
         uses: actions/upload-release-asset@v1
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: OdznDriveClient_win64_msvc2022.zip
-          asset_name: OdznDriveClient_win64_msvc2022.zip
+          asset_path: OdznDrive_win64_msvc2022.zip
+          asset_name: OdznDrive_win64_msvc2022.zip
           asset_content_type: application/zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -108,8 +108,8 @@ jobs:
         uses: actions/upload-release-asset@v1
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: OdznDriveClient_Installer.exe
-          asset_name: OdznDriveClient_Installer.exe
+          asset_path: OdznDrive_Installer.exe
+          asset_name: OdznDrive_Installer.exe
           asset_content_type: application/vnd.microsoft.portable-executable
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -118,8 +118,8 @@ jobs:
         uses: actions/upload-release-asset@v1
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: OdznDriveClient_linux_x64.zip
-          asset_name: OdznDriveClient_linux_x64.zip
+          asset_path: OdznDrive_linux_x64.zip
+          asset_name: OdznDrive_linux_x64.zip
           asset_content_type: application/zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

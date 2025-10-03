@@ -5,7 +5,7 @@ import QtQuick.Controls.Material
 import QtQuick.Controls.impl
 import QtQuick.Layouts
 import QtQuick.Dialogs
-import Odizinne.OdznDriveClient
+import Odizinne.OdznDrive
 
 Rectangle {
     id: root

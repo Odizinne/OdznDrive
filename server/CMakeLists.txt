@@ -1,4 +1,12 @@
-project(OdznDriveServer)
+cmake_minimum_required(VERSION 3.21)
+
+project(OdznDriveServer VERSION 1.0.0 LANGUAGES CXX)
+
+set(CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}/install" CACHE PATH "Installation directory" FORCE)
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+find_package(Qt6 REQUIRED COMPONENTS Core Network WebSockets)
 
 qt_standard_project_setup()
 
@@ -17,7 +25,10 @@ set(HEADERS
     include/config.h
 )
 
-add_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS})
+qt_add_executable(${PROJECT_NAME}
+    ${SOURCES}
+    ${HEADERS}
+)
 
 target_include_directories(${PROJECT_NAME} PRIVATE include)
 
@@ -28,8 +39,8 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
 )
 
 install(TARGETS ${PROJECT_NAME}
-    RUNTIME DESTINATION Server/bin
-    COMPONENT Server
+    BUNDLE DESTINATION .
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
 
 qt_generate_deploy_app_script(
@@ -39,4 +50,4 @@ qt_generate_deploy_app_script(
     DEPLOY_TOOL_OPTIONS --no-compiler-runtime --no-opengl-sw --no-system-dxc-compiler --no-system-d3d-compiler --skip-plugin-types designer,iconengines,qmllint,generic,networkinformation,help,qmltooling,sqldrivers,qmlls
 )
 
-install(SCRIPT ${deploy_script} COMPONENT Server)
+install(SCRIPT ${deploy_script})

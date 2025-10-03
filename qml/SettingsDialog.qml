@@ -1,7 +1,7 @@
 import QtQuick
 import QtQuick.Layouts
 import QtQuick.Controls.Material
-import Odizinne.OdznDriveClient
+import Odizinne.OdznDrive
 
 Dialog {
     title: "Settings"

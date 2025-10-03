@@ -1,14 +1,14 @@
-#define AppName       "OdznDriveClient"
-#define AppSourceDir  "..\build\OdznDriveClient\"
-#define AppExeName    "OdznDriveClient.exe"
+#define AppName       "OdznDrive"
+#define AppSourceDir  "..\build\OdznDrive\"
+#define AppExeName    "OdznDrive.exe"
 #define                MajorVersion    
 #define                MinorVersion    
 #define                RevisionVersion    
 #define                BuildVersion    
 #define TempVersion    GetVersionComponents(AppSourceDir + "bin\" + AppExeName, MajorVersion, MinorVersion, RevisionVersion, BuildVersion)
-#define AppVersion     str(MajorVersion) + "." + str(MinorVersion) + "." + str(RevisionVersion)
+#define AppVersion     str(MajorVersion) + "." + str(MinorVersion) + "." + str(RevisionVersion) + ".0"
 #define AppPublisher  "Odizinne"
-#define AppURL        "https://github.com/Odizinne/OdznDriveClient"
+#define AppURL        "https://github.com/Odizinne/OdznDrive"
 #define AppIcon       "..\Resources\icons\icon.ico"
 #define CurrentYear   GetDateTimeString('yyyy','','')
 
@@ -47,7 +47,7 @@ DefaultGroupName={#AppName}
 DefaultDirName={localappdata}\Programs\{#AppName}
 
 PrivilegesRequired=lowest
-OutputBaseFilename=OdznDriveClient_installer
+OutputBaseFilename=OdznDrive_installer
 Compression=lzma
 SolidCompression=yes
 UsedUserAreasWarning=no

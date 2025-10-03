@@ -19,8 +19,6 @@ jobs:
       - name: Get Client version from CMake
         id: client_version
         uses: DarwinInnovation/cmake-project-version-action@v1.0
-        with:
-          cmake-lists-file: 'Client/CMakeLists.txt'
 
       - name: Set up Visual Studio shell
         uses: egor-tensin/vs-shell@v2
@@ -37,7 +35,7 @@ jobs:
           add-tools-to-path: true
           cache: true
 
-      - name: Generate and Build with CMake
+      - name: Generate and Build Client
         shell: pwsh
         run: |
           mkdir -p build
@@ -49,15 +47,13 @@ jobs:
       - name: Zip Client binaries
         shell: pwsh
         run: |
-          $zipFile = "build/OdznDriveClient_win64_msvc2022.zip"
-          $folder = "build/install/Client"
-          Compress-Archive -Path $folder -DestinationPath $zipFile
+          Compress-Archive -Path build/install/* -DestinationPath build/OdznDrive_win64_msvc2022.zip
 
       - name: Upload Client Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: OdznDriveClient_win64_msvc2022
-          path: build/OdznDriveClient_win64_msvc2022.zip
+          name: OdznDrive_win64_msvc2022
+          path: build/OdznDrive_win64_msvc2022.zip
 
       - name: Update .iss version
         shell: pwsh
@@ -75,8 +71,8 @@ jobs:
       - name: Upload Client Installer
         uses: actions/upload-artifact@v4
         with:
-          name: OdznDriveClient_Installer
-          path: tools/Output/OdznDriveClient_Installer.exe
+          name: OdznDrive_Installer
+          path: tools/Output/OdznDrive_Installer.exe
 
   build-linux:
     runs-on: ubuntu-22.04
@@ -86,7 +82,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Build both Client and Server
+      - name: Build Client
         run: |
           mkdir -p build
           cd build
@@ -94,24 +90,36 @@ jobs:
           cmake --build . --config Release
           cmake --install . --config Release
 
+      - name: Configure Server
+        run: |
+          mkdir build-server
+          cd build-server
+          cmake ../server -G Ninja -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build Server
+        run: |
+          cd build-server
+          cmake --build .
+          cmake --install .
+
       - name: Zip Client binaries
         run: |
-          cd build/install
-          zip -r ../OdznDriveClient_linux_x64.zip Client
+          cd build
+          zip -r OdznDrive_linux_x64.zip install
 
       - name: Zip Server binaries
         run: |
-          cd build/install
-          zip -r ../OdznDriveServer_linux_x64.zip Server
+          cd build-server
+          zip -r OdznDriveServer_linux_x64.zip install
 
       - name: Upload Client Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: OdznDriveClient_linux_x64
-          path: build/OdznDriveClient_linux_x64.zip
+          name: OdznDrive_linux_x64
+          path: build/OdznDrive_linux_x64.zip
 
       - name: Upload Server Artifact
         uses: actions/upload-artifact@v4
         with:
           name: OdznDriveServer_linux_x64
-          path: build/OdznDriveServer_linux_x64.zip
+          path: build-server/OdznDriveServer_linux_x64.zip

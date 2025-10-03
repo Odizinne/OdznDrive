@@ -1,7 +1,7 @@
 import QtQuick
 import QtQuick.Controls.Material
 import QtQuick.Layouts
-import Odizinne.OdznDriveClient
+import Odizinne.OdznDrive
 
 ApplicationWindow {
     id: root

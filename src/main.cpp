@@ -8,7 +8,7 @@ int main(int argc, char *argv[])
     QGuiApplication app(argc, argv);
 
     QGuiApplication::setOrganizationName("Odizinne");
-    QGuiApplication::setApplicationName("OdznDriveClient");
+    QGuiApplication::setApplicationName("OdznDrive");
     QGuiApplication::setWindowIcon(QIcon(":/icons/icon.png"));
     QQmlApplicationEngine engine;
 
@@ -16,7 +16,7 @@ int main(int argc, char *argv[])
                      &app, []() { QCoreApplication::exit(-1); },
                      Qt::QueuedConnection);
 
-    engine.loadFromModule("Odizinne.OdznDriveClient", "Main");
+    engine.loadFromModule("Odizinne.OdznDrive", "Main");
 
     return app.exec();
 }
