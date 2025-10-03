@@ -1,0 +1,135 @@
+name: Release
+on:
+  workflow_dispatch:
+    inputs:
+      workflow_run_id:
+        description: 'Build workflow run ID (optional - will use latest successful run if not provided)'
+        required: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Get Client version from CMake
+        id: client_version
+        uses: DarwinInnovation/cmake-project-version-action@v1.0
+        with:
+          cmake-lists-file: 'Client/CMakeLists.txt'
+
+      - name: Get Server version from CMake
+        id: server_version
+        uses: DarwinInnovation/cmake-project-version-action@v1.0
+        with:
+          cmake-lists-file: 'Server/CMakeLists.txt'
+
+      - name: Download Windows Client artifact
+        uses: dawidd6/action-download-artifact@v9
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          workflow: build.yml
+          workflow_conclusion: success
+          name: OdznDriveClient_win64_msvc2022
+          run_id: ${{ inputs.workflow_run_id }}
+          if_no_artifact_found: fail
+
+      - name: Download Windows Client Installer
+        uses: dawidd6/action-download-artifact@v9
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          workflow: build.yml
+          workflow_conclusion: success
+          name: OdznDriveClient_Installer
+          run_id: ${{ inputs.workflow_run_id }}
+          if_no_artifact_found: fail
+
+      - name: Download Linux Client artifact
+        uses: dawidd6/action-download-artifact@v9
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          workflow: build.yml
+          workflow_conclusion: success
+          name: OdznDriveClient_linux_x64
+          run_id: ${{ inputs.workflow_run_id }}
+          if_no_artifact_found: fail
+
+      - name: Download Linux Server artifact
+        uses: dawidd6/action-download-artifact@v9
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          workflow: build.yml
+          workflow_conclusion: success
+          name: OdznDriveServer_linux_x64
+          run_id: ${{ inputs.workflow_run_id }}
+          if_no_artifact_found: fail
+
+      - name: Create release and tag
+        run: |
+          VERSION="${{ steps.client_version.outputs.version }}"
+          echo "Creating release for version: $VERSION"
+          
+          git tag $VERSION
+          git push origin $VERSION
+          echo "new_tag=$VERSION" >> $GITHUB_ENV
+
+      - name: Create GitHub release
+        id: create_release
+        uses: actions/create-release@v1
+        with:
+          tag_name: ${{ env.new_tag }}
+          release_name: OdznDrive ${{ env.new_tag }}
+          body: |
+            ## OdznDrive Release ${{ env.new_tag }}
+            
+            **Client Version:** ${{ steps.client_version.outputs.version }}
+            **Server Version:** ${{ steps.server_version.outputs.version }}
+            
+            ### Downloads
+            - **Windows Client:** `OdznDriveClient_win64_msvc2022.zip` or use the installer
+            - **Linux Client:** `OdznDriveClient_linux_x64.zip`
+            - **Linux Server:** `OdznDriveServer_linux_x64.zip`
+          draft: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload Windows Client zip
+        uses: actions/upload-release-asset@v1
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: OdznDriveClient_win64_msvc2022.zip
+          asset_name: OdznDriveClient_win64_msvc2022.zip
+          asset_content_type: application/zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload Windows Client Installer
+        uses: actions/upload-release-asset@v1
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: OdznDriveClient_Installer.exe
+          asset_name: OdznDriveClient_Installer.exe
+          asset_content_type: application/vnd.microsoft.portable-executable
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload Linux Client zip
+        uses: actions/upload-release-asset@v1
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: OdznDriveClient_linux_x64.zip
+          asset_name: OdznDriveClient_linux_x64.zip
+          asset_content_type: application/zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload Linux Server zip
+        uses: actions/upload-release-asset@v1
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: OdznDriveServer_linux_x64.zip
+          asset_name: OdznDriveServer_linux_x64.zip
+          asset_content_type: application/zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
