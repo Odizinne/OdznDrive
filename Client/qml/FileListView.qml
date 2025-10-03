@@ -4,6 +4,7 @@ import QtQuick
 import QtQuick.Controls.Material
 import QtQuick.Controls.impl
 import QtQuick.Layouts
+import QtQuick.Dialogs
 import Odizinne.OdznDriveClient
 
 Rectangle {
@@ -33,6 +34,126 @@ Rectangle {
     property string draggedItemPath: ""
     property string draggedItemName: ""
     property var currentDropTarget: null
+
+    // File upload dialog
+    FileDialog {
+        id: uploadDialog
+        fileMode: FileDialog.OpenFiles
+        onAccepted: {
+            let files = []
+            for (let i = 0; i < selectedFiles.length; i++) {
+                let fileUrl = selectedFiles[i].toString()
+
+                // Remove file:// prefix to get local path
+                let localPath = fileUrl
+                if (localPath.startsWith("file://")) {
+                    localPath = localPath.substring(7)
+                }
+
+                // On Windows, remove leading slash before drive letter
+                if (localPath.match(/^\/[A-Za-z]:\//)) {
+                    localPath = localPath.substring(1)
+                }
+
+                files.push(localPath)
+            }
+
+            if (files.length > 0) {
+                ConnectionManager.uploadFiles(files, FileModel.currentPath)
+            }
+        }
+    }
+
+    // Download dialog
+    FileDialog {
+        id: downloadDialog
+        fileMode: FileDialog.SaveFile
+        property string remotePath: ""
+
+        onAccepted: {
+            let localPath = selectedFile.toString()
+
+            // Remove file:// prefix to get local path
+            if (localPath.startsWith("file://")) {
+                localPath = localPath.substring(7)
+            }
+
+            // On Windows, remove leading slash before drive letter
+            if (localPath.match(/^\/[A-Za-z]:\//)) {
+                localPath = localPath.substring(1)
+            }
+
+            ConnectionManager.downloadFile(remotePath, localPath)
+        }
+    }
+
+    // New folder dialog
+    Dialog {
+        id: newFolderDialog
+        title: "Create New Folder"
+        modal: true
+        parent: Overlay.overlay
+        anchors.centerIn: parent
+
+        ColumnLayout {
+            spacing: 10
+
+            Label {
+                text: "Folder name:"
+            }
+
+            TextField {
+                id: folderNameField
+                Layout.preferredWidth: 300
+                placeholderText: "Enter folder name"
+                onAccepted: newFolderDialog.accepted()
+            }
+        }
+
+        standardButtons: Dialog.Ok | Dialog.Cancel
+
+        onAccepted: {
+            if (folderNameField.text.trim() !== "") {
+                let newPath = FileModel.currentPath
+                if (newPath && !newPath.endsWith('/')) {
+                    newPath += '/'
+                }
+                newPath += folderNameField.text.trim()
+                ConnectionManager.createDirectory(newPath)
+                folderNameField.clear()
+            }
+        }
+
+        onRejected: {
+            folderNameField.clear()
+        }
+    }
+
+    // Delete confirmation dialog
+    Dialog {
+        id: deleteConfirmDialog
+        title: "Confirm Delete"
+        property string itemPath: ""
+        property bool isDirectory: false
+        modal: true
+        parent: Overlay.overlay
+        anchors.centerIn: parent
+
+        Label {
+            text: "Are you sure you want to delete this " +
+                  (deleteConfirmDialog.isDirectory ? "folder" : "file") + "?"
+        }
+
+        standardButtons: Dialog.Yes | Dialog.No
+
+        onAccepted: {
+            if (isDirectory) {
+                ConnectionManager.deleteDirectory(itemPath)
+            } else {
+                ConnectionManager.deleteFile(itemPath)
+            }
+        }
+    }
 
     // Drop area for file uploads
     DropArea {
@@ -112,48 +233,6 @@ Rectangle {
         }
     }
 
-    // New folder dialog
-    Dialog {
-        id: newFolderDialog
-        title: "Create New Folder"
-        modal: true
-        parent: Overlay.overlay
-        anchors.centerIn: parent
-
-        ColumnLayout {
-            spacing: 10
-
-            Label {
-                text: "Folder name:"
-            }
-
-            TextField {
-                id: folderNameField
-                Layout.preferredWidth: 300
-                placeholderText: "Enter folder name"
-                onAccepted: newFolderDialog.accepted()
-            }
-        }
-
-        standardButtons: Dialog.Ok | Dialog.Cancel
-
-        onAccepted: {
-            if (folderNameField.text.trim() !== "") {
-                let newPath = FileModel.currentPath
-                if (newPath && !newPath.endsWith('/')) {
-                    newPath += '/'
-                }
-                newPath += folderNameField.text.trim()
-                ConnectionManager.createDirectory(newPath)
-                folderNameField.clear()
-            }
-        }
-
-        onRejected: {
-            folderNameField.clear()
-        }
-    }
-
     ScrollView {
         id: scrollView
         anchors.fill: parent
@@ -189,67 +268,245 @@ Rectangle {
                     height: 45
                     color: Qt.lighter(Constants.listHeaderColor, 1.15)
 
-                    ScrollView {
+                    RowLayout {
                         anchors.fill: parent
                         anchors.leftMargin: 10
                         anchors.rightMargin: 10
-                        contentWidth: breadcrumbRow.implicitWidth
-                        clip: true
+                        spacing: 8
 
-                        Row {
-                            id: breadcrumbRow
-                            anchors.verticalCenter: parent.verticalCenter
-                            spacing: 6
+                        // Action buttons on the left
+                        ToolButton {
+                            icon.source: "qrc:/icons/plus.svg"
+                            icon.width: 16
+                            icon.height: 16
+                            enabled: ConnectionManager.authenticated
+                            onClicked: newFolderDialog.open()
+                            ToolTip.visible: hovered
+                            ToolTip.text: "New folder"
+                            Material.roundedScale: Material.ExtraSmallScale
+                        }
 
-                            Button {
-                                id: rootButton
-                                text: "odzndrive"
-                                flat: true
-                                font.pixelSize: 13
-                                implicitWidth: contentItem.implicitWidth + 20
-                                onClicked: ConnectionManager.listDirectory("")
-                                font.bold: root.getPathSegments().length === 0
-                                opacity: root.getPathSegments().length === 0 || rootHover.hovered ? 1 : 0.7
-                                Material.roundedScale: Material.ExtraSmallScale
+                        ToolButton {
+                            icon.source: "qrc:/icons/upload.svg"
+                            icon.width: 16
+                            icon.height: 16
+                            enabled: ConnectionManager.authenticated
+                            onClicked: uploadDialog.open()
+                            ToolTip.visible: hovered
+                            ToolTip.text: "Upload files"
+                            Material.roundedScale: Material.ExtraSmallScale
+                        }
 
-                                HoverHandler {
-                                    id: rootHover
+                        ToolButton {
+                            icon.source: "qrc:/icons/refresh.svg"
+                            icon.width: 16
+                            icon.height: 16
+                            enabled: ConnectionManager.authenticated
+                            onClicked: {
+                                ConnectionManager.listDirectory(FileModel.currentPath)
+                            }
+                            ToolTip.visible: hovered
+                            ToolTip.text: "Refresh"
+                            Material.roundedScale: Material.ExtraSmallScale
+                        }
+
+                        Rectangle {
+                            Layout.preferredWidth: 1
+                            Layout.preferredHeight: 24
+                            color: Material.foreground
+                            opacity: 0.2
+                        }
+
+                        // Breadcrumb path
+                        Item {
+                            id: path
+                            Layout.fillWidth: true
+                            implicitHeight: breadcrumbRow.implicitHeight
+                            clip: true
+
+                            // Invisible row to measure full width
+                            Row {
+                                id: measurementRow
+                                visible: false
+                                spacing: 6
+
+                                Button {
+                                    text: "odzndrive"
+                                    flat: true
+                                    font.pixelSize: 13
+                                    implicitWidth: contentItem.implicitWidth + 20
+                                    Material.roundedScale: Material.ExtraSmallScale
+                                }
+
+                                Repeater {
+                                    model: root.getPathSegments()
+
+                                    Row {
+                                        id: pathItem
+                                        required property string modelData
+                                        spacing: 6
+
+                                        IconImage {
+                                            source: "qrc:/icons/right.svg"
+                                            sourceSize.width: 10
+                                            sourceSize.height: 10
+                                        }
+
+                                        Button {
+                                            text: pathItem.modelData
+                                            flat: true
+                                            font.pixelSize: 13
+                                            implicitWidth: contentItem.implicitWidth + 20
+                                            Material.roundedScale: Material.ExtraSmallScale
+                                        }
+                                    }
                                 }
                             }
 
-                            Repeater {
-                                id: segmentsRepeater
-                                model: root.getPathSegments()
+                            property bool needsEllipsis: measurementRow.implicitWidth > width - 20
 
-                                Row {
-                                    id: pathBtn
-                                    required property string modelData
-                                    required property int index
-                                    spacing: 6
+                            Row {
+                                id: breadcrumbRow
+                                anchors.verticalCenter: parent.verticalCenter
+                                spacing: 6
 
-                                    IconImage {
-                                        source: "qrc:/icons/right.svg"
-                                        sourceSize.width: 10
-                                        sourceSize.height: 10
-                                        anchors.verticalCenter: parent.verticalCenter
-                                        color: Material.foreground
-                                        opacity: 0.7
+                                Button {
+                                    id: rootButton
+                                    text: "odzndrive"
+                                    flat: true
+                                    font.pixelSize: 13
+                                    implicitWidth: contentItem.implicitWidth + 20
+                                    onClicked: ConnectionManager.listDirectory("")
+                                    font.bold: root.getPathSegments().length === 0
+                                    opacity: root.getPathSegments().length === 0 || rootHover.hovered ? 1 : 0.7
+                                    Material.roundedScale: Material.ExtraSmallScale
+
+                                    HoverHandler {
+                                        id: rootHover
                                     }
+                                }
 
-                                    Button {
-                                        text: pathBtn.modelData
-                                        flat: true
-                                        font.pixelSize: 13
-                                        implicitWidth: contentItem.implicitWidth + 20
-                                        Material.roundedScale: Material.ExtraSmallScale
-                                        font.bold: pathBtn.index === segmentsRepeater.count - 1
-                                        opacity: pathBtn.index === segmentsRepeater.count - 1 || pathBtnHover.hovered ? 1 : 0.7
-                                        onClicked: {
-                                            ConnectionManager.listDirectory(root.getPathUpToIndex(pathBtn.index))
+                                // Show ellipsis button if path is too long
+                                Loader {
+                                    active: path.needsEllipsis && root.getPathSegments().length > 1
+                                    visible: active
+                                    sourceComponent: Row {
+                                        spacing: 6
+
+                                        IconImage {
+                                            source: "qrc:/icons/right.svg"
+                                            sourceSize.width: 10
+                                            sourceSize.height: 10
+                                            anchors.verticalCenter: parent.verticalCenter
+                                            color: Material.foreground
+                                            opacity: 0.7
                                         }
 
-                                        HoverHandler {
-                                            id: pathBtnHover
+                                        Button {
+                                            text: "..."
+                                            flat: true
+                                            font.pixelSize: 13
+                                            implicitWidth: contentItem.implicitWidth + 20
+                                            Material.roundedScale: Material.ExtraSmallScale
+                                            opacity: ellipsisHover.hovered ? 1 : 0.7
+                                            onClicked: hiddenPathsMenu.popup()
+
+                                            HoverHandler {
+                                                id: ellipsisHover
+                                            }
+
+                                            Menu {
+                                                id: hiddenPathsMenu
+                                                width: 200
+
+                                                Instantiator {
+                                                    model: root.getHiddenSegments()
+                                                    delegate: MenuItem {
+                                                        required property string modelData
+                                                        required property int index
+                                                        text: modelData
+                                                        onClicked: {
+                                                            ConnectionManager.listDirectory(root.getPathUpToHiddenIndex(index))
+                                                        }
+                                                    }
+                                                    onObjectAdded: (index, object) => hiddenPathsMenu.insertItem(index, object)
+                                                    onObjectRemoved: (index, object) => hiddenPathsMenu.removeItem(object)
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+
+                                // Show last segment if we have segments and need ellipsis
+                                Loader {
+                                    active: path.needsEllipsis && root.getPathSegments().length > 0
+                                    visible: active
+                                    sourceComponent: Row {
+                                        spacing: 6
+
+                                        IconImage {
+                                            source: "qrc:/icons/right.svg"
+                                            sourceSize.width: 10
+                                            sourceSize.height: 10
+                                            anchors.verticalCenter: parent.verticalCenter
+                                            color: Material.foreground
+                                            opacity: 0.7
+                                        }
+
+                                        Button {
+                                            text: root.getLastSegment()
+                                            flat: true
+                                            font.pixelSize: 13
+                                            implicitWidth: contentItem.implicitWidth + 20
+                                            Material.roundedScale: Material.ExtraSmallScale
+                                            font.bold: true
+                                            opacity: lastSegmentHover.hovered ? 1 : 0.7
+                                            onClicked: {
+                                                ConnectionManager.listDirectory(FileModel.currentPath)
+                                            }
+
+                                            HoverHandler {
+                                                id: lastSegmentHover
+                                            }
+                                        }
+                                    }
+                                }
+
+                                // Show all segments if path is not too long
+                                Repeater {
+                                    id: allSegmentsRepeater
+                                    model: path.needsEllipsis ? [] : root.getPathSegments()
+
+                                    Row {
+                                        id: pathBtn
+                                        required property string modelData
+                                        required property int index
+                                        spacing: 6
+
+                                        IconImage {
+                                            source: "qrc:/icons/right.svg"
+                                            sourceSize.width: 10
+                                            sourceSize.height: 10
+                                            anchors.verticalCenter: parent.verticalCenter
+                                            color: Material.foreground
+                                            opacity: 0.7
+                                        }
+
+                                        Button {
+                                            text: pathBtn.modelData
+                                            flat: true
+                                            font.pixelSize: 13
+                                            implicitWidth: contentItem.implicitWidth + 20
+                                            Material.roundedScale: Material.ExtraSmallScale
+                                            font.bold: pathBtn.index === allSegmentsRepeater.count - 1
+                                            opacity: pathBtn.index === allSegmentsRepeater.count - 1 || pathBtnHover.hovered ? 1 : 0.7
+                                            onClicked: {
+                                                ConnectionManager.listDirectory(root.getPathUpToIndex(pathBtn.index))
+                                            }
+
+                                            HoverHandler {
+                                                id: pathBtnHover
+                                            }
                                         }
                                     }
                                 }
@@ -342,7 +599,7 @@ Rectangle {
                         }
 
                         Label {
-                            text: "Parent Directory"
+                            text: ""//"Parent Directory"
                             Layout.preferredWidth: 180
                             opacity: 0.7
                         }
@@ -358,7 +615,7 @@ Rectangle {
 
                     TapHandler {
                         acceptedButtons: Qt.LeftButton
-                        onTapped: {
+                        onDoubleTapped: {
                             ConnectionManager.listDirectory(FileModel.getParentPath())
                         }
                     }
@@ -390,8 +647,10 @@ Rectangle {
                         icon.source: "qrc:/icons/download.svg"
                         icon.width: 16
                         icon.height: 16
+                        visible: !delegateRoot.model.isDir
                         onClicked: {
-                            Intercom.requestShowDownloadDialog(delegateRoot.model.path)
+                            downloadDialog.remotePath = delegateRoot.model.path
+                            downloadDialog.open()
                         }
                     }
                     MenuItem {
@@ -406,7 +665,9 @@ Rectangle {
                         icon.width: 16
                         icon.height: 16
                         onClicked: {
-                            Intercom.requestShowDeleteConfirm(delegateRoot.model.path, delegateRoot.model.isDir)
+                            deleteConfirmDialog.itemPath = delegateRoot.model.path
+                            deleteConfirmDialog.isDirectory = delegateRoot.model.isDir
+                            deleteConfirmDialog.open()
                         }
                     }
                 }
@@ -461,9 +722,12 @@ Rectangle {
                                 icon.source: "qrc:/icons/menu.svg"
                                 icon.width: 16
                                 icon.height: 16
+                                Layout.preferredWidth: height
+                                flat: true
                                 onClicked: delContextMenu.popup()
                                 Layout.alignment: Qt.AlignRight
                                 opacity: (hoverHandler.hovered && root.draggedItemPath === "") ? 1 : 0
+                                Material.roundedScale: Material.ExtraSmallScale
                             }
                         }
                     }
@@ -516,7 +780,7 @@ Rectangle {
                                 if (FileModel.canGoUp) {
                                     let headerItem = listView.headerItem
                                     if (headerItem) {
-                                        let parentDirItem = headerItem.children[2] // The parent dir rectangle (now third child)
+                                        let parentDirItem = headerItem.children[2]
                                         if (parentDirItem) {
                                             let parentPos = parentDirItem.mapFromItem(listView, listPos.x, listPos.y)
                                             if (parentPos.x >= 0 && parentPos.x <= parentDirItem.width &&
@@ -588,6 +852,36 @@ Rectangle {
         let segments = getPathSegments()
         let pathParts = segments.slice(0, index + 1)
         return pathParts.join("/")
+    }
+
+    function shouldShowEllipsis() {
+        let segments = getPathSegments()
+        // Show ellipsis if we have more than 3 segments
+        // This gives us: odzndrive > ... > current
+        return segments.length > 3
+    }
+
+    function getHiddenSegments() {
+        let segments = getPathSegments()
+        if (segments.length <= 1) {
+            return []
+        }
+        // Return all segments except the last one (which is shown)
+        return segments.slice(0, -1)
+    }
+
+    function getPathUpToHiddenIndex(index) {
+        let segments = getPathSegments()
+        let pathParts = segments.slice(0, index + 1)
+        return pathParts.join("/")
+    }
+
+    function getLastSegment() {
+        let segments = getPathSegments()
+        if (segments.length === 0) {
+            return ""
+        }
+        return segments[segments.length - 1]
     }
 
     function formatSize(bytes) {

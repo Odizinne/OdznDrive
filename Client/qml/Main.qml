@@ -1,7 +1,6 @@
 import QtQuick
 import QtQuick.Controls.Material
 import QtQuick.Layouts
-import QtQuick.Dialogs
 import Odizinne.OdznDriveClient
 
 ApplicationWindow {
@@ -53,11 +52,11 @@ ApplicationWindow {
         }
 
         function onDownloadProgress(progress) {
-            //statusLabel.text = `Downloading: ${progress}%`
+            // Could add download progress UI here
         }
 
         function onDownloadComplete(path) {
-            //statusLabel.text = "Download complete: " + path
+            // Could add download complete notification here
         }
 
         function onDirectoryCreated(path) {
@@ -106,20 +105,26 @@ ApplicationWindow {
         height: 44
         color: Material.primary
 
-        TextField {
-            id: filterField
-            height: 35
-            width: 300
-            anchors.centerIn: parent
-            placeholderText: "Filter..."
-        }
-
         RowLayout {
             anchors.fill: parent
             anchors.leftMargin: 10
-            spacing: 0
+            anchors.rightMargin: 10
+            spacing: 15
+
+            TextField {
+                id: filterField
+                Layout.preferredWidth: 300
+                Layout.preferredHeight: 35
+                placeholderText: "Filter..."
+            }
+
+            Item {
+                Layout.fillWidth: true
+            }
 
             ColumnLayout {
+                spacing: 0
+
                 ProgressBar {
                     id: storageBar
                     Layout.preferredWidth: 150
@@ -131,55 +136,6 @@ ApplicationWindow {
                     text: "Storage: -- / --"
                     font.pixelSize: 10
                 }
-            }
-
-            Item {
-                Layout.fillWidth: true
-            }
-
-            ToolButton {
-                icon.source: "qrc:/icons/up.svg"
-                icon.width: 18
-                icon.height: 18
-                enabled: FileModel.canGoUp && ConnectionManager.authenticated
-                onClicked: {
-                    let parentPath = FileModel.getParentPath()
-                    ConnectionManager.listDirectory(parentPath)
-                }
-                ToolTip.visible: hovered
-                ToolTip.text: "Go up"
-            }
-
-            ToolButton {
-                icon.source: "qrc:/icons/refresh.svg"
-                icon.width: 16
-                icon.height: 16
-                enabled: ConnectionManager.authenticated
-                onClicked: {
-                    ConnectionManager.listDirectory(FileModel.currentPath)
-                }
-                ToolTip.visible: hovered
-                ToolTip.text: "Refresh"
-            }
-
-            ToolButton {
-                icon.source: "qrc:/icons/plus.svg"
-                icon.width: 18
-                icon.height: 18
-                enabled: ConnectionManager.authenticated
-                onClicked: newFolderDialog.open()
-                ToolTip.visible: hovered
-                ToolTip.text: "New folder"
-            }
-
-            ToolButton {
-                icon.source: "qrc:/icons/upload.svg"
-                icon.width: 16
-                icon.height: 16
-                enabled: ConnectionManager.authenticated
-                onClicked: uploadDialog.open()
-                ToolTip.visible: hovered
-                ToolTip.text: "Upload files"
             }
 
             ToolButton {
@@ -200,95 +156,6 @@ ApplicationWindow {
 
     FileListView {
         anchors.fill: parent
-    }
-
-    Dialog {
-        id: newFolderDialog
-        title: "Create New Folder"
-        modal: true
-        anchors.centerIn: parent
-
-        ColumnLayout {
-            spacing: 10
-
-            Label {
-                text: "Folder name:"
-            }
-
-            TextField {
-                id: folderNameField
-                Layout.preferredWidth: 300
-                placeholderText: "Enter folder name"
-            }
-        }
-
-        standardButtons: Dialog.Ok | Dialog.Cancel
-
-        onAccepted: {
-            if (folderNameField.text.trim() !== "") {
-                let newPath = FileModel.currentPath
-                if (newPath && !newPath.endsWith('/')) {
-                    newPath += '/'
-                }
-                newPath += folderNameField.text.trim()
-                ConnectionManager.createDirectory(newPath)
-                folderNameField.clear()
-            }
-        }
-
-        onRejected: {
-            folderNameField.clear()
-        }
-    }
-
-    FileDialog {
-        id: uploadDialog
-        fileMode: FileDialog.OpenFiles
-        onAccepted: {
-            let files = []
-            for (let i = 0; i < selectedFiles.length; i++) {
-                let fileUrl = selectedFiles[i].toString()
-
-                // Remove file:// prefix to get local path
-                let localPath = fileUrl
-                if (localPath.startsWith("file://")) {
-                    localPath = localPath.substring(7)
-                }
-
-                // On Windows, remove leading slash before drive letter (e.g., /C:/ -> C:/)
-                if (localPath.match(/^\/[A-Za-z]:\//)) {
-                    localPath = localPath.substring(1)
-                }
-
-                files.push(localPath)
-            }
-
-            if (files.length > 0) {
-                ConnectionManager.uploadFiles(files, FileModel.currentPath)
-            }
-        }
-    }
-
-    FileDialog {
-        id: downloadDialog
-        fileMode: FileDialog.SaveFile
-        property string remotePath: ""
-
-        onAccepted: {
-            let localPath = selectedFile.toString()
-
-            // Remove file:// prefix to get local path
-            if (localPath.startsWith("file://")) {
-                localPath = localPath.substring(7)
-            }
-
-            // On Windows, remove leading slash before drive letter (e.g., /C:/ -> C:/)
-            if (localPath.match(/^\/[A-Za-z]:\//)) {
-                localPath = localPath.substring(1)
-            }
-
-            ConnectionManager.downloadFile(remotePath, localPath)
-        }
     }
 
     Dialog {
@@ -346,51 +213,5 @@ ApplicationWindow {
         }
 
         standardButtons: Dialog.Ok
-    }
-
-    Dialog {
-        id: deleteConfirmDialog
-        title: "Confirm Delete"
-        property string itemPath: ""
-        property bool isDirectory: false
-        modal: true
-        anchors.centerIn: parent
-
-        Label {
-            text: "Are you sure you want to delete this " +
-                  (deleteConfirmDialog.isDirectory ? "folder" : "file") + "?"
-        }
-
-        standardButtons: Dialog.Yes | Dialog.No
-
-        onAccepted: {
-            if (isDirectory) {
-                ConnectionManager.deleteDirectory(itemPath)
-            } else {
-                ConnectionManager.deleteFile(itemPath)
-            }
-        }
-    }
-
-    function showDeleteConfirm(path, isDir) {
-        deleteConfirmDialog.itemPath = path
-        deleteConfirmDialog.isDirectory = isDir
-        deleteConfirmDialog.open()
-    }
-
-    function showDownloadDialog(remotePath) {
-        downloadDialog.remotePath = remotePath
-        downloadDialog.open()
-    }
-
-    Connections {
-        target: Intercom
-        function onRequestShowDeleteConfirm(path, isDir) {
-            root.showDeleteConfirm(path, isDir)
-        }
-
-        function onRequestShowDownloadDialog(remotePath) {
-            root.showDownloadDialog(remotePath)
-        }
     }
 }
