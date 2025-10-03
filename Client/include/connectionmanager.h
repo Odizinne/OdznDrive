@@ -5,7 +5,13 @@
 #include <QWebSocket>
 #include <QVariantList>
 #include <QFile>
+#include <QQueue>
 #include <qqml.h>
+
+struct UploadQueueItem {
+    QString localPath;
+    QString remotePath;
+};
 
 class ConnectionManager : public QObject
 {
@@ -16,6 +22,8 @@ class ConnectionManager : public QObject
     Q_PROPERTY(bool connected READ connected NOTIFY connectedChanged)
     Q_PROPERTY(bool authenticated READ authenticated NOTIFY authenticatedChanged)
     Q_PROPERTY(QString statusMessage READ statusMessage NOTIFY statusMessageChanged)
+    Q_PROPERTY(int uploadQueueSize READ uploadQueueSize NOTIFY uploadQueueSizeChanged)
+    Q_PROPERTY(QString currentUploadFileName READ currentUploadFileName NOTIFY currentUploadFileNameChanged)
 
 public:
     static ConnectionManager* create(QQmlEngine *qmlEngine, QJSEngine *jsEngine);
@@ -24,6 +32,8 @@ public:
     bool connected() const { return m_connected; }
     bool authenticated() const { return m_authenticated; }
     QString statusMessage() const { return m_statusMessage; }
+    int uploadQueueSize() const { return m_uploadQueue.size(); }
+    QString currentUploadFileName() const { return m_currentUploadFileName; }
 
     Q_INVOKABLE void connectToServer(const QString &url, const QString &password);
     Q_INVOKABLE void disconnect();
@@ -33,15 +43,19 @@ public:
     Q_INVOKABLE void deleteFile(const QString &path);
     Q_INVOKABLE void deleteDirectory(const QString &path);
     Q_INVOKABLE void uploadFile(const QString &localPath, const QString &remotePath);
+    Q_INVOKABLE void uploadFiles(const QStringList &localPaths, const QString &remoteDir);
     Q_INVOKABLE void downloadFile(const QString &remotePath, const QString &localPath);
     Q_INVOKABLE void moveItem(const QString &fromPath, const QString &toPath);
     Q_INVOKABLE void getStorageInfo();
     Q_INVOKABLE void cancelUpload();
+    Q_INVOKABLE void cancelAllUploads();
 
 signals:
     void connectedChanged();
     void authenticatedChanged();
     void statusMessageChanged();
+    void uploadQueueSizeChanged();
+    void currentUploadFileNameChanged();
 
     void directoryListed(const QString &path, const QVariantList &files);
     void directoryCreated(const QString &path);
@@ -74,6 +88,9 @@ private:
     void setAuthenticated(bool authenticated);
     void setStatusMessage(const QString &message);
     void sendNextChunk();
+    void startNextUpload();
+    void cleanupCurrentUpload();
+    void setCurrentUploadFileName(const QString &fileName);
 
     static ConnectionManager *s_instance;
 
@@ -87,11 +104,13 @@ private:
     QByteArray m_downloadBuffer;
     qint64 m_downloadExpectedSize;
 
+    QQueue<UploadQueueItem> m_uploadQueue;
     QString m_uploadLocalPath;
     QString m_uploadRemotePath;
     QFile *m_uploadFile;
     qint64 m_uploadTotalSize;
     qint64 m_uploadSentSize;
+    QString m_currentUploadFileName;
 
     static const qint64 CHUNK_SIZE = 1024 * 1024; // 1MB chunks
 };

@@ -127,17 +127,42 @@ void ConnectionManager::uploadFile(const QString &localPath, const QString &remo
         emit errorOccurred("Cannot open file: " + localPath);
         return;
     }
-
-    m_uploadLocalPath = localPath;
-    m_uploadRemotePath = remotePath;
-    m_uploadTotalSize = file.size();
-    m_uploadSentSize = 0;
     file.close();
 
-    QJsonObject params;
-    params["path"] = remotePath;
-    params["size"] = m_uploadTotalSize;
-    sendCommand("upload_file", params);
+    // Check if queue is empty BEFORE adding
+    bool queueWasEmpty = m_uploadQueue.isEmpty();
+
+    UploadQueueItem item;
+    item.localPath = localPath;
+    item.remotePath = remotePath;
+    m_uploadQueue.enqueue(item);
+    emit uploadQueueSizeChanged();
+
+    // Only start upload if queue was empty AND nothing is currently uploading
+    if (queueWasEmpty && !m_uploadFile && m_uploadLocalPath.isEmpty()) {
+        startNextUpload();
+    }
+}
+
+void ConnectionManager::uploadFiles(const QStringList &localPaths, const QString &remoteDir)
+{
+    if (!m_authenticated) {
+        emit errorOccurred("Not authenticated");
+        return;
+    }
+
+    for (const QString &localPath : localPaths) {
+        QFileInfo fileInfo(localPath);
+        QString fileName = fileInfo.fileName();
+
+        QString remotePath = remoteDir;
+        if (!remotePath.isEmpty() && !remotePath.endsWith('/')) {
+            remotePath += '/';
+        }
+        remotePath += fileName;
+
+        uploadFile(localPath, remotePath);
+    }
 }
 
 void ConnectionManager::downloadFile(const QString &remotePath, const QString &localPath)
@@ -194,11 +219,9 @@ void ConnectionManager::onDisconnected()
     setAuthenticated(false);
     setStatusMessage("Disconnected");
 
-    if (m_uploadFile) {
-        m_uploadFile->close();
-        delete m_uploadFile;
-        m_uploadFile = nullptr;
-    }
+    cleanupCurrentUpload();
+    m_uploadQueue.clear();
+    emit uploadQueueSizeChanged();
 }
 
 void ConnectionManager::onTextMessageReceived(const QString &message)
@@ -278,9 +301,8 @@ void ConnectionManager::sendNextChunk()
     QByteArray chunk = m_uploadFile->read(CHUNK_SIZE);
     if (chunk.isEmpty()) {
         emit errorOccurred("Failed to read file chunk");
-        m_uploadFile->close();
-        delete m_uploadFile;
-        m_uploadFile = nullptr;
+        cleanupCurrentUpload();
+        startNextUpload();
         return;
     }
 
@@ -308,11 +330,7 @@ void ConnectionManager::sendCommand(const QString &type, const QJsonObject &para
 
 void ConnectionManager::cancelUpload()
 {
-    if (m_uploadFile) {
-        m_uploadFile->close();
-        delete m_uploadFile;
-        m_uploadFile = nullptr;
-    }
+    cleanupCurrentUpload();
 
     if (!m_uploadRemotePath.isEmpty()) {
         QJsonObject params;
@@ -327,6 +345,66 @@ void ConnectionManager::cancelUpload()
         setStatusMessage("Upload cancelled");
         emit errorOccurred("Upload cancelled by user");
     }
+
+    // Start next upload in queue if any
+    startNextUpload();
+}
+
+void ConnectionManager::cancelAllUploads()
+{
+    cancelUpload();
+    m_uploadQueue.clear();
+    emit uploadQueueSizeChanged();
+    setStatusMessage("All uploads cancelled");
+}
+
+void ConnectionManager::startNextUpload()
+{
+    if (m_uploadQueue.isEmpty()) {
+        setCurrentUploadFileName("");
+        return;
+    }
+
+    UploadQueueItem item = m_uploadQueue.dequeue();
+    emit uploadQueueSizeChanged();
+
+    QFile file(item.localPath);
+    if (!file.open(QIODevice::ReadOnly)) {
+        emit errorOccurred("Cannot open file: " + item.localPath);
+        startNextUpload(); // Try next file
+        return;
+    }
+
+    m_uploadLocalPath = item.localPath;
+    m_uploadRemotePath = item.remotePath;
+    m_uploadTotalSize = file.size();
+    m_uploadSentSize = 0;
+    file.close();
+
+    QFileInfo fileInfo(item.localPath);
+    setCurrentUploadFileName(fileInfo.fileName());
+
+    QJsonObject params;
+    params["path"] = item.remotePath;
+    params["size"] = m_uploadTotalSize;
+    sendCommand("upload_file", params);
+}
+
+void ConnectionManager::cleanupCurrentUpload()
+{
+    if (m_uploadFile) {
+        m_uploadFile->close();
+        delete m_uploadFile;
+        m_uploadFile = nullptr;
+    }
+}
+
+void ConnectionManager::setCurrentUploadFileName(const QString &fileName)
+{
+    if (m_currentUploadFileName != fileName) {
+        m_currentUploadFileName = fileName;
+        emit currentUploadFileNameChanged();
+    }
 }
 
 void ConnectionManager::handleResponse(const QJsonObject &response)
@@ -339,16 +417,13 @@ void ConnectionManager::handleResponse(const QJsonObject &response)
         setStatusMessage("Error: " + error);
         emit errorOccurred(error);
 
-        // Clean up upload on error
-        if (m_uploadFile) {
-            m_uploadFile->close();
-            delete m_uploadFile;
-            m_uploadFile = nullptr;
-            m_uploadLocalPath.clear();
-            m_uploadRemotePath.clear();
-            m_uploadTotalSize = 0;
-            m_uploadSentSize = 0;
-        }
+        // Clean up current upload and try next one
+        cleanupCurrentUpload();
+        m_uploadLocalPath.clear();
+        m_uploadRemotePath.clear();
+        m_uploadTotalSize = 0;
+        m_uploadSentSize = 0;
+        startNextUpload();
         return;
     }
 
@@ -383,6 +458,7 @@ void ConnectionManager::handleResponse(const QJsonObject &response)
             emit errorOccurred("Failed to open file: " + m_uploadLocalPath);
             delete m_uploadFile;
             m_uploadFile = nullptr;
+            startNextUpload();
         }
     } else if (type == "upload_complete") {
         emit uploadComplete(data["path"].toString());
@@ -394,6 +470,9 @@ void ConnectionManager::handleResponse(const QJsonObject &response)
             delete m_uploadFile;
             m_uploadFile = nullptr;
         }
+
+        // Start next upload in queue
+        startNextUpload();
     } else if (type == "upload_cancelled") {
         // Server confirmed cancellation
         setStatusMessage("Upload cancelled");

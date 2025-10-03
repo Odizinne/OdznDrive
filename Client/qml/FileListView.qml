@@ -31,6 +31,69 @@ Rectangle {
     property string draggedItemName: ""
     property var currentDropTarget: null
 
+    // Drop area for file uploads
+    DropArea {
+        id: dropArea
+        anchors.fill: parent
+
+        onEntered: (drag) => {
+            if (drag.hasUrls && ConnectionManager.authenticated) {
+                drag.accept(Qt.CopyAction)
+                dropOverlay.visible = true
+            }
+        }
+
+        onExited: {
+            dropOverlay.visible = false
+        }
+
+        onDropped: (drop) => {
+            dropOverlay.visible = false
+
+            if (drop.hasUrls && ConnectionManager.authenticated) {
+                let files = []
+                for (let i = 0; i < drop.urls.length; i++) {
+                    let fileUrl = drop.urls[i].toString()
+
+                    // Remove file:// prefix to get local path
+                    let localPath = fileUrl
+                    if (localPath.startsWith("file://")) {
+                        localPath = localPath.substring(7)
+                    }
+
+                    // On Windows, remove leading slash before drive letter
+                    if (localPath.match(/^\/[A-Za-z]:\//)) {
+                        localPath = localPath.substring(1)
+                    }
+
+                    files.push(localPath)
+                }
+
+                if (files.length > 0) {
+                    ConnectionManager.uploadFiles(files, FileModel.currentPath)
+                }
+
+                drop.accept(Qt.CopyAction)
+            }
+        }
+
+        Rectangle {
+            id: dropOverlay
+            anchors.fill: parent
+            color: Material.primary
+            opacity: 0.2
+            visible: false
+
+            Label {
+                anchors.centerIn: parent
+                text: "Drop files here to upload"
+                font.pixelSize: 24
+                font.bold: true
+                color: Material.primary
+            }
+        }
+    }
+
     ScrollView {
         id: scrollView
         anchors.fill: parent
@@ -209,11 +272,12 @@ Rectangle {
             Label {
                 anchors.centerIn: parent
                 text: ConnectionManager.authenticated ?
-                      (FileModel.count === 0 ? "Empty folder" : "") :
+                      (FileModel.count === 0 ? "Empty folder\n\nDrag files here to upload" : "") :
                       "Not connected"
                 visible: FileModel.count === 0
                 opacity: 0.5
                 font.pixelSize: 16
+                horizontalAlignment: Text.AlignHCenter
             }
         }
     }
