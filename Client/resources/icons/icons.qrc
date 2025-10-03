@@ -10,5 +10,6 @@
         <file>delete.svg</file>
         <file>download.svg</file>
         <file>right.svg</file>
+        <file>icon.png</file>
     </qresource>
 </RCC>

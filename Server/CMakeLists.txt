@@ -1,6 +1,6 @@
-project(OdznDriveServer)
+project(OdznDriveServer VERSION 0.1.0 LANGUAGES CXX)
 
-set(CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}/install" CACHE PATH "Installation directory" FORCE)
+set(CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}/install/Server" CACHE PATH "Installation directory" FORCE)
 qt_standard_project_setup()
 
 set(SOURCES

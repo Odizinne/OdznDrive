@@ -9,8 +9,7 @@ int main(int argc, char *argv[])
 
     QGuiApplication::setOrganizationName("Odizinne");
     QGuiApplication::setApplicationName("OdznDriveClient");
-    QGuiApplication::setApplicationVersion("1.0.0");
-
+    QGuiApplication::setWindowIcon(QIcon(":/icons/icon.png"));
     QQmlApplicationEngine engine;
 
     QObject::connect(&engine, &QQmlApplicationEngine::objectCreationFailed,

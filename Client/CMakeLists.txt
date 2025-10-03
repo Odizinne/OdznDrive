@@ -1,6 +1,5 @@
-project(OdznDriveClient)
-
-set(CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}/install" CACHE PATH "Installation directory" FORCE)
+project(OdznDriveClient VERSION 0.1.0 LANGUAGES CXX)
+set(CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}/install/Client" CACHE PATH "Installation directory" FORCE)
 set(CMAKE_AUTORCC ON)
 qt_standard_project_setup(REQUIRES 6.8)
 
@@ -28,17 +27,66 @@ set(QML_SINGLETONS
     qml/Singletons/Intercom.qml
 )
 
+# Get git commit hash
+find_package(Git QUIET)
+if(GIT_FOUND AND EXISTS "${PROJECT_SOURCE_DIR}/.git")
+    execute_process(
+        COMMAND ${GIT_EXECUTABLE} rev-parse --short HEAD
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+        OUTPUT_VARIABLE GIT_COMMIT_HASH
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+        ERROR_QUIET
+    )
+else()
+    set(GIT_COMMIT_HASH "unknown")
+endif()
+
+string(TIMESTAMP BUILD_TIMESTAMP "%Y-%m-%d %H:%M:%S UTC" UTC)
+
+# Generate version header
+configure_file(
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/version.h.in"
+    "${CMAKE_CURRENT_BINARY_DIR}/version.h"
+)
+
+# Windows-specific configuration
+if(WIN32)
+    # Configure Windows metadata
+    set(APP_ICON_PATH "${CMAKE_CURRENT_SOURCE_DIR}/resources/icons/icon.ico")
+    configure_file(
+        "${CMAKE_CURRENT_SOURCE_DIR}/src/windows_metadata.rc.in"
+        "${CMAKE_CURRENT_BINARY_DIR}/windows_metadata.rc"
+        @ONLY
+    )
+    set(WINDOWS_RESOURCES "${CMAKE_CURRENT_BINARY_DIR}/windows_metadata.rc")
+else()
+    set(WINDOWS_RESOURCES "")
+endif()
+
 set_source_files_properties(${QML_SINGLETONS}
     PROPERTIES QT_QML_SINGLETON_TYPE TRUE
 )
 
-qt_add_executable(${PROJECT_NAME}
-    ${HEADERS}
-    ${SOURCES}
-    resources/icons/icons.qrc
-)
+# Create executable with WIN32 flag only on Windows
+if(WIN32)
+    qt_add_executable(${PROJECT_NAME} WIN32
+        ${HEADERS}
+        ${SOURCES}
+        resources/icons/icons.qrc
+        ${WINDOWS_RESOURCES}
+    )
+else()
+    qt_add_executable(${PROJECT_NAME}
+        ${HEADERS}
+        ${SOURCES}
+        resources/icons/icons.qrc
+    )
+endif()
 
-target_include_directories(${PROJECT_NAME} PRIVATE include)
+target_include_directories(${PROJECT_NAME} PRIVATE
+    include
+    ${CMAKE_CURRENT_BINARY_DIR}
+)
 
 qt_add_qml_module(${PROJECT_NAME}
     URI Odizinne.OdznDriveClient
