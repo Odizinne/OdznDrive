@@ -1,6 +1,7 @@
 project(OdznDriveClient)
 
 set(CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}/install" CACHE PATH "Installation directory" FORCE)
+set(CMAKE_AUTORCC ON)
 qt_standard_project_setup(REQUIRES 6.8)
 
 set(SOURCES
@@ -19,11 +20,13 @@ set(QML_FILES
     qml/HeaderBar.qml
     qml/FileListView.qml
     qml/TransferProgress.qml
+    qml/SettingsDialog.qml
 )
 
 set(QML_SINGLETONS
-    #qml/Singletons/UserSettings.qml
+    qml/Singletons/UserSettings.qml
     qml/Singletons/Constants.qml
+    qml/Singletons/Intercom.qml
 )
 
 set_source_files_properties(${QML_SINGLETONS}
@@ -33,6 +36,7 @@ set_source_files_properties(${QML_SINGLETONS}
 qt_add_executable(${PROJECT_NAME}
     ${HEADERS}
     ${SOURCES}
+    resources/icons/icons.qrc
 )
 
 target_include_directories(${PROJECT_NAME} PRIVATE include)

@@ -1,0 +1,13 @@
+<RCC>
+    <qresource prefix="icons">
+        <file>cog.svg</file>
+        <file>plus.svg</file>
+        <file>refresh.svg</file>
+        <file>up.svg</file>
+        <file>upload.svg</file>
+        <file>menu.svg</file>
+        <file>rename.svg</file>
+        <file>delete.svg</file>
+        <file>download.svg</file>
+    </qresource>
+</RCC>

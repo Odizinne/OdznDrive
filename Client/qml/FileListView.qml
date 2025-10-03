@@ -1,3 +1,5 @@
+pragma ComponentBehavior: Bound
+
 import QtQuick
 import QtQuick.Controls.Material
 import QtQuick.Layouts
@@ -15,14 +17,14 @@ Rectangle {
         height: 40
         color: Material.primary
         radius: 4
-        opacity: 0.9
+        opacity: 0.7
         z: 1000
         parent: Overlay.overlay
 
         Label {
             id: dragLabel
             anchors.centerIn: parent
-            color: Material.background
+            color: Material.foreground
             font.bold: true
         }
     }
@@ -147,17 +149,65 @@ Rectangle {
                 id: delegateRoot
                 width: listView.width
                 height: 50
+                required property var model
+                required property int index
 
                 property string itemPath: model.path
                 property string itemName: model.name
                 property bool itemIsDir: model.isDir
 
+                ContextMenu.menu: delContextMenu
+                Menu {
+                    id: delContextMenu
+                    width: 200
+                    MenuItem {
+                        text: delegateRoot.model.name
+                        enabled: false
+                    }
+
+                    MenuItem {
+                        text: "Download"
+                        icon.source: "qrc:/icons/download.svg"
+                        icon.width: 16
+                        icon.height: 16
+                        onClicked: {
+                            Intercom.requestShowDownloadDialog(delegateRoot.model.path)
+                        }
+                    }
+                    MenuItem {
+                        text: "Rename"
+                        icon.source: "qrc:/icons/rename.svg"
+                        icon.width: 16
+                        icon.height: 16
+                    }
+                    MenuItem {
+                        text: "Delete"
+                        icon.source: "qrc:/icons/delete.svg"
+                        icon.width: 16
+                        icon.height: 16
+                        onClicked: {
+                            Intercom.requestShowDeleteConfirm(delegateRoot.model.path, delegateRoot.model.isDir)
+                        }
+                    }
+                }
+
                 Rectangle {
                     id: delegateBackground
                     anchors.fill: parent
-                    color: (root.currentDropTarget === delegateRoot && model.isDir && root.draggedItemPath !== model.path) ?
-                           Constants.listHeaderColor :
-                           (index % 2 === 0 ? Constants.surfaceColor : Constants.alternateRowColor)
+                    color: {
+                        if (root.currentDropTarget === delegateRoot && delegateRoot.model.isDir && root.draggedItemPath !== delegateRoot.model.path) {
+                            return Constants.listHeaderColor
+                        }
+                        return hoverHandler.hovered ? Constants.alternateRowColor : "transparent"//Constants.surfaceColor
+                    }
+
+                    Rectangle {
+                        anchors.left: parent.left
+                        anchors.bottom: parent.bottom
+                        height: 1
+                        width: parent.width
+                        color: Constants.alternateRowColor
+                    }
 
                     RowLayout {
                         anchors.fill: parent
@@ -166,19 +216,19 @@ Rectangle {
                         spacing: 10
 
                         Label {
-                            text: (model.isDir ? "📁 " : "📄 ") + model.name
+                            text: (delegateRoot.model.isDir ? "📁 " : "📄 ") + delegateRoot.model.name
                             Layout.fillWidth: true
                             elide: Text.ElideRight
                         }
 
                         Label {
-                            text: model.isDir ? "-" : formatSize(model.size)
+                            text: delegateRoot.model.isDir ? "-" : root.formatSize(delegateRoot.model.size)
                             Layout.preferredWidth: 100
                             opacity: 0.7
                         }
 
                         Label {
-                            text: formatDate(model.modified)
+                            text: root.formatDate(delegateRoot.model.modified)
                             Layout.preferredWidth: 180
                             opacity: 0.7
                         }
@@ -188,24 +238,18 @@ Rectangle {
                             spacing: 2
 
                             ToolButton {
-                                text: "↓"
-                                visible: !model.isDir
-                                onClicked: {
-                                    root.Window.window.showDownloadDialog(model.path)
-                                }
-                                ToolTip.visible: hovered
-                                ToolTip.text: "Download"
-                            }
-
-                            ToolButton {
-                                text: "✕"
-                                onClicked: {
-                                    root.Window.window.showDeleteConfirm(model.path, model.isDir)
-                                }
-                                ToolTip.visible: hovered
-                                ToolTip.text: "Delete"
+                                icon.source: "qrc:/icons/menu.svg"
+                                icon.width: 16
+                                icon.height: 16
+                                onClicked: delContextMenu.popup()
+                                Layout.alignment: Qt.AlignRight
+                                opacity: (hoverHandler.hovered && root.draggedItemPath === "") ? 1 : 0
                             }
                         }
+                    }
+
+                    HoverHandler {
+                        id: hoverHandler
                     }
 
                     DragHandler {
@@ -215,9 +259,9 @@ Rectangle {
 
                         onActiveChanged: {
                             if (active) {
-                                root.draggedItemPath = model.path
-                                root.draggedItemName = model.name
-                                dragLabel.text = "Move " + model.name
+                                root.draggedItemPath = delegateRoot.model.path
+                                root.draggedItemName = delegateRoot.model.name
+                                dragLabel.text = "Move " + delegateRoot.model.name
                                 dragIndicator.visible = true
                             } else {
                                 dragIndicator.visible = false
@@ -261,8 +305,8 @@ Rectangle {
                     TapHandler {
                         acceptedButtons: Qt.LeftButton
                         onDoubleTapped: {
-                            if (model.isDir) {
-                                ConnectionManager.listDirectory(model.path)
+                            if (delegateRoot.model.isDir) {
+                                ConnectionManager.listDirectory(delegateRoot.model.path)
                             }
                         }
                     }
@@ -272,8 +316,8 @@ Rectangle {
             Label {
                 anchors.centerIn: parent
                 text: ConnectionManager.authenticated ?
-                      (FileModel.count === 0 ? "Empty folder\n\nDrag files here to upload" : "") :
-                      "Not connected"
+                          (FileModel.count === 0 ? "Empty folder\n\nDrag files here to upload" : "") :
+                          "Not connected"
                 visible: FileModel.count === 0
                 opacity: 0.5
                 font.pixelSize: 16

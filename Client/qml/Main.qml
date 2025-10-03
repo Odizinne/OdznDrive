@@ -10,11 +10,12 @@ ApplicationWindow {
     width: 1000
     height: 700
     title: "OdznDrive Client"
-
-    Material.theme: Constants.materialTheme
-    Material.accent: Material.Blue
-
+    Material.theme: Constants.darkMode ? Material.Dark : Material.Light
     color: Constants.backgroundColor
+
+    Component.onCompleted: {
+        ConnectionManager.connectToServer(UserSettings.serverUrl, UserSettings.serverPassword)
+    }
 
     Connections {
         target: ConnectionManager
@@ -41,28 +42,22 @@ ApplicationWindow {
         function onUploadProgress(progress) {
             uploadProgressDialog.progress = progress
             uploadProgressDialog.open()
-
-            let queueText = ConnectionManager.uploadQueueSize > 0 ?
-                ` (${ConnectionManager.uploadQueueSize} in queue)` : ""
-            statusLabel.text = `Uploading: ${progress}%${queueText}`
         }
 
         function onUploadComplete(path) {
-            // Don't close dialog if there are more uploads in queue
             if (ConnectionManager.uploadQueueSize === 0) {
                 uploadProgressDialog.close()
-                statusLabel.text = "All uploads complete"
             }
             ConnectionManager.listDirectory(FileModel.currentPath)
             storageUpdateTimer.restart()
         }
 
         function onDownloadProgress(progress) {
-            statusLabel.text = `Downloading: ${progress}%`
+            //statusLabel.text = `Downloading: ${progress}%`
         }
 
         function onDownloadComplete(path) {
-            statusLabel.text = "Download complete: " + path
+            //statusLabel.text = "Download complete: " + path
         }
 
         function onDirectoryCreated(path) {
@@ -107,95 +102,104 @@ ApplicationWindow {
         }
     }
 
-    ColumnLayout {
-        anchors.fill: parent
-        spacing: 0
+    header: Rectangle {
+        height: 44
+        color: Material.primary
 
-        HeaderBar {
-            Layout.fillWidth: true
-            Layout.preferredHeight: 60
+        TextField {
+            id: filterField
+            height: 35
+            width: 300
+            anchors.centerIn: parent
+            placeholderText: "Filter..."
         }
 
-        Rectangle {
-            Layout.fillWidth: true
-            Layout.preferredHeight: 50
-            color: Constants.surfaceColor
+        RowLayout {
+            anchors.fill: parent
+            anchors.leftMargin: 10
+            spacing: 0
 
-            RowLayout {
-                anchors.fill: parent
-                anchors.margins: 8
-                spacing: 5
-
-                ToolButton {
-                    text: "↑"
-                    enabled: FileModel.canGoUp && ConnectionManager.authenticated
-                    onClicked: {
-                        let parentPath = FileModel.getParentPath()
-                        ConnectionManager.listDirectory(parentPath)
-                    }
-                    ToolTip.visible: hovered
-                    ToolTip.text: "Go up"
-                }
-
-                ToolButton {
-                    text: "⟳"
-                    enabled: ConnectionManager.authenticated
-                    onClicked: {
-                        ConnectionManager.listDirectory(FileModel.currentPath)
-                    }
-                    ToolTip.visible: hovered
-                    ToolTip.text: "Refresh"
-                }
-
-                ToolButton {
-                    text: "+"
-                    enabled: ConnectionManager.authenticated
-                    onClicked: newFolderDialog.open()
-                    ToolTip.visible: hovered
-                    ToolTip.text: "New folder"
-                }
-
-                ToolButton {
-                    text: "↑"
-                    enabled: ConnectionManager.authenticated
-                    onClicked: uploadDialog.open()
-                    ToolTip.visible: hovered
-                    ToolTip.text: "Upload files"
-                }
-
-                Item {
-                    Layout.fillWidth: true
-                }
-
-                Label {
-                    id: storageLabel
-                    text: "Storage: -- / --"
-                }
-
+            ColumnLayout {
                 ProgressBar {
                     id: storageBar
                     Layout.preferredWidth: 150
                     value: 0
                 }
+
+                Label {
+                    id: storageLabel
+                    text: "Storage: -- / --"
+                    font.pixelSize: 10
+                }
+            }
+
+            Item {
+                Layout.fillWidth: true
+            }
+
+            ToolButton {
+                icon.source: "qrc:/icons/up.svg"
+                icon.width: 18
+                icon.height: 18
+                enabled: FileModel.canGoUp && ConnectionManager.authenticated
+                onClicked: {
+                    let parentPath = FileModel.getParentPath()
+                    ConnectionManager.listDirectory(parentPath)
+                }
+                ToolTip.visible: hovered
+                ToolTip.text: "Go up"
+            }
+
+            ToolButton {
+                icon.source: "qrc:/icons/refresh.svg"
+                icon.width: 16
+                icon.height: 16
+                enabled: ConnectionManager.authenticated
+                onClicked: {
+                    ConnectionManager.listDirectory(FileModel.currentPath)
+                }
+                ToolTip.visible: hovered
+                ToolTip.text: "Refresh"
+            }
+
+            ToolButton {
+                icon.source: "qrc:/icons/plus.svg"
+                icon.width: 18
+                icon.height: 18
+                enabled: ConnectionManager.authenticated
+                onClicked: newFolderDialog.open()
+                ToolTip.visible: hovered
+                ToolTip.text: "New folder"
+            }
+
+            ToolButton {
+                icon.source: "qrc:/icons/upload.svg"
+                icon.width: 16
+                icon.height: 16
+                enabled: ConnectionManager.authenticated
+                onClicked: uploadDialog.open()
+                ToolTip.visible: hovered
+                ToolTip.text: "Upload files"
+            }
+
+            ToolButton {
+                icon.source: "qrc:/icons/cog.svg"
+                icon.width: 16
+                icon.height: 16
+                onClicked: settingsDialog.open()
+                ToolTip.visible: hovered
+                ToolTip.text: "Settings"
             }
         }
+    }
 
-        FileListView {
-            Layout.fillWidth: true
-            Layout.fillHeight: true
-        }
+    SettingsDialog {
+        id: settingsDialog
+        anchors.centerIn: parent
+    }
 
-        Rectangle {
-            Layout.fillWidth: true
-            Layout.preferredHeight: 30
-            color: Constants.surfaceColor
-
-            Label {
-                id: statusLabel
-                anchors.centerIn: parent
-                text: ConnectionManager.statusMessage
-            }
-        }
+    FileListView {
+        anchors.fill: parent
     }
 
     Dialog {
@@ -293,8 +297,13 @@ ApplicationWindow {
         modal: true
         closePolicy: Popup.NoAutoClose
         anchors.centerIn: parent
+        standardButtons: Dialog.Cancel
 
         property int progress: 0
+
+        onRejected: {
+            ConnectionManager.cancelAllUploads()
+        }
 
         ColumnLayout {
             spacing: 15
@@ -306,8 +315,8 @@ ApplicationWindow {
 
             Label {
                 text: ConnectionManager.uploadQueueSize > 0 ?
-                    `${ConnectionManager.uploadQueueSize} file(s) remaining in queue` :
-                    "Upload in progress..."
+                          `${ConnectionManager.uploadQueueSize} file(s) remaining in queue` :
+                          "Upload in progress..."
                 visible: ConnectionManager.uploadQueueSize > 0
                 opacity: 0.7
             }
@@ -321,29 +330,6 @@ ApplicationWindow {
             Label {
                 text: uploadProgressDialog.progress + "%"
                 Layout.alignment: Qt.AlignHCenter
-            }
-
-            RowLayout {
-                Layout.alignment: Qt.AlignHCenter
-                spacing: 10
-
-                ToolButton {
-                    text: "Cancel Current"
-                    flat: false
-                    onClicked: {
-                        ConnectionManager.cancelUpload()
-                    }
-                }
-
-                ToolButton {
-                    text: "Cancel All"
-                    flat: false
-                    visible: ConnectionManager.uploadQueueSize > 0
-                    onClicked: {
-                        ConnectionManager.cancelAllUploads()
-                        uploadProgressDialog.close()
-                    }
-                }
             }
         }
     }
@@ -395,5 +381,16 @@ ApplicationWindow {
     function showDownloadDialog(remotePath) {
         downloadDialog.remotePath = remotePath
         downloadDialog.open()
+    }
+
+    Connections {
+        target: Intercom
+        function onRequestShowDeleteConfirm(path, isDir) {
+            root.showDeleteConfirm(path, isDir)
+        }
+
+        function onRequestShowDownloadDialog(remotePath) {
+            root.showDownloadDialog(remotePath)
+        }
     }
 }
