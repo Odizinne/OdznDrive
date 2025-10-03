@@ -129,9 +129,20 @@ void ClientConnection::handleCommand(const QJsonObject &command)
         handleMoveItem(params);
     } else if (type == "get_storage_info") {
         handleGetStorageInfo();
+    } else if (type == "get_server_info") {
+        handleGetServerInfo();
     } else {
         sendError("Unknown command type");
     }
+}
+
+void ClientConnection::handleGetServerInfo()
+{
+    QJsonObject data;
+    data["name"] = Config::instance().serverName();
+    data["version"] = "1.0.0";
+
+    sendResponse("server_info", data);
 }
 
 void ClientConnection::handleCancelUpload(const QJsonObject &params)

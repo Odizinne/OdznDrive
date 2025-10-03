@@ -17,6 +17,7 @@ ConnectionManager::ConnectionManager(QObject *parent)
     , m_uploadFile(nullptr)
     , m_uploadTotalSize(0)
     , m_uploadSentSize(0)
+    , m_serverName("Unknown Server")
 {
     connect(m_socket, &QWebSocket::connected, this, &ConnectionManager::onConnected);
     connect(m_socket, &QWebSocket::disconnected, this, &ConnectionManager::onDisconnected);
@@ -496,6 +497,8 @@ void ConnectionManager::handleResponse(const QJsonObject &response)
         qint64 used = data["used"].toVariant().toLongLong();
         qint64 available = data["available"].toVariant().toLongLong();
         emit storageInfo(total, used, available);
+    } else if (type == "server_info") {
+        setServerName(data["name"].toString());
     }
 }
 
@@ -520,5 +523,23 @@ void ConnectionManager::setStatusMessage(const QString &message)
     if (m_statusMessage != message) {
         m_statusMessage = message;
         emit statusMessageChanged();
+    }
+}
+
+void ConnectionManager::getServerInfo()
+{
+    if (!m_authenticated) {
+        emit errorOccurred("Not authenticated");
+        return;
+    }
+
+    sendCommand("get_server_info", QJsonObject());
+}
+
+void ConnectionManager::setServerName(const QString &name)
+{
+    if (m_serverName != name) {
+        m_serverName = name;
+        emit serverNameChanged();
     }
 }

@@ -24,6 +24,7 @@ class ConnectionManager : public QObject
     Q_PROPERTY(QString statusMessage READ statusMessage NOTIFY statusMessageChanged)
     Q_PROPERTY(int uploadQueueSize READ uploadQueueSize NOTIFY uploadQueueSizeChanged)
     Q_PROPERTY(QString currentUploadFileName READ currentUploadFileName NOTIFY currentUploadFileNameChanged)
+    Q_PROPERTY(QString serverName READ serverName NOTIFY serverNameChanged)
 
 public:
     static ConnectionManager* create(QQmlEngine *qmlEngine, QJSEngine *jsEngine);
@@ -34,6 +35,7 @@ public:
     QString statusMessage() const { return m_statusMessage; }
     int uploadQueueSize() const { return m_uploadQueue.size(); }
     QString currentUploadFileName() const { return m_currentUploadFileName; }
+    QString serverName() const { return m_serverName; }
 
     Q_INVOKABLE void connectToServer(const QString &url, const QString &password);
     Q_INVOKABLE void disconnect();
@@ -49,6 +51,7 @@ public:
     Q_INVOKABLE void getStorageInfo();
     Q_INVOKABLE void cancelUpload();
     Q_INVOKABLE void cancelAllUploads();
+    Q_INVOKABLE void getServerInfo();
 
 signals:
     void connectedChanged();
@@ -68,6 +71,7 @@ signals:
     void itemMoved(const QString &fromPath, const QString &toPath);
     void storageInfo(qint64 total, qint64 used, qint64 available);
     void errorOccurred(const QString &error);
+    void serverNameChanged();
 
 private slots:
     void onConnected();
@@ -91,6 +95,7 @@ private:
     void startNextUpload();
     void cleanupCurrentUpload();
     void setCurrentUploadFileName(const QString &fileName);
+    void setServerName(const QString &name);
 
     static ConnectionManager *s_instance;
 
@@ -111,6 +116,7 @@ private:
     qint64 m_uploadTotalSize;
     qint64 m_uploadSentSize;
     QString m_currentUploadFileName;
+    QString m_serverName;
 
     static const qint64 CHUNK_SIZE = 1024 * 1024; // 1MB chunks
 };

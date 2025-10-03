@@ -37,6 +37,7 @@ private:
     void handleCancelUpload(const QJsonObject &params);
     void handleMoveItem(const QJsonObject &params);
     void handleGetStorageInfo();
+    void handleGetServerInfo();
 
     QWebSocket *m_socket;
     FileManager *m_fileManager;

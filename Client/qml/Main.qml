@@ -29,6 +29,7 @@ ApplicationWindow {
             if (ConnectionManager.authenticated) {
                 ConnectionManager.listDirectory("")
                 ConnectionManager.getStorageInfo()
+                ConnectionManager.getServerInfo()
             }
         }
 

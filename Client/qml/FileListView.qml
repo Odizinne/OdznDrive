@@ -331,7 +331,7 @@ Rectangle {
                                 height: parent.height
 
                                 Button {
-                                    text: "odzndrive"
+                                    text: ConnectionManager.serverName
                                     flat: true
                                     font.pixelSize: 13
                                     implicitWidth: contentItem.implicitWidth + 20
@@ -372,7 +372,7 @@ Rectangle {
 
                                 Button {
                                     id: rootButton
-                                    text: "odzndrive"
+                                    text: ConnectionManager.serverName
                                     flat: true
                                     font.pixelSize: 13
                                     implicitWidth: contentItem.implicitWidth + 20
