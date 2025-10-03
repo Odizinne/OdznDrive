@@ -2,6 +2,7 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import QtQuick.Controls.Material
+import QtQuick.Controls.impl
 import QtQuick.Layouts
 import Odizinne.OdznDriveClient
 
@@ -96,6 +97,63 @@ Rectangle {
         }
     }
 
+    // Context menu for empty space
+    Menu {
+        id: emptySpaceMenu
+        width: 200
+
+        MenuItem {
+            text: "New Folder"
+            icon.source: "qrc:/icons/plus.svg"
+            icon.width: 16
+            icon.height: 16
+            enabled: ConnectionManager.authenticated
+            onClicked: newFolderDialog.open()
+        }
+    }
+
+    // New folder dialog
+    Dialog {
+        id: newFolderDialog
+        title: "Create New Folder"
+        modal: true
+        parent: Overlay.overlay
+        anchors.centerIn: parent
+
+        ColumnLayout {
+            spacing: 10
+
+            Label {
+                text: "Folder name:"
+            }
+
+            TextField {
+                id: folderNameField
+                Layout.preferredWidth: 300
+                placeholderText: "Enter folder name"
+                onAccepted: newFolderDialog.accepted()
+            }
+        }
+
+        standardButtons: Dialog.Ok | Dialog.Cancel
+
+        onAccepted: {
+            if (folderNameField.text.trim() !== "") {
+                let newPath = FileModel.currentPath
+                if (newPath && !newPath.endsWith('/')) {
+                    newPath += '/'
+                }
+                newPath += folderNameField.text.trim()
+                ConnectionManager.createDirectory(newPath)
+                folderNameField.clear()
+            }
+        }
+
+        onRejected: {
+            folderNameField.clear()
+        }
+    }
+
     ScrollView {
         id: scrollView
         anchors.fill: parent
@@ -107,40 +165,202 @@ Rectangle {
             model: FileModel
             interactive: false
 
+            // Right-click handler for empty space
+            TapHandler {
+                acceptedButtons: Qt.RightButton
+                onTapped: {
+                    if (ConnectionManager.authenticated) {
+                        emptySpaceMenu.popup()
+                    }
+                }
+            }
+
             headerPositioning: ListView.OverlayHeader
 
-            header: Rectangle {
+            header: Item {
                 width: listView.width
-                height: 40
-                color: Constants.listHeaderColor
+                height: 45 + 40 + (FileModel.canGoUp ? 50 : 0)
                 z: 2
 
-                RowLayout {
-                    anchors.fill: parent
-                    anchors.leftMargin: 10
-                    anchors.rightMargin: 10
-                    spacing: 10
+                // Breadcrumb navigation bar
+                Rectangle {
+                    id: breadcrumbBar
+                    width: parent.width
+                    height: 45
+                    color: Qt.lighter(Constants.listHeaderColor, 1.15)
 
-                    Label {
-                        text: "Name"
-                        font.bold: true
-                        Layout.fillWidth: true
+                    ScrollView {
+                        anchors.fill: parent
+                        anchors.leftMargin: 10
+                        anchors.rightMargin: 10
+                        contentWidth: breadcrumbRow.implicitWidth
+                        clip: true
+
+                        Row {
+                            id: breadcrumbRow
+                            anchors.verticalCenter: parent.verticalCenter
+                            spacing: 6
+
+                            Button {
+                                id: rootButton
+                                text: "odzndrive"
+                                flat: true
+                                font.pixelSize: 13
+                                implicitWidth: contentItem.implicitWidth + 20
+                                onClicked: ConnectionManager.listDirectory("")
+                                font.bold: root.getPathSegments().length === 0
+                                opacity: root.getPathSegments().length === 0 || rootHover.hovered ? 1 : 0.7
+                                Material.roundedScale: Material.ExtraSmallScale
+
+                                HoverHandler {
+                                    id: rootHover
+                                }
+                            }
+
+                            Repeater {
+                                id: segmentsRepeater
+                                model: root.getPathSegments()
+
+                                Row {
+                                    id: pathBtn
+                                    required property string modelData
+                                    required property int index
+                                    spacing: 6
+
+                                    IconImage {
+                                        source: "qrc:/icons/right.svg"
+                                        sourceSize.width: 10
+                                        sourceSize.height: 10
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        color: Material.foreground
+                                        opacity: 0.7
+                                    }
+
+                                    Button {
+                                        text: pathBtn.modelData
+                                        flat: true
+                                        font.pixelSize: 13
+                                        implicitWidth: contentItem.implicitWidth + 20
+                                        Material.roundedScale: Material.ExtraSmallScale
+                                        font.bold: pathBtn.index === segmentsRepeater.count - 1
+                                        opacity: pathBtn.index === segmentsRepeater.count - 1 || pathBtnHover.hovered ? 1 : 0.7
+                                        onClicked: {
+                                            ConnectionManager.listDirectory(root.getPathUpToIndex(pathBtn.index))
+                                        }
+
+                                        HoverHandler {
+                                            id: pathBtnHover
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Column headers
+                Rectangle {
+                    id: columnHeader
+                    width: parent.width
+                    height: 40
+                    anchors.top: breadcrumbBar.bottom
+                    color: Constants.listHeaderColor
+
+                    RowLayout {
+                        anchors.fill: parent
+                        anchors.leftMargin: 10
+                        anchors.rightMargin: 10
+                        spacing: 10
+
+                        Label {
+                            text: "Name"
+                            font.bold: true
+                            Layout.fillWidth: true
+                        }
+
+                        Label {
+                            text: "Size"
+                            font.bold: true
+                            Layout.preferredWidth: 100
+                        }
+
+                        Label {
+                            text: "Modified"
+                            font.bold: true
+                            Layout.preferredWidth: 180
+                        }
+
+                        Item {
+                            Layout.preferredWidth: 80
+                        }
+                    }
+                }
+
+                // Parent directory navigation item
+                Rectangle {
+                    id: parentDirItem
+                    visible: FileModel.canGoUp
+                    width: parent.width
+                    height: 50
+                    anchors.top: columnHeader.bottom
+                    color: {
+                        if (root.currentDropTarget === parentDirItem) {
+                            return Constants.listHeaderColor
+                        }
+                        return parentHoverHandler.hovered ? Constants.alternateRowColor : "transparent"
                     }
 
-                    Label {
-                        text: "Size"
-                        font.bold: true
-                        Layout.preferredWidth: 100
+                    property bool itemIsDir: true
+                    property string itemPath: FileModel.getParentPath()
+                    property string itemName: ".."
+
+                    Rectangle {
+                        anchors.left: parent.left
+                        anchors.bottom: parent.bottom
+                        height: 1
+                        width: parent.width
+                        color: Constants.alternateRowColor
                     }
 
-                    Label {
-                        text: "Modified"
-                        font.bold: true
-                        Layout.preferredWidth: 180
+                    RowLayout {
+                        anchors.fill: parent
+                        anchors.leftMargin: 10
+                        anchors.rightMargin: 10
+                        spacing: 10
+
+                        Label {
+                            text: "📁 .."
+                            Layout.fillWidth: true
+                            font.bold: true
+                            opacity: 0.7
+                        }
+
+                        Label {
+                            text: "-"
+                            Layout.preferredWidth: 100
+                            opacity: 0.7
+                        }
+
+                        Label {
+                            text: "Parent Directory"
+                            Layout.preferredWidth: 180
+                            opacity: 0.7
+                        }
+
+                        Item {
+                            Layout.preferredWidth: 80
+                        }
                     }
 
-                    Item {
-                        Layout.preferredWidth: 80
+                    HoverHandler {
+                        id: parentHoverHandler
+                    }
+
+                    TapHandler {
+                        acceptedButtons: Qt.LeftButton
+                        onTapped: {
+                            ConnectionManager.listDirectory(FileModel.getParentPath())
+                        }
                     }
                 }
             }
@@ -198,7 +418,7 @@ Rectangle {
                         if (root.currentDropTarget === delegateRoot && delegateRoot.model.isDir && root.draggedItemPath !== delegateRoot.model.path) {
                             return Constants.listHeaderColor
                         }
-                        return hoverHandler.hovered ? Constants.alternateRowColor : "transparent"//Constants.surfaceColor
+                        return hoverHandler.hovered ? Constants.alternateRowColor : "transparent"
                     }
 
                     Rectangle {
@@ -266,10 +486,14 @@ Rectangle {
                             } else {
                                 dragIndicator.visible = false
 
-                                if (root.currentDropTarget &&
-                                    root.currentDropTarget.itemIsDir &&
-                                    root.currentDropTarget.itemPath !== root.draggedItemPath) {
-                                    ConnectionManager.moveItem(root.draggedItemPath, root.currentDropTarget.itemPath)
+                                if (root.currentDropTarget) {
+                                    let targetPath = root.currentDropTarget.itemPath
+
+                                    // Check if dropping on parent directory item or regular directory
+                                    if (root.currentDropTarget.itemIsDir &&
+                                        targetPath !== root.draggedItemPath) {
+                                        ConnectionManager.moveItem(root.draggedItemPath, targetPath)
+                                    }
                                 }
 
                                 root.draggedItemPath = ""
@@ -287,6 +511,24 @@ Rectangle {
                                 let listPos = delegateBackground.mapToItem(listView, centroid.position.x, centroid.position.y)
 
                                 root.currentDropTarget = null
+
+                                // Check parent directory item if visible
+                                if (FileModel.canGoUp) {
+                                    let headerItem = listView.headerItem
+                                    if (headerItem) {
+                                        let parentDirItem = headerItem.children[2] // The parent dir rectangle (now third child)
+                                        if (parentDirItem) {
+                                            let parentPos = parentDirItem.mapFromItem(listView, listPos.x, listPos.y)
+                                            if (parentPos.x >= 0 && parentPos.x <= parentDirItem.width &&
+                                                parentPos.y >= 0 && parentPos.y <= parentDirItem.height) {
+                                                root.currentDropTarget = parentDirItem
+                                                return
+                                            }
+                                        }
+                                    }
+                                }
+
+                                // Check regular file items
                                 for (let i = 0; i < listView.count; i++) {
                                     let item = listView.itemAtIndex(i)
                                     if (item) {
@@ -324,6 +566,28 @@ Rectangle {
                 horizontalAlignment: Text.AlignHCenter
             }
         }
+    }
+
+    function getPathSegments() {
+        if (!FileModel.currentPath || FileModel.currentPath === "" || FileModel.currentPath === "/") {
+            return []
+        }
+
+        let path = FileModel.currentPath
+        if (path.startsWith("/")) {
+            path = path.substring(1)
+        }
+        if (path.endsWith("/")) {
+            path = path.substring(0, path.length - 1)
+        }
+
+        return path.split("/")
+    }
+
+    function getPathUpToIndex(index) {
+        let segments = getPathSegments()
+        let pathParts = segments.slice(0, index + 1)
+        return pathParts.join("/")
     }
 
     function formatSize(bytes) {

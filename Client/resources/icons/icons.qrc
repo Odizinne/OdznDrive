@@ -9,5 +9,6 @@
         <file>rename.svg</file>
         <file>delete.svg</file>
         <file>download.svg</file>
+        <file>right.svg</file>
     </qresource>
 </RCC>
