@@ -1,5 +1,5 @@
 project(OdznDriveClient VERSION 0.1.0 LANGUAGES CXX)
-set(CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}/install/Client" CACHE PATH "Installation directory" FORCE)
+
 set(CMAKE_AUTORCC ON)
 qt_standard_project_setup(REQUIRES 6.8)
 
@@ -103,8 +103,8 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
 )
 
 install(TARGETS ${PROJECT_NAME}
-    BUNDLE DESTINATION .
-    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+    RUNTIME DESTINATION Client/bin
+    COMPONENT Client
 )
 
 qt_generate_deploy_qml_app_script(
@@ -113,4 +113,5 @@ qt_generate_deploy_qml_app_script(
     NO_TRANSLATIONS
     DEPLOY_TOOL_OPTIONS --no-compiler-runtime --no-opengl-sw --no-system-dxc-compiler --no-system-d3d-compiler --skip-plugin-types designer,iconengines,qmllint,generic,networkinformation,help,qmltooling,sqldrivers,qmlls
 )
-install(SCRIPT ${deploy_script})
+
+install(SCRIPT ${deploy_script} COMPONENT Client)
