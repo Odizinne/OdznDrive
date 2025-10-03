@@ -73,6 +73,11 @@ ApplicationWindow {
             storageUpdateTimer.restart()
         }
 
+        function onItemMoved(fromPath, toPath) {
+            ConnectionManager.listDirectory(FileModel.currentPath)
+            storageUpdateTimer.restart()
+        }
+
         function onStorageInfo(total, used, available) {
             storageBar.value = used / total
             let usedMB = Math.round(used / 1024 / 1024)
@@ -111,7 +116,7 @@ ApplicationWindow {
 
                 ToolButton {
                     text: "↑"
-                    enabled: FileModel.canGoUp() && ConnectionManager.authenticated
+                    enabled: FileModel.canGoUp && ConnectionManager.authenticated
                     onClicked: {
                         let parentPath = FileModel.getParentPath()
                         ConnectionManager.listDirectory(parentPath)

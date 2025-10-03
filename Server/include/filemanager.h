@@ -17,6 +17,7 @@ public:
     bool createDirectory(const QString &relativePath);
     bool deleteFile(const QString &relativePath);
     bool deleteDirectory(const QString &relativePath);
+    bool moveItem(const QString &fromPath, const QString &toPath);  // Add this
     
     qint64 getTotalSize() const;
     qint64 getAvailableSpace(qint64 limit) const;

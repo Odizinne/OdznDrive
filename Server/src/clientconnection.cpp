@@ -125,6 +125,8 @@ void ClientConnection::handleCommand(const QJsonObject &command)
         handleUploadFile(params);
     } else if (type == "cancel_upload") {
         handleCancelUpload(params);
+    } else if (type == "move_item") {
+        handleMoveItem(params);
     } else if (type == "get_storage_info") {
         handleGetStorageInfo();
     } else {
@@ -311,4 +313,20 @@ void ClientConnection::handleGetStorageInfo()
     data["available"] = available;
 
     sendResponse("storage_info", data);
+}
+
+void ClientConnection::handleMoveItem(const QJsonObject &params)
+{
+    QString fromPath = params["from"].toString();
+    QString toPath = params["to"].toString();
+
+    if (m_fileManager->moveItem(fromPath, toPath)) {
+        QJsonObject data;
+        data["from"] = fromPath;
+        data["to"] = toPath;
+        data["success"] = true;
+        sendResponse("move_item", data);
+    } else {
+        sendError("Failed to move item");
+    }
 }

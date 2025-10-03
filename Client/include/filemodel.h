@@ -21,6 +21,7 @@ class FileModel : public QAbstractListModel
     
     Q_PROPERTY(QString currentPath READ currentPath NOTIFY currentPathChanged)
     Q_PROPERTY(int count READ rowCount NOTIFY countChanged)
+    Q_PROPERTY(bool canGoUp READ canGoUp NOTIFY currentPathChanged)
 
 public:
     enum Roles {

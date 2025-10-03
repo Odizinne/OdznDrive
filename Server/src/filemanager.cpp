@@ -161,3 +161,31 @@ qint64 FileManager::calculateDirectorySize(const QString &path) const
     
     return size;
 }
+
+bool FileManager::moveItem(const QString &fromPath, const QString &toPath)
+{
+    if (!isValidPath(fromPath) || !isValidPath(toPath)) {
+        return false;
+    }
+
+    QString absFromPath = getAbsolutePath(fromPath);
+    QString absToPath = getAbsolutePath(toPath);
+
+    QFileInfo fromInfo(absFromPath);
+    QFileInfo toInfo(absToPath);
+
+    if (!fromInfo.exists()) {
+        return false;
+    }
+
+    // If destination is a directory, move into it
+    if (toInfo.isDir()) {
+        QString fileName = fromInfo.fileName();
+        absToPath = QDir(absToPath).filePath(fileName);
+    }
+
+    // Create parent directory if needed
+    QDir().mkpath(QFileInfo(absToPath).absolutePath());
+
+    return QFile::rename(absFromPath, absToPath);
+}

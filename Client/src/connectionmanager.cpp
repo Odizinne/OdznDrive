@@ -165,6 +165,19 @@ void ConnectionManager::getStorageInfo()
     sendCommand("get_storage_info", QJsonObject());
 }
 
+void ConnectionManager::moveItem(const QString &fromPath, const QString &toPath)
+{
+    if (!m_authenticated) {
+        emit errorOccurred("Not authenticated");
+        return;
+    }
+
+    QJsonObject params;
+    params["from"] = fromPath;
+    params["to"] = toPath;
+    sendCommand("move_item", params);
+}
+
 void ConnectionManager::onConnected()
 {
     setConnected(true);
@@ -181,7 +194,6 @@ void ConnectionManager::onDisconnected()
     setAuthenticated(false);
     setStatusMessage("Disconnected");
 
-    // Clean up upload file if disconnected during upload
     if (m_uploadFile) {
         m_uploadFile->close();
         delete m_uploadFile;
@@ -356,6 +368,8 @@ void ConnectionManager::handleResponse(const QJsonObject &response)
         emit fileDeleted(data["path"].toString());
     } else if (type == "delete_directory") {
         emit directoryDeleted(data["path"].toString());
+    } else if (type == "move_item") {
+        emit itemMoved(data["from"].toString(), data["to"].toString());
     } else if (type == "upload_ready") {
         // Start chunked upload
         m_uploadFile = new QFile(m_uploadLocalPath);

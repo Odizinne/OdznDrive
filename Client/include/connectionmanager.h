@@ -34,6 +34,7 @@ public:
     Q_INVOKABLE void deleteDirectory(const QString &path);
     Q_INVOKABLE void uploadFile(const QString &localPath, const QString &remotePath);
     Q_INVOKABLE void downloadFile(const QString &remotePath, const QString &localPath);
+    Q_INVOKABLE void moveItem(const QString &fromPath, const QString &toPath);
     Q_INVOKABLE void getStorageInfo();
     Q_INVOKABLE void cancelUpload();
 
@@ -50,6 +51,7 @@ signals:
     void uploadComplete(const QString &path);
     void downloadProgress(int percentage);
     void downloadComplete(const QString &path);
+    void itemMoved(const QString &fromPath, const QString &toPath);
     void storageInfo(qint64 total, qint64 used, qint64 available);
     void errorOccurred(const QString &error);
 
