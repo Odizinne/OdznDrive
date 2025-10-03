@@ -6,14 +6,20 @@ import Odizinne.OdznDriveClient
 ApplicationWindow {
     id: root
     visible: true
-    width: 1000
-    height: 700
+    width: 1280
+    height: 720
+    minimumWidth: 1280
+    minimumHeight: 720
     title: "OdznDrive Client"
     Material.theme: Constants.darkMode ? Material.Dark : Material.Light
     color: Constants.backgroundColor
 
     Component.onCompleted: {
-        ConnectionManager.connectToServer(UserSettings.serverUrl, UserSettings.serverPassword)
+        if (UserSettings.autoconnect) {
+            ConnectionManager.connectToServer(UserSettings.serverUrl, UserSettings.serverPassword)
+        } else {
+            settingsDialog.open()
+        }
     }
 
     Connections {
@@ -35,6 +41,11 @@ ApplicationWindow {
             if (error !== "Upload cancelled by user") {
                 errorDialog.text = error
                 errorDialog.open()
+
+                // Show settings dialog if connection failed
+                if (!ConnectionManager.connected) {
+                    settingsDialog.open()
+                }
             }
         }
 
@@ -80,9 +91,8 @@ ApplicationWindow {
 
         function onStorageInfo(total, used, available) {
             storageBar.value = used / total
-            let usedMB = Math.round(used / 1024 / 1024)
-            let totalMB = Math.round(total / 1024 / 1024)
-            storageLabel.text = `Storage: ${usedMB} MB / ${totalMB} MB`
+            occupiedLabel.text = root.formatStorage(used)
+            totalLabel.text = root.formatStorage(total)
         }
 
         function onUploadQueueSizeChanged() {
@@ -90,6 +100,17 @@ ApplicationWindow {
                 uploadProgressDialog.close()
             }
         }
+    }
+
+    function formatStorage(bytes) {
+        let mb = bytes / (1024 * 1024)
+
+        if (mb >= 1000) {
+            let gb = mb / 1024
+            return gb.toFixed(1) + " GB"
+        }
+
+        return Math.round(mb) + " MB"
     }
 
     Timer {
@@ -101,15 +122,25 @@ ApplicationWindow {
         }
     }
 
-    header: Rectangle {
+    footer: Rectangle {
         height: 44
-        color: Material.primary
+        color: Constants.surfaceColor
 
         RowLayout {
             anchors.fill: parent
-            anchors.leftMargin: 10
+            anchors.leftMargin: 5
             anchors.rightMargin: 10
-            spacing: 15
+            spacing: 4
+
+            ToolButton {
+                icon.source: "qrc:/icons/cog.svg"
+                icon.width: 16
+                icon.height: 16
+                onClicked: settingsDialog.open()
+                ToolTip.visible: hovered
+                ToolTip.text: "Settings"
+                Material.roundedScale: Material.ExtraSmallScale
+            }
 
             TextField {
                 id: filterField
@@ -123,7 +154,7 @@ ApplicationWindow {
             }
 
             ColumnLayout {
-                spacing: 0
+                spacing: 4
 
                 ProgressBar {
                     id: storageBar
@@ -131,27 +162,34 @@ ApplicationWindow {
                     value: 0
                 }
 
-                Label {
-                    id: storageLabel
-                    text: "Storage: -- / --"
-                    font.pixelSize: 10
+                RowLayout {
+                    Layout.alignment: Qt.AlignRight
+                    spacing: 4
+
+                    Label {
+                        id: occupiedLabel
+                        text: "--"
+                        font.pixelSize: 10
+                        font.bold: true
+                        opacity: 0.7
+
+                    }
+
+                    Label {
+                        text: "/"
+                        font.pixelSize: 10
+                        opacity: 0.7
+                    }
+
+                    Label {
+                        id: totalLabel
+                        text: "--"
+                        font.pixelSize: 10
+                        opacity: 0.7
+                    }
                 }
             }
-
-            ToolButton {
-                icon.source: "qrc:/icons/cog.svg"
-                icon.width: 16
-                icon.height: 16
-                onClicked: settingsDialog.open()
-                ToolTip.visible: hovered
-                ToolTip.text: "Settings"
-            }
         }
-    }
-
-    SettingsDialog {
-        id: settingsDialog
-        anchors.centerIn: parent
     }
 
     FileListView {
@@ -213,5 +251,10 @@ ApplicationWindow {
         }
 
         standardButtons: Dialog.Ok
+    }
+
+    SettingsDialog {
+        id: settingsDialog
+        anchors.centerIn: parent
     }
 }

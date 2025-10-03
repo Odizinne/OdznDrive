@@ -17,7 +17,6 @@ set(HEADERS
 
 set(QML_FILES
     qml/Main.qml
-    qml/HeaderBar.qml
     qml/FileListView.qml
     qml/TransferProgress.qml
     qml/SettingsDialog.qml

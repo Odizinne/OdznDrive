@@ -6,12 +6,23 @@ import Odizinne.OdznDriveClient
 Dialog {
     title: "Settings"
     width: 400
-    standardButtons: Dialog.Close
+    standardButtons: Dialog.NoButton
+    closePolicy: ConnectionManager.connected ? Popup.CloseOnEscape : Popup.NoAutoClose
     modal: true
+
+    footer: DialogButtonBox {
+        Button {
+            flat: true
+            text: "Close"
+            enabled: ConnectionManager.connected
+            onClicked: close()
+        }
+    }
 
     ColumnLayout {
         anchors.fill: parent
         spacing: 10
+
         RowLayout {
             Label {
                 text: "Server URL"

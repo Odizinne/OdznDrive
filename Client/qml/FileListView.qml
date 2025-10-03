@@ -266,7 +266,7 @@ Rectangle {
                     id: breadcrumbBar
                     width: parent.width
                     height: 45
-                    color: Qt.lighter(Constants.listHeaderColor, 1.15)
+                    color: Material.primary
 
                     RowLayout {
                         anchors.fill: parent
