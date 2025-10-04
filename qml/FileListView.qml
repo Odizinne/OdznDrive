@@ -224,13 +224,11 @@ Rectangle {
         }
     }
 
-    Dialog {
+    CustomDialog {
         id: newFolderDialog
         title: "Create New Folder"
-        modal: true
         parent: Overlay.overlay
         anchors.centerIn: parent
-        Material.roundedScale: Material.ExtraSmallScale
 
         ColumnLayout {
             spacing: 10
@@ -266,15 +264,13 @@ Rectangle {
         }
     }
 
-    Dialog {
+    CustomDialog {
         id: deleteConfirmDialog
         title: "Confirm Delete"
         property string itemPath: ""
         property bool isDirectory: false
-        modal: true
         parent: Overlay.overlay
         anchors.centerIn: parent
-        Material.roundedScale: Material.ExtraSmallScale
 
         Label {
             text: "Are you sure you want to delete this " +
@@ -292,14 +288,12 @@ Rectangle {
         }
     }
 
-    Dialog {
+    CustomDialog {
         id: multiDeleteConfirmDialog
         title: "Confirm Delete"
         property int itemCount: 0
-        modal: true
         parent: Overlay.overlay
         anchors.centerIn: parent
-        Material.roundedScale: Material.ExtraSmallScale
 
         Label {
             text: "Are you sure you want to delete " + multiDeleteConfirmDialog.itemCount + " item(s)?"
@@ -1177,9 +1171,12 @@ Rectangle {
                 Label {
                     anchors.centerIn: parent
                     text: ConnectionManager.authenticated ?
-                              (FilterProxyModel.rowCount() === 0 ? "Empty folder\n\nDrag files here to upload" : "") :
+                              (FileModel.count === 0 ? "Empty folder\n\nDrag files here to upload" :
+                               FilterProxyModel.rowCount() === 0 ? "No items match filter" : "") :
                               "Not connected"
-                    visible: FilterProxyModel.rowCount() === 0
+                    visible: ConnectionManager.authenticated ?
+                                (FileModel.count === 0 || FilterProxyModel.rowCount() === 0) :
+                                true
                     opacity: 0.5
                     font.pixelSize: 16
                     horizontalAlignment: Text.AlignHCenter
@@ -1531,9 +1528,12 @@ Rectangle {
                 Label {
                     anchors.centerIn: parent
                     text: ConnectionManager.authenticated ?
-                              (FilterProxyModel.rowCount() === 0 ? "Empty folder\n\nDrag files here to upload" : "") :
+                              (FileModel.count === 0 ? "Empty folder\n\nDrag files here to upload" :
+                               FilterProxyModel.rowCount() === 0 ? "No items match filter" : "") :
                               "Not connected"
-                    visible: FilterProxyModel.rowCount() === 0
+                    visible: ConnectionManager.authenticated ?
+                                (FileModel.count === 0 || FilterProxyModel.rowCount() === 0) :
+                                true
                     opacity: 0.5
                     font.pixelSize: 16
                     horizontalAlignment: Text.AlignHCenter

@@ -212,14 +212,12 @@ ApplicationWindow {
         anchors.fill: parent
     }
 
-    Dialog {
+    CustomDialog {
         id: uploadProgressDialog
         title: "Uploading Files"
-        modal: true
         closePolicy: Popup.NoAutoClose
         anchors.centerIn: parent
         standardButtons: Dialog.Cancel
-        Material.roundedScale: Material.ExtraSmallScale
         property int progress: 0
 
         onRejected: {
@@ -255,14 +253,12 @@ ApplicationWindow {
         }
     }
 
-    Dialog {
+    CustomDialog {
         id: downloadProgressDialog
         title: ConnectionManager.isZipping ? "Compressing Folder" : "Downloading File"
-        modal: true
         closePolicy: Popup.NoAutoClose
         anchors.centerIn: parent
         standardButtons: Dialog.Cancel
-        Material.roundedScale: Material.ExtraSmallScale
 
         property int progress: 0
 
@@ -292,26 +288,20 @@ ApplicationWindow {
         }
     }
 
-    Dialog {
+    CustomDialog {
         id: errorDialog
         title: "Error"
         width: 300
         property alias text: errorLabel.text
-        modal: true
         anchors.centerIn: parent
-        Material.roundedScale: Material.ExtraSmallScale
-
         Label {
             id: errorLabel
         }
-
         standardButtons: Dialog.Ok
     }
 
     SettingsDialog {
         id: settingsDialog
         anchors.centerIn: parent
-        Material.roundedScale: Material.ExtraSmallScale
-
     }
 }

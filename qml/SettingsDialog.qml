@@ -3,11 +3,10 @@ import QtQuick.Layouts
 import QtQuick.Controls.Material
 import Odizinne.OdznDrive
 
-Dialog {
+CustomDialog {
     title: "Settings"
-    width: 400
     standardButtons: Dialog.NoButton
-    closePolicy: ConnectionManager.connected ? Popup.CloseOnEscape : Popup.NoAutoClose
+    closePolicy: ConnectionManager.connected ? Popup.CloseOnEscape | Popup.CloseOnPressOutside : Popup.NoAutoClose
     modal: true
 
     footer: DialogButtonBox {
@@ -18,6 +17,8 @@ Dialog {
             onClicked: close()
         }
     }
+
+
 
     ColumnLayout {
         anchors.fill: parent
