@@ -31,7 +31,7 @@ QString FileManager::getAbsolutePath(const QString &relativePath) const
     return rootDir.absoluteFilePath(relativePath);
 }
 
-QJsonArray FileManager::listDirectory(const QString &relativePath)
+QJsonArray FileManager::listDirectory(const QString &relativePath, bool foldersFirst)
 {
     QJsonArray result;
 
@@ -46,7 +46,12 @@ QJsonArray FileManager::listDirectory(const QString &relativePath)
         return result;
     }
 
-    QFileInfoList entries = dir.entryInfoList(QDir::AllEntries | QDir::NoDotAndDotDot, QDir::Name);
+    QDir::SortFlags sortFlags = QDir::Name;
+    if (foldersFirst) {
+        sortFlags |= QDir::DirsFirst;
+    }
+
+    QFileInfoList entries = dir.entryInfoList(QDir::AllEntries | QDir::NoDotAndDotDot, sortFlags);
 
     for (const QFileInfo &info : entries) {
         QJsonObject obj;

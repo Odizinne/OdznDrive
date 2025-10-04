@@ -66,7 +66,7 @@ ApplicationWindow {
             if (ConnectionManager.uploadQueueSize === 0) {
                 uploadProgressDialog.close()
             }
-            ConnectionManager.listDirectory(FileModel.currentPath)
+            ConnectionManager.listDirectory(FileModel.currentPath, UserSettings.foldersFirst)
             storageUpdateTimer.restart()
         }
 
@@ -80,26 +80,26 @@ ApplicationWindow {
         }
 
         function onDirectoryCreated(path) {
-            ConnectionManager.listDirectory(FileModel.currentPath)
+            ConnectionManager.listDirectory(FileModel.currentPath, UserSettings.foldersFirst)
         }
 
         function onFileDeleted(path) {
-            ConnectionManager.listDirectory(FileModel.currentPath)
+            ConnectionManager.listDirectory(FileModel.currentPath, UserSettings.foldersFirst)
             storageUpdateTimer.restart()
         }
 
         function onDirectoryDeleted(path) {
-            ConnectionManager.listDirectory(FileModel.currentPath)
+            ConnectionManager.listDirectory(FileModel.currentPath, UserSettings.foldersFirst)
             storageUpdateTimer.restart()
         }
 
         function onMultipleDeleted() {
-            ConnectionManager.listDirectory(FileModel.currentPath)
+            ConnectionManager.listDirectory(FileModel.currentPath, UserSettings.foldersFirst)
             storageUpdateTimer.restart()
         }
 
         function onItemMoved(fromPath, toPath) {
-            ConnectionManager.listDirectory(FileModel.currentPath)
+            ConnectionManager.listDirectory(FileModel.currentPath, UserSettings.foldersFirst)
             storageUpdateTimer.restart()
         }
 

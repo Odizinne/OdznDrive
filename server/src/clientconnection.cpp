@@ -325,7 +325,8 @@ bool ClientConnection::authenticate(const QString &password)
 void ClientConnection::handleListDirectory(const QJsonObject &params)
 {
     QString path = params["path"].toString();
-    QJsonArray files = m_fileManager->listDirectory(path);
+    bool foldersFirst = params["foldersFirst"].toBool();
+    QJsonArray files = m_fileManager->listDirectory(path, foldersFirst);
 
     // Add preview URLs for image files
     for (int i = 0; i < files.size(); ++i) {

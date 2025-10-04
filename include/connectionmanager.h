@@ -48,7 +48,7 @@ public:
     Q_INVOKABLE void connectToServer(const QString &url, const QString &password);
     Q_INVOKABLE void disconnect();
 
-    Q_INVOKABLE void listDirectory(const QString &path);
+    Q_INVOKABLE void listDirectory(const QString &path, bool foldersFirst);
     Q_INVOKABLE void createDirectory(const QString &path);
     Q_INVOKABLE void deleteFile(const QString &path);
     Q_INVOKABLE void deleteDirectory(const QString &path);

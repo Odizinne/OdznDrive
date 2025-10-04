@@ -82,7 +82,7 @@ void ConnectionManager::disconnect()
     m_socket->close();
 }
 
-void ConnectionManager::listDirectory(const QString &path)
+void ConnectionManager::listDirectory(const QString &path, bool foldersFirst)
 {
     if (!m_authenticated) {
         emit errorOccurred("Not authenticated");
@@ -91,6 +91,7 @@ void ConnectionManager::listDirectory(const QString &path)
 
     QJsonObject params;
     params["path"] = path;
+    params["foldersFirst"] = foldersFirst;
     sendCommand("list_directory", params);
 }
 

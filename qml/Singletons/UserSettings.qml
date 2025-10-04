@@ -6,4 +6,5 @@ Settings {
     property string serverUrl: "ws://localhost:8888"
     property string serverPassword: ""
     property bool listView: true
+    property bool foldersFirst: true
 }

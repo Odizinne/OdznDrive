@@ -13,7 +13,7 @@ public:
     bool isValidPath(const QString &relativePath) const;
     QString getAbsolutePath(const QString &relativePath) const;
 
-    QJsonArray listDirectory(const QString &relativePath);
+    QJsonArray listDirectory(const QString &relativePath, bool foldersFirst = true);
     bool createDirectory(const QString &relativePath);
     bool deleteFile(const QString &relativePath);
     bool deleteDirectory(const QString &relativePath);
