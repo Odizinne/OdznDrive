@@ -121,13 +121,11 @@ Rectangle {
             for (let i = 0; i < selectedFiles.length; i++) {
                 let fileUrl = selectedFiles[i].toString()
 
-                // Remove file:// prefix to get local path
                 let localPath = fileUrl
                 if (localPath.startsWith("file://")) {
                     localPath = localPath.substring(7)
                 }
 
-                // On Windows, remove leading slash before drive letter
                 if (localPath.match(/^\/[A-Za-z]:\//)) {
                     localPath = localPath.substring(1)
                 }
@@ -164,7 +162,6 @@ Rectangle {
         }
     }
 
-    // Folder download dialog
     FileDialog {
         id: folderDownloadDialog
         fileMode: FileDialog.SaveFile
@@ -193,7 +190,6 @@ Rectangle {
         }
     }
 
-    // Multiple items download dialog
     FileDialog {
         id: multiDownloadDialog
         fileMode: FileDialog.SaveFile
@@ -217,15 +213,10 @@ Rectangle {
                 localPath += ".zip"
             }
 
-            // TODO: Need server-side support for downloading multiple paths as a single zip
-            // For now, this would need a new command like "download_multiple"
-            // ConnectionManager.downloadMultiple(itemPaths, localPath)
-
             console.log("Multi-download to:", localPath, "Paths:", itemPaths)
         }
     }
 
-    // New folder dialog
     Dialog {
         id: newFolderDialog
         title: "Create New Folder"
@@ -267,7 +258,6 @@ Rectangle {
         }
     }
 
-    // Delete confirmation dialog
     Dialog {
         id: deleteConfirmDialog
         title: "Confirm Delete"
@@ -293,7 +283,6 @@ Rectangle {
         }
     }
 
-    // Multi-delete confirmation dialog
     Dialog {
         id: multiDeleteConfirmDialog
         title: "Confirm Delete"
@@ -321,7 +310,6 @@ Rectangle {
         }
     }
 
-    // Drop area for file uploads
     DropArea {
         id: dropArea
         anchors.fill: parent
@@ -345,13 +333,11 @@ Rectangle {
                 for (let i = 0; i < drop.urls.length; i++) {
                     let fileUrl = drop.urls[i].toString()
 
-                    // Remove file:// prefix to get local path
                     let localPath = fileUrl
                     if (localPath.startsWith("file://")) {
                         localPath = localPath.substring(7)
                     }
 
-                    // On Windows, remove leading slash before drive letter
                     if (localPath.match(/^\/[A-Za-z]:\//)) {
                         localPath = localPath.substring(1)
                     }
@@ -384,7 +370,6 @@ Rectangle {
         }
     }
 
-    // Context menu for empty space
     Menu {
         id: emptySpaceMenu
         width: 200
@@ -399,25 +384,754 @@ Rectangle {
         }
     }
 
-    ScrollView {
-        id: scrollView
+    Loader {
         anchors.fill: parent
-        clip: true
+        sourceComponent: UserSettings.listView ? listViewComponent : tileViewComponent
+    }
 
-        ListView {
-            id: listView
-            width: scrollView.width
-            model: FileModel
-            interactive: false
+    Component {
+        id: listViewComponent
 
-            headerPositioning: ListView.OverlayHeader
+        ScrollView {
+            id: scrollView
+            clip: true
 
-            header: Item {
-                width: listView.width
-                height: 45 + 45 + (FileModel.canGoUp ? 50 : 0)
-                z: 2
+            ListView {
+                id: listView
+                width: scrollView.width
+                model: FileModel
+                interactive: false
 
-                // Breadcrumb navigation bar
+                headerPositioning: ListView.OverlayHeader
+
+                header: Item {
+                    width: listView.width
+                    height: 45 + 45 + (FileModel.canGoUp ? 50 : 0)
+                    z: 2
+
+                    Rectangle {
+                        id: breadcrumbBar
+                        width: parent.width
+                        height: 45
+                        color: Material.primary
+
+                        RowLayout {
+                            anchors.fill: parent
+                            anchors.leftMargin: 3
+                            anchors.rightMargin: 10
+                            spacing: 8
+
+                            ToolButton {
+                                visible: root.checkedCount === 0
+                                icon.source: "qrc:/icons/plus.svg"
+                                icon.width: 16
+                                icon.height: 16
+                                enabled: ConnectionManager.authenticated
+                                onClicked: newFolderDialog.open()
+                                ToolTip.visible: hovered
+                                ToolTip.text: "New folder"
+                                Material.roundedScale: Material.ExtraSmallScale
+                            }
+
+                            ToolButton {
+                                visible: root.checkedCount === 0
+                                icon.source: "qrc:/icons/upload.svg"
+                                icon.width: 16
+                                icon.height: 16
+                                enabled: ConnectionManager.authenticated
+                                onClicked: uploadDialog.open()
+                                ToolTip.visible: hovered
+                                ToolTip.text: "Upload files"
+                                Material.roundedScale: Material.ExtraSmallScale
+                            }
+
+                            ToolButton {
+                                visible: root.checkedCount === 0
+                                icon.source: "qrc:/icons/refresh.svg"
+                                icon.width: 16
+                                icon.height: 16
+                                enabled: ConnectionManager.authenticated
+                                onClicked: {
+                                    ConnectionManager.listDirectory(FileModel.currentPath)
+                                }
+                                ToolTip.visible: hovered
+                                ToolTip.text: "Refresh"
+                                Material.roundedScale: Material.ExtraSmallScale
+                            }
+
+                            ToolButton {
+                                visible: root.checkedCount > 0
+                                icon.source: "qrc:/icons/download.svg"
+                                icon.width: 16
+                                icon.height: 16
+                                enabled: ConnectionManager.authenticated
+                                onClicked: {
+                                    let items = root.getCheckedItems()
+                                    if (items.length === 1) {
+                                        if (items[0].isDir) {
+                                            folderDownloadDialog.remotePath = items[0].path
+                                            folderDownloadDialog.defaultName = items[0].name + ".zip"
+                                            folderDownloadDialog.open()
+                                        } else {
+                                            fileDownloadDialog.remotePath = items[0].path
+                                            fileDownloadDialog.defaultName = items[0].name
+                                            fileDownloadDialog.open()
+                                        }
+                                    } else {
+                                        multiDownloadDialog.itemPaths = root.getCheckedPaths()
+                                        multiDownloadDialog.open()
+                                    }
+                                }
+                                ToolTip.visible: hovered
+                                ToolTip.text: root.checkedCount === 1 ? "Download" : "Download as zip"
+                                Material.roundedScale: Material.ExtraSmallScale
+                            }
+
+                            ToolButton {
+                                visible: root.checkedCount > 0
+                                icon.source: "qrc:/icons/delete.svg"
+                                icon.width: 16
+                                icon.height: 16
+                                enabled: ConnectionManager.authenticated
+                                onClicked: {
+                                    multiDeleteConfirmDialog.itemCount = root.checkedCount
+                                    multiDeleteConfirmDialog.open()
+                                }
+                                ToolTip.visible: hovered
+                                ToolTip.text: "Delete selected"
+                                Material.roundedScale: Material.ExtraSmallScale
+                            }
+
+                            Label {
+                                visible: root.checkedCount > 0
+                                text: root.checkedCount + (root.checkedCount === 1 ? " item selected" : " items selected")
+                                opacity: 0.7
+                                Layout.rightMargin: 4
+                            }
+
+                            Rectangle {
+                                Layout.preferredWidth: 1
+                                Layout.preferredHeight: 24
+                                color: Material.foreground
+                                opacity: 0.2
+                            }
+
+                            Item {
+                                id: path
+                                Layout.fillWidth: true
+                                implicitHeight: breadcrumbRow.implicitHeight
+                                clip: true
+
+                                Row {
+                                    id: measurementRow
+                                    visible: false
+                                    spacing: 6
+                                    height: parent.height
+
+                                    Button {
+                                        text: ConnectionManager.serverName
+                                        flat: true
+                                        font.pixelSize: 13
+                                        implicitWidth: contentItem.implicitWidth + 20
+                                        Material.roundedScale: Material.ExtraSmallScale
+                                    }
+
+                                    Repeater {
+                                        model: root.getPathSegments()
+
+                                        Row {
+                                            id: pathItem
+                                            required property string modelData
+                                            spacing: 6
+
+                                            IconImage {
+                                                source: "qrc:/icons/right.svg"
+                                                sourceSize.width: 10
+                                                sourceSize.height: 10
+                                            }
+
+                                            Button {
+                                                text: pathItem.modelData
+                                                flat: true
+                                                font.pixelSize: 13
+                                                implicitWidth: contentItem.implicitWidth + 20
+                                                Material.roundedScale: Material.ExtraSmallScale
+                                            }
+                                        }
+                                    }
+                                }
+
+                                property bool needsEllipsis: measurementRow.implicitWidth > width - 20
+
+                                Row {
+                                    id: breadcrumbRow
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    spacing: 6
+
+                                    Button {
+                                        id: rootButton
+                                        text: ConnectionManager.serverName
+                                        flat: true
+                                        font.pixelSize: 13
+                                        implicitWidth: contentItem.implicitWidth + 20
+                                        onClicked: ConnectionManager.listDirectory("")
+                                        font.bold: root.getPathSegments().length === 0
+                                        opacity: root.getPathSegments().length === 0 || rootHover.hovered ? 1 : 0.7
+                                        Material.roundedScale: Material.ExtraSmallScale
+
+                                        HoverHandler {
+                                            id: rootHover
+                                        }
+                                    }
+
+                                    Loader {
+                                        active: path.needsEllipsis && root.getPathSegments().length > 1
+                                        visible: active
+                                        sourceComponent: Row {
+                                            spacing: 6
+
+                                            IconImage {
+                                                source: "qrc:/icons/right.svg"
+                                                sourceSize.width: 10
+                                                sourceSize.height: 10
+                                                anchors.verticalCenter: parent.verticalCenter
+                                                color: Material.foreground
+                                                opacity: 0.7
+                                            }
+
+                                            Button {
+                                                text: "..."
+                                                flat: true
+                                                font.pixelSize: 13
+                                                implicitWidth: contentItem.implicitWidth + 20
+                                                Material.roundedScale: Material.ExtraSmallScale
+                                                opacity: ellipsisHover.hovered ? 1 : 0.7
+                                                onClicked: hiddenPathsMenu.popup()
+
+                                                HoverHandler {
+                                                    id: ellipsisHover
+                                                }
+
+                                                Menu {
+                                                    id: hiddenPathsMenu
+                                                    width: 200
+
+                                                    Instantiator {
+                                                        model: root.getHiddenSegments()
+                                                        delegate: MenuItem {
+                                                            required property string modelData
+                                                            required property int index
+                                                            text: modelData
+                                                            onClicked: {
+                                                                ConnectionManager.listDirectory(root.getPathUpToHiddenIndex(index))
+                                                            }
+                                                        }
+                                                        onObjectAdded: (index, object) => hiddenPathsMenu.insertItem(index, object)
+                                                        onObjectRemoved: (index, object) => hiddenPathsMenu.removeItem(object)
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+
+                                    Loader {
+                                        active: path.needsEllipsis && root.getPathSegments().length > 0
+                                        visible: active
+                                        sourceComponent: Row {
+                                            spacing: 6
+
+                                            IconImage {
+                                                source: "qrc:/icons/right.svg"
+                                                sourceSize.width: 10
+                                                sourceSize.height: 10
+                                                anchors.verticalCenter: parent.verticalCenter
+                                                color: Material.foreground
+                                                opacity: 0.7
+                                            }
+
+                                            Button {
+                                                text: root.getLastSegment()
+                                                flat: true
+                                                font.pixelSize: 13
+                                                implicitWidth: contentItem.implicitWidth + 20
+                                                Material.roundedScale: Material.ExtraSmallScale
+                                                font.bold: true
+                                                opacity: lastSegmentHover.hovered ? 1 : 0.7
+                                                onClicked: {
+                                                    ConnectionManager.listDirectory(FileModel.currentPath)
+                                                }
+
+                                                HoverHandler {
+                                                    id: lastSegmentHover
+                                                }
+                                            }
+                                        }
+                                    }
+
+                                    Repeater {
+                                        id: allSegmentsRepeater
+                                        model: path.needsEllipsis ? [] : root.getPathSegments()
+
+                                        Row {
+                                            id: pathBtn
+                                            required property string modelData
+                                            required property int index
+                                            spacing: 6
+
+                                            IconImage {
+                                                source: "qrc:/icons/right.svg"
+                                                sourceSize.width: 10
+                                                sourceSize.height: 10
+                                                anchors.verticalCenter: parent.verticalCenter
+                                                color: Material.foreground
+                                                opacity: 0.7
+                                            }
+
+                                            Button {
+                                                text: pathBtn.modelData
+                                                flat: true
+                                                font.pixelSize: 13
+                                                implicitWidth: contentItem.implicitWidth + 20
+                                                Material.roundedScale: Material.ExtraSmallScale
+                                                font.bold: pathBtn.index === allSegmentsRepeater.count - 1
+                                                opacity: pathBtn.index === allSegmentsRepeater.count - 1 || pathBtnHover.hovered ? 1 : 0.7
+                                                onClicked: {
+                                                    ConnectionManager.listDirectory(root.getPathUpToIndex(pathBtn.index))
+                                                }
+
+                                                HoverHandler {
+                                                    id: pathBtnHover
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
+                            ToolButton {
+                                icon.source: UserSettings.listView ? "qrc:/icons/grid.svg" : "qrc:/icons/list.svg"
+                                icon.width: 16
+                                icon.height: 16
+                                onClicked: UserSettings.listView = !UserSettings.listView
+                                ToolTip.visible: hovered
+                                ToolTip.text: UserSettings.listView ? "Tile view" : "List view"
+                                Material.roundedScale: Material.ExtraSmallScale
+                            }
+                        }
+                    }
+
+                    Rectangle {
+                        id: columnHeader
+                        width: parent.width
+                        height: 45
+                        anchors.top: breadcrumbBar.bottom
+                        color: Constants.listHeaderColor
+
+                        RowLayout {
+                            anchors.fill: parent
+                            anchors.leftMargin: 10
+                            anchors.rightMargin: 10
+                            spacing: 10
+
+                            CheckBox {
+                                id: headerCheckbox
+                                Layout.preferredWidth: 30
+                                checked: root.checkedCount > 0 && root.checkedCount === FileModel.count
+                                tristate: root.checkedCount > 0 && root.checkedCount < FileModel.count
+                                checkState: {
+                                    if (root.checkedCount === 0) return Qt.Unchecked
+                                    if (root.checkedCount === FileModel.count) return Qt.Checked
+                                    return Qt.PartiallyChecked
+                                }
+                                onClicked: {
+                                    if (root.checkedCount === FileModel.count) {
+                                        root.uncheckAll()
+                                    } else {
+                                        root.checkAll()
+                                    }
+                                }
+                            }
+
+                            Label {
+                                text: "Name"
+                                font.bold: true
+                                Layout.fillWidth: true
+                            }
+
+                            Label {
+                                text: "Size"
+                                font.bold: true
+                                Layout.preferredWidth: 100
+                            }
+
+                            Label {
+                                text: "Modified"
+                                font.bold: true
+                                Layout.preferredWidth: 180
+                            }
+
+                            Item {
+                                Layout.preferredWidth: 80
+                            }
+                        }
+                    }
+
+                    Rectangle {
+                        id: parentDirItem
+                        visible: FileModel.canGoUp
+                        width: parent.width
+                        height: 50
+                        anchors.top: columnHeader.bottom
+                        color: {
+                            if (root.currentDropTarget === parentDirItem) {
+                                return Constants.listHeaderColor
+                            }
+                            return parentHoverHandler.hovered ? Constants.alternateRowColor : "transparent"
+                        }
+
+                        property bool itemIsDir: true
+                        property string itemPath: FileModel.getParentPath()
+                        property string itemName: ".."
+
+                        Rectangle {
+                            anchors.left: parent.left
+                            anchors.bottom: parent.bottom
+                            height: 1
+                            width: parent.width
+                            color: Constants.alternateRowColor
+                        }
+
+                        RowLayout {
+                            anchors.fill: parent
+                            anchors.leftMargin: 10
+                            anchors.rightMargin: 10
+                            spacing: 10
+
+                            Item {
+                                Layout.preferredWidth: 30
+                            }
+
+                            Label {
+                                text: "📁 .."
+                                Layout.fillWidth: true
+                                font.bold: true
+                                opacity: 0.7
+                            }
+
+                            Label {
+                                text: "-"
+                                Layout.preferredWidth: 100
+                                opacity: 0.7
+                            }
+
+                            Label {
+                                text: ""
+                                Layout.preferredWidth: 180
+                                opacity: 0.7
+                            }
+
+                            Item {
+                                Layout.preferredWidth: 80
+                            }
+                        }
+
+                        HoverHandler {
+                            id: parentHoverHandler
+                        }
+
+                        TapHandler {
+                            acceptedButtons: Qt.LeftButton
+                            onDoubleTapped: {
+                                ConnectionManager.listDirectory(FileModel.getParentPath())
+                            }
+                        }
+                    }
+                }
+
+                delegate: Item {
+                    id: delegateRoot
+                    width: listView.width
+                    height: 50
+                    required property var model
+                    required property int index
+
+                    property string itemPath: model.path
+                    property string itemName: model.name
+                    property bool itemIsDir: model.isDir
+
+                    ContextMenu.menu: delContextMenu
+                    Menu {
+                        id: delContextMenu
+                        width: 200
+                        MenuItem {
+                            text: delegateRoot.model.name
+                            enabled: false
+                        }
+
+                        MenuItem {
+                            text: "Download"
+                            icon.source: "qrc:/icons/download.svg"
+                            icon.width: 16
+                            icon.height: 16
+                            onClicked: {
+                                if (delegateRoot.model.isDir) {
+                                    folderDownloadDialog.remotePath = delegateRoot.model.path
+                                    folderDownloadDialog.defaultName = delegateRoot.model.name + ".zip"
+                                    folderDownloadDialog.open()
+                                } else {
+                                    fileDownloadDialog.remotePath = delegateRoot.model.path
+                                    fileDownloadDialog.defaultName = delegateRoot.model.name
+                                    fileDownloadDialog.open()
+                                }
+                            }
+                        }
+                        MenuItem {
+                            text: "Rename"
+                            icon.source: "qrc:/icons/rename.svg"
+                            icon.width: 16
+                            icon.height: 16
+                        }
+                        MenuItem {
+                            text: "Delete"
+                            icon.source: "qrc:/icons/delete.svg"
+                            icon.width: 16
+                            icon.height: 16
+                            onClicked: {
+                                deleteConfirmDialog.itemPath = delegateRoot.model.path
+                                deleteConfirmDialog.isDirectory = delegateRoot.model.isDir
+                                deleteConfirmDialog.open()
+                            }
+                        }
+                    }
+
+                    Rectangle {
+                        id: delegateBackground
+                        anchors.fill: parent
+                        color: {
+                            if (root.currentDropTarget === delegateRoot && delegateRoot.model.isDir && root.draggedItemPath !== delegateRoot.model.path) {
+                                return Constants.listHeaderColor
+                            }
+                            return hoverHandler.hovered ? Constants.alternateRowColor : "transparent"
+                        }
+
+                        Rectangle {
+                            anchors.left: parent.left
+                            anchors.bottom: parent.bottom
+                            height: 1
+                            width: parent.width
+                            color: Constants.alternateRowColor
+                        }
+
+                        RowLayout {
+                            anchors.fill: parent
+                            anchors.leftMargin: 10
+                            anchors.rightMargin: 10
+                            spacing: 10
+
+                            CheckBox {
+                                Layout.preferredWidth: 30
+                                checked: root.isItemChecked(delegateRoot.model.path)
+                                onClicked: {
+                                    root.toggleItemChecked(delegateRoot.model.path)
+                                }
+                            }
+
+                            Label {
+                                text: (delegateRoot.model.isDir ? "📁 " : "📄 ") + delegateRoot.model.name
+                                Layout.fillWidth: true
+                                elide: Text.ElideRight
+                            }
+
+                            Label {
+                                text: delegateRoot.model.isDir ? "-" : root.formatSize(delegateRoot.model.size)
+                                Layout.preferredWidth: 100
+                                opacity: 0.7
+                            }
+
+                            Label {
+                                text: root.formatDate(delegateRoot.model.modified)
+                                Layout.preferredWidth: 180
+                                opacity: 0.7
+                            }
+
+                            RowLayout {
+                                Layout.preferredWidth: 80
+                                spacing: 2
+
+                                ToolButton {
+                                    icon.source: "qrc:/icons/menu.svg"
+                                    icon.width: 16
+                                    icon.height: 16
+                                    Layout.preferredWidth: height
+                                    flat: true
+                                    onClicked: delContextMenu.popup()
+                                    Layout.alignment: Qt.AlignRight
+                                    opacity: (hoverHandler.hovered && root.draggedItemPath === "") ? 1 : 0
+                                    Material.roundedScale: Material.ExtraSmallScale
+                                }
+                            }
+                        }
+
+                        HoverHandler {
+                            id: hoverHandler
+                        }
+
+                        DragHandler {
+                            id: dragHandler
+                            target: null
+                            dragThreshold: 15
+
+                            onActiveChanged: {
+                                if (active) {
+                                    root.draggedItemPath = delegateRoot.model.path
+                                    root.draggedItemName = delegateRoot.model.name
+                                    dragLabel.text = "Move " + delegateRoot.model.name
+                                    dragIndicator.visible = true
+                                } else {
+                                    dragIndicator.visible = false
+
+                                    if (root.currentDropTarget) {
+                                        let targetPath = root.currentDropTarget.itemPath
+
+                                        if (root.currentDropTarget.itemIsDir &&
+                                            targetPath !== root.draggedItemPath) {
+                                            ConnectionManager.moveItem(root.draggedItemPath, targetPath)
+                                        }
+                                    }
+
+                                    root.draggedItemPath = ""
+                                    root.draggedItemName = ""
+                                    root.currentDropTarget = null
+                                }
+                            }
+
+                            onCentroidChanged: {
+                                if (active) {
+                                    let globalPos = delegateBackground.mapToItem(null, centroid.position.x, centroid.position.y)
+                                    dragIndicator.x = globalPos.x + 10
+                                    dragIndicator.y = globalPos.y + 10
+
+                                    let listPos = delegateBackground.mapToItem(listView, centroid.position.x, centroid.position.y)
+
+                                    root.currentDropTarget = null
+
+                                    if (FileModel.canGoUp) {
+                                        let headerItem = listView.headerItem
+                                        if (headerItem) {
+                                            let parentDirItem = headerItem.children[2]
+                                            if (parentDirItem) {
+                                                let parentPos = parentDirItem.mapFromItem(listView, listPos.x, listPos.y)
+                                                if (parentPos.x >= 0 && parentPos.x <= parentDirItem.width &&
+                                                    parentPos.y >= 0 && parentPos.y <= parentDirItem.height) {
+                                                    root.currentDropTarget = parentDirItem
+                                                    return
+                                                }
+                                            }
+                                        }
+                                    }
+
+                                    for (let i = 0; i < listView.count; i++) {
+                                        let item = listView.itemAtIndex(i)
+                                        if (item) {
+                                            let itemPos = item.mapFromItem(listView, listPos.x, listPos.y)
+                                            if (itemPos.x >= 0 && itemPos.x <= item.width &&
+                                                itemPos.y >= 0 && itemPos.y <= item.height) {
+                                                root.currentDropTarget = item
+                                                break
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        TapHandler {
+                            acceptedButtons: Qt.LeftButton
+                            onTapped: root.toggleItemChecked(delegateRoot.model.path)
+                            onDoubleTapped: {
+                                if (delegateRoot.model.isDir) {
+                                    ConnectionManager.listDirectory(delegateRoot.model.path)
+                                }
+                            }
+                        }
+                    }
+                }
+
+                Label {
+                    anchors.centerIn: parent
+                    text: ConnectionManager.authenticated ?
+                              (FileModel.count === 0 ? "Empty folder\n\nDrag files here to upload" : "") :
+                              "Not connected"
+                    visible: FileModel.count === 0
+                    opacity: 0.5
+                    font.pixelSize: 16
+                    horizontalAlignment: Text.AlignHCenter
+                }
+            }
+        }
+    }
+
+    Component {
+        id: tileViewComponent
+
+        ScrollView {
+            id: tileScrollView
+            clip: true
+
+            Item {
+                width: tileScrollView.width
+                implicitHeight: breadcrumbBar.height + tileGrid.y + tileGrid.height + 10
+
+                ListModel {
+                    id: tileModel
+
+                    function refresh() {
+                        clear()
+
+                        if (FileModel.canGoUp) {
+                            append({
+                                "name": "..",
+                                "path": FileModel.getParentPath(),
+                                "isDir": true,
+                                "size": 0,
+                                "modified": "",
+                                "isParent": true
+                            })
+                        }
+
+                        for (let i = 0; i < FileModel.count; i++) {
+                            let name = FileModel.data(FileModel.index(i, 0), 257)  // NameRole
+                            let path = FileModel.data(FileModel.index(i, 0), 258)  // PathRole
+                            let isDir = FileModel.data(FileModel.index(i, 0), 259) // IsDirRole
+                            let size = FileModel.data(FileModel.index(i, 0), 260)  // SizeRole
+                            let modified = FileModel.data(FileModel.index(i, 0), 261) // ModifiedRole
+
+                            if (name !== undefined && path !== undefined) {
+                                append({
+                                    "name": name,
+                                    "path": path,
+                                    "isDir": isDir !== undefined ? isDir : false,
+                                    "size": size !== undefined ? size : 0,
+                                    "modified": modified !== undefined ? modified : "",
+                                    "isParent": false
+                                })
+                            }
+                        }
+                    }
+
+                    Component.onCompleted: refresh()
+                }
+
+                Connections {
+                    target: FileModel
+                    function onCurrentPathChanged() {
+                        tileModel.refresh()
+                    }
+                    function onCountChanged() {
+                        tileModel.refresh()
+                    }
+                }
+
                 Rectangle {
                     id: breadcrumbBar
                     width: parent.width
@@ -430,7 +1144,6 @@ Rectangle {
                         anchors.rightMargin: 10
                         spacing: 8
 
-                        // Regular action buttons (visible when no items selected)
                         ToolButton {
                             visible: root.checkedCount === 0
                             icon.source: "qrc:/icons/plus.svg"
@@ -469,7 +1182,6 @@ Rectangle {
                             Material.roundedScale: Material.ExtraSmallScale
                         }
 
-                        // Bulk action buttons (visible when items selected)
                         ToolButton {
                             visible: root.checkedCount > 0
                             icon.source: "qrc:/icons/download.svg"
@@ -479,7 +1191,6 @@ Rectangle {
                             onClicked: {
                                 let items = root.getCheckedItems()
                                 if (items.length === 1) {
-                                    // Single item download
                                     if (items[0].isDir) {
                                         folderDownloadDialog.remotePath = items[0].path
                                         folderDownloadDialog.defaultName = items[0].name + ".zip"
@@ -490,7 +1201,6 @@ Rectangle {
                                         fileDownloadDialog.open()
                                     }
                                 } else {
-                                    // Multiple items - download as zip
                                     multiDownloadDialog.itemPaths = root.getCheckedPaths()
                                     multiDownloadDialog.open()
                                 }
@@ -523,22 +1233,20 @@ Rectangle {
                         }
 
                         Rectangle {
-                            //visible: root.checkedCount === 0
                             Layout.preferredWidth: 1
                             Layout.preferredHeight: 24
                             color: Material.foreground
                             opacity: 0.2
                         }
 
-                        // Breadcrumb path
                         Item {
-                            id: path
+                            id: tilePath
                             Layout.fillWidth: true
-                            implicitHeight: breadcrumbRow.implicitHeight
+                            implicitHeight: tileBreadcrumbRow.implicitHeight
                             clip: true
 
                             Row {
-                                id: measurementRow
+                                id: tileMeasurementRow
                                 visible: false
                                 spacing: 6
                                 height: parent.height
@@ -555,7 +1263,7 @@ Rectangle {
                                     model: root.getPathSegments()
 
                                     Row {
-                                        id: pathItem
+                                        id: tilePathItem
                                         required property string modelData
                                         spacing: 6
 
@@ -566,7 +1274,7 @@ Rectangle {
                                         }
 
                                         Button {
-                                            text: pathItem.modelData
+                                            text: tilePathItem.modelData
                                             flat: true
                                             font.pixelSize: 13
                                             implicitWidth: contentItem.implicitWidth + 20
@@ -576,32 +1284,30 @@ Rectangle {
                                 }
                             }
 
-                            property bool needsEllipsis: measurementRow.implicitWidth > width - 20
+                            property bool needsEllipsis: tileMeasurementRow.implicitWidth > width - 20
 
                             Row {
-                                id: breadcrumbRow
+                                id: tileBreadcrumbRow
                                 anchors.verticalCenter: parent.verticalCenter
                                 spacing: 6
 
                                 Button {
-                                    id: rootButton
                                     text: ConnectionManager.serverName
                                     flat: true
                                     font.pixelSize: 13
                                     implicitWidth: contentItem.implicitWidth + 20
                                     onClicked: ConnectionManager.listDirectory("")
                                     font.bold: root.getPathSegments().length === 0
-                                    opacity: root.getPathSegments().length === 0 || rootHover.hovered ? 1 : 0.7
+                                    opacity: root.getPathSegments().length === 0 || tileRootHover.hovered ? 1 : 0.7
                                     Material.roundedScale: Material.ExtraSmallScale
 
                                     HoverHandler {
-                                        id: rootHover
+                                        id: tileRootHover
                                     }
                                 }
 
-                                // Show ellipsis button if path is too long
                                 Loader {
-                                    active: path.needsEllipsis && root.getPathSegments().length > 1
+                                    active: tilePath.needsEllipsis && root.getPathSegments().length > 1
                                     visible: active
                                     sourceComponent: Row {
                                         spacing: 6
@@ -621,15 +1327,15 @@ Rectangle {
                                             font.pixelSize: 13
                                             implicitWidth: contentItem.implicitWidth + 20
                                             Material.roundedScale: Material.ExtraSmallScale
-                                            opacity: ellipsisHover.hovered ? 1 : 0.7
-                                            onClicked: hiddenPathsMenu.popup()
+                                            opacity: tileEllipsisHover.hovered ? 1 : 0.7
+                                            onClicked: tileHiddenPathsMenu.popup()
 
                                             HoverHandler {
-                                                id: ellipsisHover
+                                                id: tileEllipsisHover
                                             }
 
                                             Menu {
-                                                id: hiddenPathsMenu
+                                                id: tileHiddenPathsMenu
                                                 width: 200
 
                                                 Instantiator {
@@ -642,17 +1348,16 @@ Rectangle {
                                                             ConnectionManager.listDirectory(root.getPathUpToHiddenIndex(index))
                                                         }
                                                     }
-                                                    onObjectAdded: (index, object) => hiddenPathsMenu.insertItem(index, object)
-                                                    onObjectRemoved: (index, object) => hiddenPathsMenu.removeItem(object)
+                                                    onObjectAdded: (index, object) => tileHiddenPathsMenu.insertItem(index, object)
+                                                    onObjectRemoved: (index, object) => tileHiddenPathsMenu.removeItem(object)
                                                 }
                                             }
                                         }
                                     }
                                 }
 
-                                // Show last segment if we have segments and need ellipsis
                                 Loader {
-                                    active: path.needsEllipsis && root.getPathSegments().length > 0
+                                    active: tilePath.needsEllipsis && root.getPathSegments().length > 0
                                     visible: active
                                     sourceComponent: Row {
                                         spacing: 6
@@ -673,25 +1378,24 @@ Rectangle {
                                             implicitWidth: contentItem.implicitWidth + 20
                                             Material.roundedScale: Material.ExtraSmallScale
                                             font.bold: true
-                                            opacity: lastSegmentHover.hovered ? 1 : 0.7
+                                            opacity: tileLastSegmentHover.hovered ? 1 : 0.7
                                             onClicked: {
                                                 ConnectionManager.listDirectory(FileModel.currentPath)
                                             }
 
                                             HoverHandler {
-                                                id: lastSegmentHover
+                                                id: tileLastSegmentHover
                                             }
                                         }
                                     }
                                 }
 
-                                // Show all segments if path is not too long
                                 Repeater {
-                                    id: allSegmentsRepeater
-                                    model: path.needsEllipsis ? [] : root.getPathSegments()
+                                    id: tileAllSegmentsRepeater
+                                    model: tilePath.needsEllipsis ? [] : root.getPathSegments()
 
                                     Row {
-                                        id: pathBtn
+                                        id: tilePathBtn
                                         required property string modelData
                                         required property int index
                                         spacing: 6
@@ -706,379 +1410,305 @@ Rectangle {
                                         }
 
                                         Button {
-                                            text: pathBtn.modelData
+                                            text: tilePathBtn.modelData
                                             flat: true
                                             font.pixelSize: 13
                                             implicitWidth: contentItem.implicitWidth + 20
                                             Material.roundedScale: Material.ExtraSmallScale
-                                            font.bold: pathBtn.index === allSegmentsRepeater.count - 1
-                                            opacity: pathBtn.index === allSegmentsRepeater.count - 1 || pathBtnHover.hovered ? 1 : 0.7
+                                            font.bold: tilePathBtn.index === tileAllSegmentsRepeater.count - 1
+                                            opacity: tilePathBtn.index === tileAllSegmentsRepeater.count - 1 || tilePathBtnHover.hovered ? 1 : 0.7
                                             onClicked: {
-                                                ConnectionManager.listDirectory(root.getPathUpToIndex(pathBtn.index))
+                                                ConnectionManager.listDirectory(root.getPathUpToIndex(tilePathBtn.index))
                                             }
 
                                             HoverHandler {
-                                                id: pathBtnHover
+                                                id: tilePathBtnHover
                                             }
                                         }
                                     }
                                 }
                             }
                         }
+
+                        ToolButton {
+                            icon.source: UserSettings.listView ? "qrc:/icons/tiles.svg" : "qrc:/icons/list.svg"
+                            icon.width: 16
+                            icon.height: 16
+                            onClicked: UserSettings.listView = !UserSettings.listView
+                            ToolTip.visible: hovered
+                            ToolTip.text: UserSettings.listView ? "Tile view" : "List view"
+                            Material.roundedScale: Material.ExtraSmallScale
+                        }
                     }
                 }
 
-                // Column headers
-                Rectangle {
-                    id: columnHeader
-                    width: parent.width
-                    height: 45
-                    anchors.top: breadcrumbBar.bottom
-                    color: Constants.listHeaderColor
+                GridView {
+                    id: tileGrid
+                    anchors {
+                        left: parent.left
+                        right: parent.right
+                        top: breadcrumbBar.bottom
+                        leftMargin: 10
+                        rightMargin: 10
+                        topMargin: 10
+                    }
 
-                    RowLayout {
-                        anchors.fill: parent
-                        anchors.leftMargin: 10
-                        anchors.rightMargin: 10
-                        spacing: 10
+                    height: Math.ceil(count / Math.floor(width / cellWidth)) * cellHeight
+                    interactive: false
 
-                        CheckBox {
-                            id: headerCheckbox
-                            Layout.preferredWidth: 30
-                            checked: root.checkedCount > 0 && root.checkedCount === FileModel.count
-                            tristate: root.checkedCount > 0 && root.checkedCount < FileModel.count
-                            checkState: {
-                                if (root.checkedCount === 0) return Qt.Unchecked
-                                if (root.checkedCount === FileModel.count) return Qt.Checked
-                                return Qt.PartiallyChecked
-                            }
-                            onClicked: {
-                                if (root.checkedCount === FileModel.count) {
-                                    root.uncheckAll()
-                                } else {
-                                    root.checkAll()
+                    property int targetColumns: 6
+                    property real cellSize: Math.floor(width / targetColumns)
+                    cellWidth: cellSize
+                    cellHeight: cellSize
+
+                    model: tileModel
+
+                    delegate: Item {
+                        id: tileDelegateRoot
+                        width: tileGrid.cellWidth
+                        height: tileGrid.cellHeight
+                        required property var model
+                        required property int index
+
+                        property string itemPath: model.path
+                        property string itemName: model.name
+                        property bool itemIsDir: model.isDir
+                        property bool isParentItem: model.isParent
+
+                        Rectangle {
+                            id: tileRect
+                            anchors.fill: parent
+                            anchors.margins: 5
+                            color: {
+                                if (tileHoverHandler.hovered) {
+                                    return Constants.alternateRowColor
                                 }
+                                return "transparent"
                             }
-                        }
-
-                        Label {
-                            text: "Name"
-                            font.bold: true
-                            Layout.fillWidth: true
-                        }
-
-                        Label {
-                            text: "Size"
-                            font.bold: true
-                            Layout.preferredWidth: 100
-                        }
-
-                        Label {
-                            text: "Modified"
-                            font.bold: true
-                            Layout.preferredWidth: 180
-                        }
-
-                        Item {
-                            Layout.preferredWidth: 80
-                        }
-                    }
-                }
-
-                // Parent directory navigation item
-                Rectangle {
-                    id: parentDirItem
-                    visible: FileModel.canGoUp
-                    width: parent.width
-                    height: 50
-                    anchors.top: columnHeader.bottom
-                    color: {
-                        if (root.currentDropTarget === parentDirItem) {
-                            return Constants.listHeaderColor
-                        }
-                        return parentHoverHandler.hovered ? Constants.alternateRowColor : "transparent"
-                    }
-
-                    property bool itemIsDir: true
-                    property string itemPath: FileModel.getParentPath()
-                    property string itemName: ".."
-
-                    Rectangle {
-                        anchors.left: parent.left
-                        anchors.bottom: parent.bottom
-                        height: 1
-                        width: parent.width
-                        color: Constants.alternateRowColor
-                    }
-
-                    RowLayout {
-                        anchors.fill: parent
-                        anchors.leftMargin: 10
-                        anchors.rightMargin: 10
-                        spacing: 10
-
-                        Item {
-                            Layout.preferredWidth: 30
-                        }
-
-                        Label {
-                            text: "📁 .."
-                            Layout.fillWidth: true
-                            font.bold: true
-                            opacity: 0.7
-                        }
-
-                        Label {
-                            text: "-"
-                            Layout.preferredWidth: 100
-                            opacity: 0.7
-                        }
-
-                        Label {
-                            text: ""
-                            Layout.preferredWidth: 180
-                            opacity: 0.7
-                        }
-
-                        Item {
-                            Layout.preferredWidth: 80
-                        }
-                    }
-
-                    HoverHandler {
-                        id: parentHoverHandler
-                    }
-
-                    TapHandler {
-                        acceptedButtons: Qt.LeftButton
-                        onDoubleTapped: {
-                            ConnectionManager.listDirectory(FileModel.getParentPath())
-                        }
-                    }
-                }
-            }
-
-            delegate: Item {
-                id: delegateRoot
-                width: listView.width
-                height: 50
-                required property var model
-                required property int index
-
-                property string itemPath: model.path
-                property string itemName: model.name
-                property bool itemIsDir: model.isDir
-
-                ContextMenu.menu: delContextMenu
-                Menu {
-                    id: delContextMenu
-                    width: 200
-                    MenuItem {
-                        text: delegateRoot.model.name
-                        enabled: false
-                    }
-
-                    MenuItem {
-                        text: "Download"
-                        icon.source: "qrc:/icons/download.svg"
-                        icon.width: 16
-                        icon.height: 16
-                        onClicked: {
-                            if (delegateRoot.model.isDir) {
-                                folderDownloadDialog.remotePath = delegateRoot.model.path
-                                folderDownloadDialog.defaultName = delegateRoot.model.name + ".zip"
-                                folderDownloadDialog.open()
-                            } else {
-                                fileDownloadDialog.remotePath = delegateRoot.model.path
-                                fileDownloadDialog.defaultName = delegateRoot.model.name
-                                fileDownloadDialog.open()
+                            border.width: 1
+                            border.color: {
+                                if (root.currentDropTarget === tileDelegateRoot && tileDelegateRoot.itemIsDir && root.draggedItemPath !== tileDelegateRoot.itemPath) {
+                                    return Material.accent
+                                }
+                                if (!tileDelegateRoot.isParentItem && root.isItemChecked(tileDelegateRoot.itemPath)) {
+                                    return Material.accent
+                                }
+                                return Constants.borderColor
                             }
-                        }
-                    }
-                    MenuItem {
-                        text: "Rename"
-                        icon.source: "qrc:/icons/rename.svg"
-                        icon.width: 16
-                        icon.height: 16
-                    }
-                    MenuItem {
-                        text: "Delete"
-                        icon.source: "qrc:/icons/delete.svg"
-                        icon.width: 16
-                        icon.height: 16
-                        onClicked: {
-                            deleteConfirmDialog.itemPath = delegateRoot.model.path
-                            deleteConfirmDialog.isDirectory = delegateRoot.model.isDir
-                            deleteConfirmDialog.open()
-                        }
-                    }
-                }
+                            radius: 4
 
-                Rectangle {
-                    id: delegateBackground
-                    anchors.fill: parent
-                    color: {
-                        if (root.currentDropTarget === delegateRoot && delegateRoot.model.isDir && root.draggedItemPath !== delegateRoot.model.path) {
-                            return Constants.listHeaderColor
-                        }
-                        return hoverHandler.hovered ? Constants.alternateRowColor : "transparent"
-                    }
-
-                    Rectangle {
-                        anchors.left: parent.left
-                        anchors.bottom: parent.bottom
-                        height: 1
-                        width: parent.width
-                        color: Constants.alternateRowColor
-                    }
-
-                    RowLayout {
-                        anchors.fill: parent
-                        anchors.leftMargin: 10
-                        anchors.rightMargin: 10
-                        spacing: 10
-
-                        CheckBox {
-                            Layout.preferredWidth: 30
-                            checked: root.isItemChecked(delegateRoot.model.path)
-                            onClicked: {
-                                root.toggleItemChecked(delegateRoot.model.path)
+                            Behavior on border.color {
+                                ColorAnimation { duration: 150 }
                             }
-                        }
 
-                        Label {
-                            text: (delegateRoot.model.isDir ? "📁 " : "📄 ") + delegateRoot.model.name
-                            Layout.fillWidth: true
-                            elide: Text.ElideRight
-                        }
-
-                        Label {
-                            text: delegateRoot.model.isDir ? "-" : root.formatSize(delegateRoot.model.size)
-                            Layout.preferredWidth: 100
-                            opacity: 0.7
-                        }
-
-                        Label {
-                            text: root.formatDate(delegateRoot.model.modified)
-                            Layout.preferredWidth: 180
-                            opacity: 0.7
-                        }
-
-                        RowLayout {
-                            Layout.preferredWidth: 80
-                            spacing: 2
-
-                            ToolButton {
-                                icon.source: "qrc:/icons/menu.svg"
-                                icon.width: 16
-                                icon.height: 16
-                                Layout.preferredWidth: height
-                                flat: true
-                                onClicked: delContextMenu.popup()
-                                Layout.alignment: Qt.AlignRight
-                                opacity: (hoverHandler.hovered && root.draggedItemPath === "") ? 1 : 0
-                                Material.roundedScale: Material.ExtraSmallScale
+                            Behavior on color {
+                                ColorAnimation { duration: 150 }
                             }
-                        }
-                    }
 
-                    HoverHandler {
-                        id: hoverHandler
-                    }
+                            ColumnLayout {
+                                anchors.fill: parent
+                                spacing: 0
 
-                    DragHandler {
-                        id: dragHandler
-                        target: null
-                        dragThreshold: 15
+                                Item {
+                                    Layout.fillWidth: true
+                                    Layout.fillHeight: true
+                                    Layout.margins: 4
 
-                        onActiveChanged: {
-                            if (active) {
-                                root.draggedItemPath = delegateRoot.model.path
-                                root.draggedItemName = delegateRoot.model.name
-                                dragLabel.text = "Move " + delegateRoot.model.name
-                                dragIndicator.visible = true
-                            } else {
-                                dragIndicator.visible = false
+                                    CheckBox {
+                                        visible: !tileDelegateRoot.isParentItem
+                                        anchors.left: parent.left
+                                        anchors.top: parent.top
+                                        checked: root.isItemChecked(tileDelegateRoot.itemPath)
+                                        onClicked: {
+                                            root.toggleItemChecked(tileDelegateRoot.itemPath)
+                                        }
+                                    }
 
-                                if (root.currentDropTarget) {
-                                    let targetPath = root.currentDropTarget.itemPath
-
-                                    // Check if dropping on parent directory item or regular directory
-                                    if (root.currentDropTarget.itemIsDir &&
-                                        targetPath !== root.draggedItemPath) {
-                                        ConnectionManager.moveItem(root.draggedItemPath, targetPath)
+                                    Label {
+                                        anchors.centerIn: parent
+                                        text: tileDelegateRoot.itemIsDir ? "📁" : "📄"
+                                        font.pixelSize: 48
                                     }
                                 }
 
-                                root.draggedItemPath = ""
-                                root.draggedItemName = ""
-                                root.currentDropTarget = null
+                                Rectangle {
+                                    Layout.fillWidth: true
+                                    Layout.preferredHeight: 1
+                                    color: Constants.borderColor
+                                }
+
+                                Item {
+                                    Layout.fillWidth: true
+                                    Layout.preferredHeight: 50
+                                    Layout.margins: 8
+
+                                    ColumnLayout {
+                                        anchors.fill: parent
+                                        spacing: 2
+
+                                        Label {
+                                            text: tileDelegateRoot.itemName
+                                            Layout.fillWidth: true
+                                            elide: Text.ElideMiddle
+                                            horizontalAlignment: Text.AlignHCenter
+                                            font.bold: tileDelegateRoot.isParentItem ? true : root.isItemChecked(tileDelegateRoot.itemPath)
+                                            font.pixelSize: 12
+                                            wrapMode: Text.NoWrap
+                                            opacity: tileDelegateRoot.isParentItem ? 0.7 : 1.0
+                                        }
+
+                                        Label {
+                                            text: tileDelegateRoot.itemIsDir ? "" : root.formatSize(tileDelegateRoot.model.size)
+                                            Layout.fillWidth: true
+                                            horizontalAlignment: Text.AlignHCenter
+                                            font.pixelSize: 10
+                                            opacity: 0.6
+                                            visible: !tileDelegateRoot.itemIsDir
+                                        }
+                                    }
+                                }
                             }
-                        }
 
-                        onCentroidChanged: {
-                            if (active) {
-                                let globalPos = delegateBackground.mapToItem(null, centroid.position.x, centroid.position.y)
-                                dragIndicator.x = globalPos.x + 10
-                                dragIndicator.y = globalPos.y + 10
+                            HoverHandler {
+                                id: tileHoverHandler
+                            }
 
-                                let listPos = delegateBackground.mapToItem(listView, centroid.position.x, centroid.position.y)
+                            DragHandler {
+                                id: tileDragHandler
+                                target: null
+                                dragThreshold: 15
+                                enabled: !tileDelegateRoot.isParentItem
 
-                                root.currentDropTarget = null
+                                onActiveChanged: {
+                                    if (active) {
+                                        root.draggedItemPath = tileDelegateRoot.itemPath
+                                        root.draggedItemName = tileDelegateRoot.itemName
+                                        dragLabel.text = "Move " + tileDelegateRoot.itemName
+                                        dragIndicator.visible = true
+                                    } else {
+                                        dragIndicator.visible = false
 
-                                // Check parent directory item if visible
-                                if (FileModel.canGoUp) {
-                                    let headerItem = listView.headerItem
-                                    if (headerItem) {
-                                        let parentDirItem = headerItem.children[2]
-                                        if (parentDirItem) {
-                                            let parentPos = parentDirItem.mapFromItem(listView, listPos.x, listPos.y)
-                                            if (parentPos.x >= 0 && parentPos.x <= parentDirItem.width &&
-                                                parentPos.y >= 0 && parentPos.y <= parentDirItem.height) {
-                                                root.currentDropTarget = parentDirItem
-                                                return
+                                        if (root.currentDropTarget) {
+                                            let targetPath = root.currentDropTarget.itemPath
+
+                                            if (root.currentDropTarget.itemIsDir &&
+                                                targetPath !== root.draggedItemPath) {
+                                                ConnectionManager.moveItem(root.draggedItemPath, targetPath)
+                                            }
+                                        }
+
+                                        root.draggedItemPath = ""
+                                        root.draggedItemName = ""
+                                        root.currentDropTarget = null
+                                    }
+                                }
+
+                                onCentroidChanged: {
+                                    if (active) {
+                                        let globalPos = tileRect.mapToItem(null, centroid.position.x, centroid.position.y)
+                                        dragIndicator.x = globalPos.x + 10
+                                        dragIndicator.y = globalPos.y + 10
+
+                                        let gridPos = tileRect.mapToItem(tileGrid, centroid.position.x, centroid.position.y)
+
+                                        root.currentDropTarget = null
+
+                                        for (let i = 0; i < tileGrid.count; i++) {
+                                            let item = tileGrid.itemAtIndex(i)
+                                            if (item) {
+                                                let itemPos = item.mapFromItem(tileGrid, gridPos.x, gridPos.y)
+                                                if (itemPos.x >= 0 && itemPos.x <= item.width &&
+                                                    itemPos.y >= 0 && itemPos.y <= item.height) {
+                                                    root.currentDropTarget = item
+                                                    break
+                                                }
                                             }
                                         }
                                     }
                                 }
+                            }
 
-                                // Check regular file items
-                                for (let i = 0; i < listView.count; i++) {
-                                    let item = listView.itemAtIndex(i)
-                                    if (item) {
-                                        let itemPos = item.mapFromItem(listView, listPos.x, listPos.y)
-                                        if (itemPos.x >= 0 && itemPos.x <= item.width &&
-                                            itemPos.y >= 0 && itemPos.y <= item.height) {
-                                            root.currentDropTarget = item
-                                            break
+                            TapHandler {
+                                acceptedButtons: Qt.LeftButton
+                                onTapped: {
+                                    if (!tileDelegateRoot.isParentItem) {
+                                        root.toggleItemChecked(tileDelegateRoot.itemPath)
+                                    }
+                                }
+                                onDoubleTapped: {
+                                    if (tileDelegateRoot.isParentItem) {
+                                        ConnectionManager.listDirectory(FileModel.getParentPath())
+                                    } else if (tileDelegateRoot.itemIsDir) {
+                                        ConnectionManager.listDirectory(tileDelegateRoot.itemPath)
+                                    }
+                                }
+                            }
+
+                            TapHandler {
+                                acceptedButtons: Qt.RightButton
+                                enabled: !tileDelegateRoot.isParentItem
+                                onTapped: {
+                                    tileContextMenu.popup()
+                                }
+                            }
+
+                            Menu {
+                                id: tileContextMenu
+                                width: 200
+                                MenuItem {
+                                    text: tileDelegateRoot.itemName
+                                    enabled: false
+                                }
+
+                                MenuItem {
+                                    text: "Download"
+                                    icon.source: "qrc:/icons/download.svg"
+                                    icon.width: 16
+                                    icon.height: 16
+                                    onClicked: {
+                                        if (tileDelegateRoot.itemIsDir) {
+                                            folderDownloadDialog.remotePath = tileDelegateRoot.itemPath
+                                            folderDownloadDialog.defaultName = tileDelegateRoot.itemName + ".zip"
+                                            folderDownloadDialog.open()
+                                        } else {
+                                            fileDownloadDialog.remotePath = tileDelegateRoot.itemPath
+                                            fileDownloadDialog.defaultName = tileDelegateRoot.itemName
+                                            fileDownloadDialog.open()
                                         }
+                                    }
+                                }
+                                MenuItem {
+                                    text: "Rename"
+                                    icon.source: "qrc:/icons/rename.svg"
+                                    icon.width: 16
+                                    icon.height: 16
+                                }
+                                MenuItem {
+                                    text: "Delete"
+                                    icon.source: "qrc:/icons/delete.svg"
+                                    icon.width: 16
+                                    icon.height: 16
+                                    onClicked: {
+                                        deleteConfirmDialog.itemPath = tileDelegateRoot.itemPath
+                                        deleteConfirmDialog.isDirectory = tileDelegateRoot.itemIsDir
+                                        deleteConfirmDialog.open()
                                     }
                                 }
                             }
                         }
                     }
-
-                    TapHandler {
-                        acceptedButtons: Qt.LeftButton
-                        onTapped: root.toggleItemChecked(delegateRoot.model.path)
-                        onDoubleTapped: {
-                            if (delegateRoot.model.isDir) {
-                                ConnectionManager.listDirectory(delegateRoot.model.path)
-                            }
-                        }
-                    }
                 }
-            }
 
-            Label {
-                anchors.centerIn: parent
-                text: ConnectionManager.authenticated ?
-                          (FileModel.count === 0 ? "Empty folder\n\nDrag files here to upload" : "") :
-                          "Not connected"
-                visible: FileModel.count === 0
-                opacity: 0.5
-                font.pixelSize: 16
-                horizontalAlignment: Text.AlignHCenter
+                Label {
+                    anchors.centerIn: parent
+                    text: ConnectionManager.authenticated ?
+                              (FileModel.count === 0 ? "Empty folder\n\nDrag files here to upload" : "") :
+                              "Not connected"
+                    visible: FileModel.count === 0
+                    opacity: 0.5
+                    font.pixelSize: 16
+                    horizontalAlignment: Text.AlignHCenter
+                }
             }
         }
     }
@@ -1105,19 +1735,11 @@ Rectangle {
         return pathParts.join("/")
     }
 
-    function shouldShowEllipsis() {
-        let segments = getPathSegments()
-        // Show ellipsis if we have more than 3 segments
-        // This gives us: odzndrive > ... > current
-        return segments.length > 3
-    }
-
     function getHiddenSegments() {
         let segments = getPathSegments()
         if (segments.length <= 1) {
             return []
         }
-        // Return all segments except the last one (which is shown)
         return segments.slice(0, -1)
     }
 
