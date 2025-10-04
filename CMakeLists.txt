@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.21)
 
-project(OdznDrive VERSION 0.3.3 LANGUAGES CXX)
+project(OdznDrive VERSION 0.3.4 LANGUAGES CXX)
 
 set(CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}/install" CACHE PATH "Installation directory" FORCE)
 set(CMAKE_CXX_STANDARD 17)

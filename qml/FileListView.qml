@@ -463,7 +463,7 @@ Rectangle {
             icon.width: 16
             icon.height: 16
             enabled: ConnectionManager.authenticated
-            onClicked: ConnectionManager.listDirectory(FileModel.currentPath)
+            onClicked: ConnectionManager.listDirectory(FileModel.currentPath, UserSettings.foldersFirst)
         }
     }
 
@@ -511,7 +511,7 @@ Rectangle {
                 icon.height: 16
                 enabled: ConnectionManager.authenticated
                 onClicked: {
-                    ConnectionManager.listDirectory(FileModel.currentPath)
+                    ConnectionManager.listDirectory(FileModel.currentPath, UserSettings.foldersFirst)
                 }
                 ToolTip.visible: hovered
                 ToolTip.text: "Refresh"
@@ -636,7 +636,7 @@ Rectangle {
                         flat: true
                         font.pixelSize: 13
                         implicitWidth: contentItem.implicitWidth + 20
-                        onClicked: ConnectionManager.listDirectory("")
+                        onClicked: ConnectionManager.listDirectory("", UserSettings.foldersFirst)
                         font.bold: root.getPathSegments().length === 0
                         opacity: root.getPathSegments().length === 0 || rootHover.hovered ? 1 : 0.7
                         Material.roundedScale: Material.ExtraSmallScale
@@ -685,7 +685,7 @@ Rectangle {
                                             required property int index
                                             text: modelData
                                             onClicked: {
-                                                ConnectionManager.listDirectory(root.getPathUpToHiddenIndex(index))
+                                                ConnectionManager.listDirectory(root.getPathUpToHiddenIndex(index), UserSettings.foldersFirst)
                                             }
                                         }
                                         onObjectAdded: (index, object) => hiddenPathsMenu.insertItem(index, object)
@@ -720,7 +720,7 @@ Rectangle {
                                 font.bold: true
                                 opacity: lastSegmentHover.hovered ? 1 : 0.7
                                 onClicked: {
-                                    ConnectionManager.listDirectory(FileModel.currentPath)
+                                    ConnectionManager.listDirectory(FileModel.currentPath, UserSettings.foldersFirst)
                                 }
 
                                 HoverHandler {
@@ -758,7 +758,7 @@ Rectangle {
                                 font.bold: pathBtn.index === allSegmentsRepeater.count - 1
                                 opacity: pathBtn.index === allSegmentsRepeater.count - 1 || pathBtnHover.hovered ? 1 : 0.7
                                 onClicked: {
-                                    ConnectionManager.listDirectory(root.getPathUpToIndex(pathBtn.index))
+                                    ConnectionManager.listDirectory(root.getPathUpToIndex(pathBtn.index), UserSettings.foldersFirst)
                                 }
 
                                 HoverHandler {
@@ -898,7 +898,7 @@ Rectangle {
                                 icon.width: 16
                                 icon.height: 16
                                 onClicked: {
-                                    ConnectionManager.listDirectory(FileModel.getParentPath())
+                                    ConnectionManager.listDirectory(FileModel.getParentPath(), UserSettings.foldersFirst)
                                 }
                             }
                         }
@@ -964,7 +964,7 @@ Rectangle {
                         TapHandler {
                             acceptedButtons: Qt.LeftButton
                             onDoubleTapped: {
-                                ConnectionManager.listDirectory(FileModel.getParentPath())
+                                ConnectionManager.listDirectory(FileModel.getParentPath(), UserSettings.foldersFirst)
                             }
                         }
                     }
@@ -1164,7 +1164,7 @@ Rectangle {
                             onTapped: root.toggleItemChecked(delegateRoot.model.path)
                             onDoubleTapped: {
                                 if (delegateRoot.model.isDir) {
-                                    ConnectionManager.listDirectory(delegateRoot.model.path)
+                                    ConnectionManager.listDirectory(delegateRoot.model.path, UserSettings.foldersFirst)
                                 }
                             }
                         }
@@ -1484,9 +1484,9 @@ Rectangle {
                                 }
                                 onDoubleTapped: {
                                     if (tileDelegateRoot.isParentItem) {
-                                        ConnectionManager.listDirectory(FileModel.getParentPath())
+                                        ConnectionManager.listDirectory(FileModel.getParentPath(), UserSettings.foldersFirst)
                                     } else if (tileDelegateRoot.itemIsDir) {
-                                        ConnectionManager.listDirectory(tileDelegateRoot.itemPath)
+                                        ConnectionManager.listDirectory(tileDelegateRoot.itemPath, UserSettings.foldersFirst)
                                     }
                                 }
                             }
@@ -1503,7 +1503,7 @@ Rectangle {
                                     icon.width: 16
                                     icon.height: 16
                                     onClicked: {
-                                        ConnectionManager.listDirectory(FileModel.getParentPath())
+                                        ConnectionManager.listDirectory(FileModel.getParentPath(), UserSettings.foldersFirst)
                                     }
                                 }
                             }

@@ -90,5 +90,20 @@ Dialog {
                 }
             }
         }
+
+        RowLayout {
+            Label {
+                text: "Sort folders before files"
+                Layout.fillWidth: true
+            }
+
+            Switch {
+                checked: UserSettings.foldersFirst
+                onClicked: {
+                    UserSettings.foldersFirst = checked
+                    ConnectionManager.listDirectory(FileModel.currentPath, checked)
+                }
+            }
+        }
     }
 }
