@@ -90,6 +90,46 @@ jobs:
           cmake --build . --config Release
           cmake --install . --config Release
 
+      - name: Copy icon to install directory
+        run: |
+          cp resources/icons/icon.png build/install/
+      
+      - name: Create install script
+        run: |
+          cat > build/install/install.sh << 'EOF'
+          #!/bin/bash
+          set -e
+          SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+          INSTALL_DIR="$HOME/.local/bin/odzndriveclient"
+          DESKTOP_FILE="$HOME/.local/share/applications/odzndrive.desktop"
+          echo "Installing OdznDrive..."
+          mkdir -p "$HOME/.local/bin"
+          mkdir -p "$HOME/.local/share/applications"
+          mkdir -p "$INSTALL_DIR"
+          echo "Copying files to $INSTALL_DIR..."
+          cp -r "$SCRIPT_DIR"/* "$INSTALL_DIR/"
+          chmod +x "$INSTALL_DIR/OdznDrive"
+          echo "Creating desktop entry..."
+          cat > "$DESKTOP_FILE" << DESKTOP_EOF
+          [Desktop Entry]
+          Version=1.0
+          Type=Application
+          Name=OdznDrive
+          Comment=OdznDrive Client
+          Exec=$INSTALL_DIR/OdznDrive
+          Icon=$INSTALL_DIR/icon.png
+          Terminal=false
+          Categories=Utility;Network;
+          DESKTOP_EOF
+          if command -v update-desktop-database &> /dev/null; then
+              update-desktop-database "$HOME/.local/share/applications"
+          fi
+          echo "Installation complete!"
+          echo "You can now launch OdznDrive from your application menu"
+          echo "or run it directly with: $INSTALL_DIR/OdznDrive"
+          EOF
+          chmod +x build/install/install.sh
+
       - name: Configure Server
         run: |
           mkdir build-server
