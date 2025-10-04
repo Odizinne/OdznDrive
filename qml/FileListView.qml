@@ -244,15 +244,15 @@ Rectangle {
             model: FileModel
             interactive: false
 
-            // Right-click handler for empty space
-            TapHandler {
-                acceptedButtons: Qt.RightButton
-                onTapped: {
-                    if (ConnectionManager.authenticated) {
-                        emptySpaceMenu.popup()
-                    }
-                }
-            }
+            // Deactivate for now as it conflcits with delegate
+            //TapHandler {
+            //    acceptedButtons: Qt.RightButton
+            //    onTapped: {
+            //        if (ConnectionManager.authenticated) {
+            //            emptySpaceMenu.popup()
+            //        }
+            //    }
+            //}
 
             headerPositioning: ListView.OverlayHeader
 
