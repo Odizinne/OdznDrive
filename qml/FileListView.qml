@@ -6,6 +6,7 @@ import QtQuick.Controls.impl
 import QtQuick.Layouts
 import QtQuick.Dialogs
 import Odizinne.OdznDrive
+import Qt5Compat.GraphicalEffects
 
 Rectangle {
     id: root
@@ -1521,27 +1522,19 @@ Rectangle {
                             }
                             radius: 4
 
-                            Behavior on border.color {
-                                ColorAnimation { duration: 150 }
-                            }
-
-                            Behavior on color {
-                                ColorAnimation { duration: 150 }
-                            }
-
                             ColumnLayout {
                                 anchors.fill: parent
                                 spacing: 0
 
                                 Item {
                                     Layout.fillWidth: true
-                                    Layout.preferredHeight: parent.height * (2/3) - 1
+                                    Layout.preferredHeight: parent.height * (3/4) - 1
 
                                     CheckBox {
                                         visible: !tileDelegateRoot.isParentItem
                                         anchors.left: parent.left
                                         anchors.top: parent.top
-                                        anchors.margins: 4
+                                        anchors.topMargin: -3
                                         z: 1
                                         checked: root.isItemChecked(tileDelegateRoot.itemPath)
                                         onClicked: {
@@ -1569,10 +1562,12 @@ Rectangle {
 
                                     Image {
                                         id: previewImage
-                                        anchors.centerIn: parent
-                                        width: parent.width - 16
-                                        height: parent.height - 16
-                                        fillMode: Image.PreserveAspectFit
+                                        anchors.fill: parent
+                                        anchors.topMargin: 1
+                                        anchors.leftMargin: 1
+                                        anchors.rightMargin: 1
+                                        anchors.bottomMargin: -1
+                                        fillMode: Image.PreserveAspectCrop
                                         cache: false
                                         asynchronous: true
                                         visible: !tileDelegateRoot.isParentItem &&
@@ -1582,6 +1577,16 @@ Rectangle {
                                         source: tileDelegateRoot.model.previewPath || ""
                                         smooth: true
                                         mipmap: true
+
+                                        layer.enabled: true
+                                        layer.effect: OpacityMask {
+                                            maskSource: Rectangle {
+                                                width: previewImage.width
+                                                height: previewImage.height
+                                                topLeftRadius: 4
+                                                topRightRadius: 4
+                                            }
+                                        }
                                     }
                                 }
 
@@ -1593,7 +1598,7 @@ Rectangle {
 
                                 Item {
                                     Layout.fillWidth: true
-                                    Layout.preferredHeight: parent.height * (1/3)
+                                    Layout.preferredHeight: parent.height * (1/4)
                                     Layout.leftMargin: 8
                                     Layout.rightMargin: 8
                                     Label {
@@ -1604,7 +1609,7 @@ Rectangle {
                                         horizontalAlignment: Text.AlignHCenter
                                         verticalAlignment: Text.AlignVCenter
                                         font.bold: tileDelegateRoot.isParentItem ? true : root.isItemChecked(tileDelegateRoot.itemPath)
-                                        font.pixelSize: 12
+                                        font.pixelSize: 13
                                         wrapMode: Text.NoWrap
                                         opacity: tileDelegateRoot.isParentItem ? 0.7 : 1.0
                                     }
