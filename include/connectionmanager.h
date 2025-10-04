@@ -99,6 +99,7 @@ private slots:
 
 private:
     explicit ConnectionManager(QObject *parent = nullptr);
+    ~ConnectionManager();
     ConnectionManager(const ConnectionManager&) = delete;
     ConnectionManager& operator=(const ConnectionManager&) = delete;
 

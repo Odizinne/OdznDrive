@@ -33,6 +33,18 @@ ConnectionManager::ConnectionManager(QObject *parent)
     connect(m_socket, &QWebSocket::bytesWritten, this, &ConnectionManager::onBytesWritten);
 }
 
+ConnectionManager::~ConnectionManager()
+{
+    cleanupCurrentUpload();
+    cleanupCurrentDownload();
+
+    if (m_socket) {
+        m_socket->abort();
+        delete m_socket;
+        m_socket = nullptr;
+    }
+}
+
 ConnectionManager* ConnectionManager::create(QQmlEngine *qmlEngine, QJSEngine *jsEngine)
 {
     Q_UNUSED(qmlEngine)
