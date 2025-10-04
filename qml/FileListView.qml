@@ -11,6 +11,83 @@ Rectangle {
     id: root
     color: Constants.backgroundColor
 
+    // Track checked items
+    property var checkedItems: ({})
+    property int checkedCount: 0
+
+    function isItemChecked(path) {
+        return checkedItems[path] === true
+    }
+
+    function toggleItemChecked(path) {
+        let newChecked = Object.assign({}, checkedItems)
+        if (newChecked[path]) {
+            delete newChecked[path]
+        } else {
+            newChecked[path] = true
+        }
+        checkedItems = newChecked
+        updateCheckedCount()
+    }
+
+    function checkAll() {
+        let newChecked = {}
+        for (let i = 0; i < FileModel.count; i++) {
+            let item = FileModel.data(FileModel.index(i, 0), 257) // PathRole
+            newChecked[item] = true
+        }
+        checkedItems = newChecked
+        updateCheckedCount()
+    }
+
+    function uncheckAll() {
+        checkedItems = {}
+        updateCheckedCount()
+    }
+
+    function updateCheckedCount() {
+        let count = 0
+        for (let key in checkedItems) {
+            if (checkedItems[key]) {
+                count++
+            }
+        }
+        checkedCount = count
+    }
+
+    function getCheckedPaths() {
+        let paths = []
+        for (let key in checkedItems) {
+            if (checkedItems[key]) {
+                paths.push(key)
+            }
+        }
+        return paths
+    }
+
+    function getCheckedItems() {
+        let items = []
+        for (let i = 0; i < FileModel.count; i++) {
+            let path = FileModel.data(FileModel.index(i, 0), 257) // PathRole
+            if (isItemChecked(path)) {
+                items.push({
+                    path: path,
+                    name: FileModel.data(FileModel.index(i, 0), 256), // NameRole
+                    isDir: FileModel.data(FileModel.index(i, 0), 258) // IsDirRole
+                })
+            }
+        }
+        return items
+    }
+
+    // Clear selection when directory changes
+    Connections {
+        target: FileModel
+        function onCurrentPathChanged() {
+            root.uncheckAll()
+        }
+    }
+
     // Drag indicator that follows the mouse
     Rectangle {
         id: dragIndicator
@@ -116,6 +193,38 @@ Rectangle {
         }
     }
 
+    // Multiple items download dialog
+    FileDialog {
+        id: multiDownloadDialog
+        fileMode: FileDialog.SaveFile
+        property var itemPaths: []
+
+        currentFile: "file:///" + root.getMultiDownloadDefaultName()
+        nameFilters: ["Zip files (*.zip)"]
+
+        onAccepted: {
+            let localPath = selectedFile.toString()
+
+            if (localPath.startsWith("file://")) {
+                localPath = localPath.substring(7)
+            }
+
+            if (localPath.match(/^\/[A-Za-z]:\//)) {
+                localPath = localPath.substring(1)
+            }
+
+            if (!localPath.endsWith(".zip")) {
+                localPath += ".zip"
+            }
+
+            // TODO: Need server-side support for downloading multiple paths as a single zip
+            // For now, this would need a new command like "download_multiple"
+            // ConnectionManager.downloadMultiple(itemPaths, localPath)
+
+            console.log("Multi-download to:", localPath, "Paths:", itemPaths)
+        }
+    }
+
     // New folder dialog
     Dialog {
         id: newFolderDialog
@@ -181,6 +290,34 @@ Rectangle {
             } else {
                 ConnectionManager.deleteFile(itemPath)
             }
+        }
+    }
+
+    // Multi-delete confirmation dialog
+    Dialog {
+        id: multiDeleteConfirmDialog
+        title: "Confirm Delete"
+        property int itemCount: 0
+        modal: true
+        parent: Overlay.overlay
+        anchors.centerIn: parent
+
+        Label {
+            text: "Are you sure you want to delete " + multiDeleteConfirmDialog.itemCount + " item(s)?"
+        }
+
+        standardButtons: Dialog.Yes | Dialog.No
+
+        onAccepted: {
+            let items = root.getCheckedItems()
+            for (let i = 0; i < items.length; i++) {
+                if (items[i].isDir) {
+                    ConnectionManager.deleteDirectory(items[i].path)
+                } else {
+                    ConnectionManager.deleteFile(items[i].path)
+                }
+            }
+            root.uncheckAll()
         }
     }
 
@@ -273,21 +410,11 @@ Rectangle {
             model: FileModel
             interactive: false
 
-            // Deactivate for now as it conflcits with delegate
-            //TapHandler {
-            //    acceptedButtons: Qt.RightButton
-            //    onTapped: {
-            //        if (ConnectionManager.authenticated) {
-            //            emptySpaceMenu.popup()
-            //        }
-            //    }
-            //}
-
             headerPositioning: ListView.OverlayHeader
 
             header: Item {
                 width: listView.width
-                height: 45 + 40 + (FileModel.canGoUp ? 50 : 0)
+                height: 45 + 45 + (FileModel.canGoUp ? 50 : 0)
                 z: 2
 
                 // Breadcrumb navigation bar
@@ -299,12 +426,13 @@ Rectangle {
 
                     RowLayout {
                         anchors.fill: parent
-                        anchors.leftMargin: 10
+                        anchors.leftMargin: 3
                         anchors.rightMargin: 10
                         spacing: 8
 
-                        // Action buttons on the left
+                        // Regular action buttons (visible when no items selected)
                         ToolButton {
+                            visible: root.checkedCount === 0
                             icon.source: "qrc:/icons/plus.svg"
                             icon.width: 16
                             icon.height: 16
@@ -316,6 +444,7 @@ Rectangle {
                         }
 
                         ToolButton {
+                            visible: root.checkedCount === 0
                             icon.source: "qrc:/icons/upload.svg"
                             icon.width: 16
                             icon.height: 16
@@ -327,6 +456,7 @@ Rectangle {
                         }
 
                         ToolButton {
+                            visible: root.checkedCount === 0
                             icon.source: "qrc:/icons/refresh.svg"
                             icon.width: 16
                             icon.height: 16
@@ -339,7 +469,61 @@ Rectangle {
                             Material.roundedScale: Material.ExtraSmallScale
                         }
 
+                        // Bulk action buttons (visible when items selected)
+                        ToolButton {
+                            visible: root.checkedCount > 0
+                            icon.source: "qrc:/icons/download.svg"
+                            icon.width: 16
+                            icon.height: 16
+                            enabled: ConnectionManager.authenticated
+                            onClicked: {
+                                let items = root.getCheckedItems()
+                                if (items.length === 1) {
+                                    // Single item download
+                                    if (items[0].isDir) {
+                                        folderDownloadDialog.remotePath = items[0].path
+                                        folderDownloadDialog.defaultName = items[0].name + ".zip"
+                                        folderDownloadDialog.open()
+                                    } else {
+                                        fileDownloadDialog.remotePath = items[0].path
+                                        fileDownloadDialog.defaultName = items[0].name
+                                        fileDownloadDialog.open()
+                                    }
+                                } else {
+                                    // Multiple items - download as zip
+                                    multiDownloadDialog.itemPaths = root.getCheckedPaths()
+                                    multiDownloadDialog.open()
+                                }
+                            }
+                            ToolTip.visible: hovered
+                            ToolTip.text: root.checkedCount === 1 ? "Download" : "Download as zip"
+                            Material.roundedScale: Material.ExtraSmallScale
+                        }
+
+                        ToolButton {
+                            visible: root.checkedCount > 0
+                            icon.source: "qrc:/icons/delete.svg"
+                            icon.width: 16
+                            icon.height: 16
+                            enabled: ConnectionManager.authenticated
+                            onClicked: {
+                                multiDeleteConfirmDialog.itemCount = root.checkedCount
+                                multiDeleteConfirmDialog.open()
+                            }
+                            ToolTip.visible: hovered
+                            ToolTip.text: "Delete selected"
+                            Material.roundedScale: Material.ExtraSmallScale
+                        }
+
+                        Label {
+                            visible: root.checkedCount > 0
+                            text: root.checkedCount + (root.checkedCount === 1 ? " item selected" : " items selected")
+                            opacity: 0.7
+                            Layout.rightMargin: 4
+                        }
+
                         Rectangle {
+                            //visible: root.checkedCount === 0
                             Layout.preferredWidth: 1
                             Layout.preferredHeight: 24
                             color: Material.foreground
@@ -548,7 +732,7 @@ Rectangle {
                 Rectangle {
                     id: columnHeader
                     width: parent.width
-                    height: 40
+                    height: 45
                     anchors.top: breadcrumbBar.bottom
                     color: Constants.listHeaderColor
 
@@ -557,6 +741,25 @@ Rectangle {
                         anchors.leftMargin: 10
                         anchors.rightMargin: 10
                         spacing: 10
+
+                        CheckBox {
+                            id: headerCheckbox
+                            Layout.preferredWidth: 30
+                            checked: root.checkedCount > 0 && root.checkedCount === FileModel.count
+                            tristate: root.checkedCount > 0 && root.checkedCount < FileModel.count
+                            checkState: {
+                                if (root.checkedCount === 0) return Qt.Unchecked
+                                if (root.checkedCount === FileModel.count) return Qt.Checked
+                                return Qt.PartiallyChecked
+                            }
+                            onClicked: {
+                                if (root.checkedCount === FileModel.count) {
+                                    root.uncheckAll()
+                                } else {
+                                    root.checkAll()
+                                }
+                            }
+                        }
 
                         Label {
                             text: "Name"
@@ -614,6 +817,10 @@ Rectangle {
                         anchors.rightMargin: 10
                         spacing: 10
 
+                        Item {
+                            Layout.preferredWidth: 30
+                        }
+
                         Label {
                             text: "📁 .."
                             Layout.fillWidth: true
@@ -628,7 +835,7 @@ Rectangle {
                         }
 
                         Label {
-                            text: ""//"Parent Directory"
+                            text: ""
                             Layout.preferredWidth: 180
                             opacity: 0.7
                         }
@@ -730,6 +937,14 @@ Rectangle {
                         anchors.leftMargin: 10
                         anchors.rightMargin: 10
                         spacing: 10
+
+                        CheckBox {
+                            Layout.preferredWidth: 30
+                            checked: root.isItemChecked(delegateRoot.model.path)
+                            onClicked: {
+                                root.toggleItemChecked(delegateRoot.model.path)
+                            }
+                        }
 
                         Label {
                             text: (delegateRoot.model.isDir ? "📁 " : "📄 ") + delegateRoot.model.name
@@ -845,6 +1060,7 @@ Rectangle {
 
                     TapHandler {
                         acceptedButtons: Qt.LeftButton
+                        onTapped: root.toggleItemChecked(delegateRoot.model.path)
                         onDoubleTapped: {
                             if (delegateRoot.model.isDir) {
                                 ConnectionManager.listDirectory(delegateRoot.model.path)
@@ -929,5 +1145,11 @@ Rectangle {
     function formatDate(dateString) {
         let date = new Date(dateString)
         return date.toLocaleString(Qt.locale(), "yyyy-MM-dd HH:mm")
+    }
+
+    function getMultiDownloadDefaultName() {
+        let now = new Date()
+        let dateStr = Qt.formatDateTime(now, "yyyy-MM-dd_HH-mm-ss")
+        return "OdznDrive_Download_" + dateStr + ".zip"
     }
 }

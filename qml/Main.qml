@@ -13,6 +13,8 @@ ApplicationWindow {
     title: "OdznDrive Client"
     Material.theme: Constants.darkMode ? Material.Dark : Material.Light
     color: Constants.backgroundColor
+    Material.accent: "#66BB6A"
+    Material.primary: "#388E3C"
 
     Component.onCompleted: {
         if (UserSettings.autoconnect) {
@@ -163,6 +165,7 @@ ApplicationWindow {
                     id: storageBar
                     Layout.preferredWidth: 150
                     value: 0
+                    Material.accent: value < 0.5 ? "#66BB6A" : value < 0.85 ? "#FF9800" : "#F44336"
                 }
 
                 RowLayout {
