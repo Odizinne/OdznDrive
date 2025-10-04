@@ -157,6 +157,8 @@ void ClientConnection::handleCommand(const QJsonObject &command)
         handleGetServerInfo();
     } else if (type == "get_thumbnail") {
         handleGetThumbnail(params);
+    } else if (type == "download_multiple") {
+        handleDownloadMultiple(params);
     } else {
         sendError("Unknown command type");
     }
@@ -580,5 +582,72 @@ void ClientConnection::handleMoveItem(const QJsonObject &params)
         sendResponse("move_item", data);
     } else {
         sendError("Failed to move item");
+    }
+}
+
+void ClientConnection::handleDownloadMultiple(const QJsonObject &params)
+{
+    QJsonArray pathsArray = params["paths"].toArray();
+    QString zipName = params["zipName"].toString();
+
+    if (pathsArray.isEmpty()) {
+        sendError("No paths provided");
+        return;
+    }
+
+    QStringList paths;
+    for (const QJsonValue &val : pathsArray) {
+        paths.append(val.toString());
+    }
+
+    // Notify client that zipping is starting
+    QJsonObject zipData;
+    zipData["status"] = "zipping";
+    zipData["name"] = zipName;
+    sendResponse("download_zipping", zipData);
+
+    // Create zip file
+    QString zipPath = m_fileManager->createZipFromMultiplePaths(paths, zipName);
+
+    if (zipPath.isEmpty()) {
+        sendError("Failed to create zip file");
+        return;
+    }
+
+    // Now download the zip file
+    QString absZipPath = m_fileManager->getAbsolutePath(zipPath);
+    QFileInfo zipInfo(absZipPath);
+
+    if (!zipInfo.exists()) {
+        sendError("Zip file not found");
+        return;
+    }
+
+    cleanupDownload();
+
+    m_downloadFile = new QFile(absZipPath);
+    if (!m_downloadFile->open(QIODevice::ReadOnly)) {
+        sendError("Failed to open zip file");
+        delete m_downloadFile;
+        m_downloadFile = nullptr;
+        return;
+    }
+
+    m_downloadPath = zipPath;
+    m_downloadTotalSize = zipInfo.size();
+    m_downloadSentSize = 0;
+    m_isZipDownload = true;
+
+    QJsonObject metadata;
+    metadata["path"] = zipPath;
+    metadata["name"] = zipName + ".zip";
+    metadata["size"] = m_downloadTotalSize;
+    metadata["isDirectory"] = false;
+    metadata["isMultiple"] = true;
+    sendResponse("download_start", metadata);
+
+    // Start sending chunks
+    for (int i = 0; i < 3 && m_downloadSentSize < m_downloadTotalSize; ++i) {
+        sendNextDownloadChunk();
     }
 }

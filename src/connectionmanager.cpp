@@ -709,3 +709,29 @@ void ConnectionManager::setServerName(const QString &name)
         emit serverNameChanged();
     }
 }
+
+void ConnectionManager::downloadMultiple(const QStringList &remotePaths, const QString &localPath, const QString &zipName)
+{
+    if (!m_authenticated) {
+        emit errorOccurred("Not authenticated");
+        return;
+    }
+
+    if (remotePaths.isEmpty()) {
+        emit errorOccurred("No files selected");
+        return;
+    }
+
+    cleanupCurrentDownload();
+
+    m_downloadLocalPath = localPath;
+
+    QJsonObject params;
+    QJsonArray pathsArray;
+    for (const QString &path : remotePaths) {
+        pathsArray.append(path);
+    }
+    params["paths"] = pathsArray;
+    params["zipName"] = zipName;
+    sendCommand("download_multiple", params);
+}

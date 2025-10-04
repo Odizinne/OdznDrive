@@ -248,3 +248,55 @@ QString FileManager::createZipFromDirectory(const QString &relativePath, const Q
     // Return relative path to the zip file
     return ".temp/" + zipFileName;
 }
+
+QString FileManager::createZipFromMultiplePaths(const QStringList &paths, const QString &zipName)
+{
+    if (paths.isEmpty()) {
+        return QString();
+    }
+
+    // Create temp directory for zip files
+    QString tempDir = QDir(m_rootPath).filePath(".temp");
+    QDir().mkpath(tempDir);
+
+    QString zipFileName = zipName + ".zip";
+    QString zipPath = QDir(tempDir).filePath(zipFileName);
+
+    // Remove existing zip if any
+    QFile::remove(zipPath);
+
+    // Prepare arguments for zip command
+    QStringList args;
+    args << "-r" << zipPath;
+
+    // Add all paths
+    for (const QString &path : paths) {
+        if (!isValidPath(path)) {
+            continue;
+        }
+        QString absPath = getAbsolutePath(path);
+        if (QFileInfo(absPath).exists()) {
+            args << absPath;
+        }
+    }
+
+    if (args.size() <= 2) { // Only "-r" and zipPath, no actual files
+        return QString();
+    }
+
+    // Use system zip command
+    QProcess process;
+    process.setWorkingDirectory(m_rootPath);
+    process.start("zip", args);
+
+    if (!process.waitForFinished(300000)) { // 5 minutes timeout
+        return QString();
+    }
+
+    if (process.exitCode() != 0) {
+        return QString();
+    }
+
+    // Return relative path to the zip file
+    return ".temp/" + zipFileName;
+}

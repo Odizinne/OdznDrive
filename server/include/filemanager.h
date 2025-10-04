@@ -26,6 +26,7 @@ public:
     QByteArray readFile(const QString &relativePath);
 
     QString createZipFromDirectory(const QString &relativePath, const QString &zipName);
+    QString createZipFromMultiplePaths(const QStringList &paths, const QString &zipName);
     qint64 getFileSize(const QString &relativePath) const;
 
 private:
