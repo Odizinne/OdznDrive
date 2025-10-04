@@ -936,10 +936,37 @@ Rectangle {
                                 }
                             }
 
-                            Label {
-                                text: (delegateRoot.model.isDir ? "📁 " : "📄 ") + delegateRoot.model.name
+                            RowLayout {
                                 Layout.fillWidth: true
-                                elide: Text.ElideRight
+                                spacing: 8
+
+                                Image {
+                                    Layout.preferredWidth: 24
+                                    Layout.preferredHeight: 24
+                                    fillMode: Image.PreserveAspectFit
+                                    source: {
+                                        if (delegateRoot.model.isDir) {
+                                            return "qrc:/icons/folder.svg"
+                                        }
+                                        if (delegateRoot.model.previewPath) {
+                                            return delegateRoot.model.previewPath
+                                        }
+                                        return "qrc:/icons/file.svg"
+                                    }
+
+                                    // Fallback for failed preview loads
+                                    onStatusChanged: {
+                                        if (status === Image.Error && !delegateRoot.model.isDir) {
+                                            source = "qrc:/icons/file.svg"
+                                        }
+                                    }
+                                }
+
+                                Label {
+                                    text: delegateRoot.model.name
+                                    Layout.fillWidth: true
+                                    elide: Text.ElideRight
+                                }
                             }
 
                             Label {
@@ -1095,27 +1122,21 @@ Rectangle {
                                 "isDir": true,
                                 "size": 0,
                                 "modified": "",
+                                "previewPath": "",
                                 "isParent": true
                             })
                         }
 
                         for (let i = 0; i < FileModel.count; i++) {
-                            let name = FileModel.data(FileModel.index(i, 0), 257)  // NameRole
-                            let path = FileModel.data(FileModel.index(i, 0), 258)  // PathRole
-                            let isDir = FileModel.data(FileModel.index(i, 0), 259) // IsDirRole
-                            let size = FileModel.data(FileModel.index(i, 0), 260)  // SizeRole
-                            let modified = FileModel.data(FileModel.index(i, 0), 261) // ModifiedRole
-
-                            if (name !== undefined && path !== undefined) {
-                                append({
-                                    "name": name,
-                                    "path": path,
-                                    "isDir": isDir !== undefined ? isDir : false,
-                                    "size": size !== undefined ? size : 0,
-                                    "modified": modified !== undefined ? modified : "",
-                                    "isParent": false
-                                })
-                            }
+                            append({
+                                "name": FileModel.data(FileModel.index(i, 0), 257),        // NameRole
+                                "path": FileModel.data(FileModel.index(i, 0), 258),        // PathRole
+                                "isDir": FileModel.data(FileModel.index(i, 0), 259),       // IsDirRole
+                                "size": FileModel.data(FileModel.index(i, 0), 260),        // SizeRole
+                                "modified": FileModel.data(FileModel.index(i, 0), 261),    // ModifiedRole
+                                "previewPath": FileModel.data(FileModel.index(i, 0), 262) || "",  // PreviewPathRole
+                                "isParent": false
+                            })
                         }
                     }
 
@@ -1513,22 +1534,70 @@ Rectangle {
                                 Item {
                                     Layout.fillWidth: true
                                     Layout.preferredHeight: parent.height * (2/3) - 1
-                                    Layout.margins: 4
 
                                     CheckBox {
                                         visible: !tileDelegateRoot.isParentItem
                                         anchors.left: parent.left
                                         anchors.top: parent.top
+                                        anchors.margins: 4
+                                        z: 1
                                         checked: root.isItemChecked(tileDelegateRoot.itemPath)
                                         onClicked: {
                                             root.toggleItemChecked(tileDelegateRoot.itemPath)
                                         }
                                     }
 
-                                    Label {
+                                    // Icon for folders and non-image files
+                                    Image {
+                                        id: iconImage
                                         anchors.centerIn: parent
-                                        text: tileDelegateRoot.itemIsDir ? "📁" : "📄"
-                                        font.pixelSize: 48
+                                        width: 64
+                                        height: 64
+                                        sourceSize.width: 64
+                                        sourceSize.height: 64
+                                        fillMode: Image.PreserveAspectFit
+                                        visible: !previewImage.visible
+                                        source: {
+                                            if (tileDelegateRoot.isParentItem || tileDelegateRoot.itemIsDir) {
+                                                return "qrc:/icons/folder.svg"
+                                            }
+                                            return "qrc:/icons/file.svg"
+                                        }
+                                        smooth: true
+
+                                        // Debug
+                                        onStatusChanged: {
+                                            if (status === Image.Error) {
+                                                console.log("Icon failed to load:", source)
+                                            }
+                                        }
+                                    }
+
+                                    // Preview for image files
+                                    Image {
+                                        id: previewImage
+                                        anchors.centerIn: parent
+                                        width: parent.width - 16
+                                        height: parent.height - 16
+                                        fillMode: Image.PreserveAspectFit
+                                        visible: !tileDelegateRoot.isParentItem &&
+                                                 !tileDelegateRoot.itemIsDir &&
+                                                 tileDelegateRoot.model.previewPath !== "" &&
+                                                 status === Image.Ready
+                                        source: tileDelegateRoot.model.previewPath || ""
+                                        smooth: true
+                                        mipmap: true
+                                        cache: true
+                                        asynchronous: true
+
+                                        onStatusChanged: {
+                                            if (status === Image.Error) {
+                                                console.log("Preview failed for:", tileDelegateRoot.model.name)
+                                                visible = false
+                                            } else if (status === Image.Ready) {
+                                                console.log("Preview loaded for:", tileDelegateRoot.model.name)
+                                            }
+                                        }
                                     }
                                 }
 
@@ -1544,11 +1613,8 @@ Rectangle {
                                     Layout.leftMargin: 8
                                     Layout.rightMargin: 8
                                     Label {
-                                        //anchors.left: parent.left
-                                        //anchors.right: parent.right
-                                        //anchors.verticalCenter: parent.verticalCenter
                                         anchors.fill: parent
-                                        anchors.bottomMargin: 10
+                                        anchors.bottomMargin: 5
                                         text: tileDelegateRoot.itemName
                                         elide: Text.ElideMiddle
                                         horizontalAlignment: Text.AlignHCenter

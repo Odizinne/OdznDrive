@@ -12,7 +12,7 @@ FileModel* FileModel::create(QQmlEngine *qmlEngine, QJSEngine *jsEngine)
 {
     Q_UNUSED(qmlEngine)
     Q_UNUSED(jsEngine)
-    
+
     return instance();
 }
 
@@ -35,9 +35,9 @@ QVariant FileModel::data(const QModelIndex &index, int role) const
     if (!index.isValid() || index.row() >= m_files.count()) {
         return QVariant();
     }
-    
+
     const FileItem &item = m_files.at(index.row());
-    
+
     switch (role) {
     case NameRole:
         return item.name;
@@ -49,6 +49,8 @@ QVariant FileModel::data(const QModelIndex &index, int role) const
         return item.size;
     case ModifiedRole:
         return item.modified;
+    case PreviewPathRole:
+        return item.previewPath;
     default:
         return QVariant();
     }
@@ -62,7 +64,23 @@ QHash<int, QByteArray> FileModel::roleNames() const
     roles[IsDirRole] = "isDir";
     roles[SizeRole] = "size";
     roles[ModifiedRole] = "modified";
+    roles[PreviewPathRole] = "previewPath";
     return roles;
+}
+
+bool FileModel::isImageFile(const QString &fileName) const
+{
+    static const QStringList imageExtensions = {
+        ".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp", ".svg", ".ico"
+    };
+
+    QString lower = fileName.toLower();
+    for (const QString &ext : imageExtensions) {
+        if (lower.endsWith(ext)) {
+            return true;
+        }
+    }
+    return false;
 }
 
 void FileModel::loadDirectory(const QString &path, const QVariantList &files)
@@ -82,6 +100,11 @@ void FileModel::loadDirectory(const QString &path, const QVariantList &files)
         item.size = obj["size"].toLongLong();
         item.modified = obj["modified"].toString();
 
+        // Set preview path for images
+        if (!item.isDir && isImageFile(item.name)) {
+            item.previewPath = obj["previewUrl"].toString();
+        }
+
         m_files.append(item);
     }
 
@@ -97,7 +120,7 @@ void FileModel::clear()
     m_files.clear();
     m_currentPath.clear();
     endResetModel();
-    
+
     emit currentPathChanged();
     emit countChanged();
 }
@@ -110,12 +133,10 @@ QString FileModel::getParentPath() const
 
     int lastSlash = m_currentPath.lastIndexOf('/');
 
-    // If no slash found, we're in a top-level folder, go back to root (empty string)
     if (lastSlash < 0) {
         return QString("");
     }
 
-    // If slash is at position 0, parent is root
     if (lastSlash == 0) {
         return QString("");
     }
@@ -125,6 +146,5 @@ QString FileModel::getParentPath() const
 
 bool FileModel::canGoUp() const
 {
-    // Can go up if we're not at root (empty or "/")
     return !m_currentPath.isEmpty() && m_currentPath != "/";
 }

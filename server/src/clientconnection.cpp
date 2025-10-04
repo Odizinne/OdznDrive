@@ -231,6 +231,24 @@ void ClientConnection::handleListDirectory(const QJsonObject &params)
     QString path = params["path"].toString();
     QJsonArray files = m_fileManager->listDirectory(path);
 
+    // Add preview URLs for image files
+    for (int i = 0; i < files.size(); ++i) {
+        QJsonObject fileObj = files[i].toObject();
+
+        if (!fileObj["isDir"].toBool()) {
+            QString fileName = fileObj["name"].toString().toLower();
+            if (fileName.endsWith(".jpg") || fileName.endsWith(".jpeg") ||
+                fileName.endsWith(".png") || fileName.endsWith(".gif") ||
+                fileName.endsWith(".bmp") || fileName.endsWith(".webp")) {
+
+                // Generate preview URL (websocket endpoint)
+                QString previewUrl = "preview://" + fileObj["path"].toString();
+                fileObj["previewUrl"] = previewUrl;
+                files[i] = fileObj;
+            }
+        }
+    }
+
     QJsonObject data;
     data["path"] = path;
     data["files"] = files;
