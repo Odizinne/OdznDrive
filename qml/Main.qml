@@ -144,80 +144,107 @@ ApplicationWindow {
             anchors.fill: parent
             anchors.margins: 12
             color: Constants.surfaceColor
-            radius: 5
+            radius: 4
             layer.enabled: true
-            layer.effect: ElevationEffect {
+            layer.effect: RoundedElevationEffect {
                 elevation: 6
-                fullWidth: false
+                roundedScale: 4
             }
 
-        RowLayout {
-            anchors.fill: parent
-            anchors.leftMargin: 5
-            anchors.rightMargin: 10
-            spacing: 4
-
-            ToolButton {
-                icon.source: "qrc:/icons/cog.svg"
-                icon.width: 16
-                icon.height: 16
-                onClicked: settingsDialog.open()
-                ToolTip.visible: hovered
-                ToolTip.text: "Settings"
-                Material.roundedScale: Material.ExtraSmallScale
-            }
-
-            TextField {
-                id: filterField
-                Layout.preferredWidth: 300
-                Layout.preferredHeight: 35
-                placeholderText: "Filter..."
-                onTextChanged: FilterProxyModel.filterText = text
-            }
-
-            Item {
-                Layout.fillWidth: true
-            }
-
-            ColumnLayout {
+            RowLayout {
+                anchors.fill: parent
+                anchors.leftMargin: 5
+                anchors.rightMargin: 10
                 spacing: 4
 
-                ProgressBar {
-                    id: storageBar
-                    Layout.preferredWidth: 150
-                    value: 0
-                    Material.accent: value < 0.5 ? "#66BB6A" : value < 0.85 ? "#FF9800" : "#F44336"
+                ToolButton {
+                    icon.source: "qrc:/icons/cog.svg"
+                    icon.width: 16
+                    icon.height: 16
+                    onClicked: settingsDialog.open()
+                    ToolTip.visible: hovered
+                    ToolTip.text: "Settings"
+                    Material.roundedScale: Material.ExtraSmallScale
                 }
 
-                RowLayout {
-                    Layout.alignment: Qt.AlignRight
+                TextField {
+                    id: filterField
+                    Layout.preferredWidth: 300
+                    Layout.preferredHeight: 35
+                    placeholderText: "Filter..."
+                    onTextChanged: FilterProxyModel.filterText = text
+                }
+
+                Item {
+                    Layout.fillWidth: true
+                }
+
+                ColumnLayout {
                     spacing: 4
 
-                    Label {
-                        id: occupiedLabel
-                        text: "--"
-                        font.pixelSize: 10
-                        font.bold: true
-                        opacity: 0.7
+                    Item {
+                        id: storageBar
+                        Layout.preferredWidth: 150
+                        Layout.preferredHeight: 8
 
+                        property real value: 0
+
+                        Rectangle {
+                            anchors.fill: parent
+                            radius: 4
+                            color: Constants.borderColor
+                            opacity: 1
+
+                            Rectangle {
+                                width: parent.width * storageBar.value
+                                height: parent.height
+                                radius: 4
+                                color: storageBar.value < 0.5 ? "#66BB6A" : storageBar.value < 0.85 ? "#FF9800" : "#F44336"
+
+                                Behavior on width {
+                                    NumberAnimation {
+                                        duration: 200
+                                        easing.type: Easing.OutCubic
+                                    }
+                                }
+
+                                Behavior on color {
+                                    ColorAnimation {
+                                        duration: 200
+                                    }
+                                }
+                            }
+                        }
                     }
 
-                    Label {
-                        text: "/"
-                        font.pixelSize: 10
-                        opacity: 0.7
-                    }
+                    RowLayout {
+                        Layout.alignment: Qt.AlignRight
+                        spacing: 4
 
-                    Label {
-                        id: totalLabel
-                        text: "--"
-                        font.pixelSize: 10
-                        opacity: 0.7
+                        Label {
+                            id: occupiedLabel
+                            text: "--"
+                            font.pixelSize: 11
+                            font.bold: true
+                            opacity: 0.7
+                        }
+
+                        Label {
+                            text: "/"
+                            font.pixelSize: 11
+                            opacity: 0.7
+                        }
+
+                        Label {
+                            id: totalLabel
+                            text: "--"
+                            font.pixelSize: 11
+                            opacity: 0.7
+                        }
                     }
                 }
             }
         }
-    }
     }
 
     FileListView {

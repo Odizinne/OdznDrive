@@ -296,7 +296,7 @@ Rectangle {
         }
     }
 
-    Menu {
+    CustomMenu {
         id: emptySpaceMenu
         width: 200
 
@@ -310,7 +310,7 @@ Rectangle {
         }
     }
 
-    component ItemContextMenu: Menu {
+    component ItemContextMenu: CustomMenu {
         id: contextMenu
         width: 200
 
@@ -357,7 +357,7 @@ Rectangle {
         }
     }
 
-    component EmptySpaceMenu: Menu {
+    component EmptySpaceMenu: CustomMenu {
         width: 200
 
         MenuItem {
@@ -398,11 +398,11 @@ Rectangle {
             GradientStop { position: 0.0; color: "#E07830" }
             GradientStop { position: 1.0; color: "#F0A060" }
         }
-        radius: 5
+        radius: 4
         layer.enabled: true
-        layer.effect: ElevationEffect {
+        layer.effect: RoundedElevationEffect {
             elevation: 6
-            fullWidth: false
+            roundedScale: 4
         }
         RowLayout {
             anchors.fill: parent
@@ -607,7 +607,7 @@ Rectangle {
                                     id: ellipsisHover
                                 }
 
-                                Menu {
+                                CustomMenu {
                                     id: hiddenPathsMenu
                                     width: 200
 
@@ -743,7 +743,7 @@ Rectangle {
                 id: listView
                 width: scrollView.width
                 model: FilterProxyModel
-                interactive: false
+                interactive: true
                 spacing: 5
 
                 headerPositioning: ListView.OverlayHeader
@@ -825,7 +825,7 @@ Rectangle {
                         property string itemPath: FileModel.canGoUp ? FileModel.getParentPath() : ""
                         property string itemName: ".."
 
-                        ContextMenu.menu: Menu {
+                        ContextMenu.menu: CustomMenu {
                             width: 200
 
                             MenuItem {
@@ -1488,7 +1488,7 @@ Rectangle {
 
                             ContextMenu.menu: tileDelegateRoot.isParentItem ? parentItemMenu : tileContextMenu
 
-                            Menu {
+                            CustomMenu {
                                 id: parentItemMenu
                                 width: 200
 

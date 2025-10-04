@@ -2,9 +2,9 @@ pragma Singleton
 import QtQuick
 
 QtObject {
-    property color backgroundColor: UserSettings.darkMode ? "#20252b" : "#e8ecf4"
-    property color surfaceColor: UserSettings.darkMode ? "#2b303a" : "#ffffff"
-    property color listHeaderColor: UserSettings.darkMode ? "#2f353f" : "#d9e1ed"
-    property color alternateRowColor: UserSettings.darkMode ? "#2c313a" : "#f0f4f9"
-    property color borderColor: UserSettings.darkMode ? "#40454e" : "#bcc5d4"
+    property color backgroundColor: UserSettings.darkMode ? "#2a3239" : "#e8ecf4"
+    property color surfaceColor: UserSettings.darkMode ? "#363f48" : "#ffffff"
+    property color listHeaderColor: UserSettings.darkMode ? "#3f4851" : "#d9e1ed"
+    property color alternateRowColor: UserSettings.darkMode ? "#3a434c" : "#f0f4f9"
+    property color borderColor: UserSettings.darkMode ? "#4f5861" : "#bcc5d4"
 }

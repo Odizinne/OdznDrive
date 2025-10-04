@@ -106,6 +106,7 @@ qt_add_qml_module(${PROJECT_NAME}
     SOURCES include/filterproxymodel.h src/filterproxymodel.cpp
     QML_FILES qml/CustomDialog.qml
     SOURCES include/filedialoghelper.h src/filedialoghelper.cpp
+    QML_FILES qml/CustomMenu.qml
 )
 
 target_link_libraries(${PROJECT_NAME} PRIVATE
