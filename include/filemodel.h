@@ -11,6 +11,7 @@ struct FileItem {
     bool isDir;
     qint64 size;
     QString modified;
+    QString previewPath;  // Add preview path
 };
 
 class FileModel : public QAbstractListModel
@@ -18,7 +19,7 @@ class FileModel : public QAbstractListModel
     Q_OBJECT
     QML_ELEMENT
     QML_SINGLETON
-    
+
     Q_PROPERTY(QString currentPath READ currentPath NOTIFY currentPathChanged)
     Q_PROPERTY(int count READ rowCount NOTIFY countChanged)
     Q_PROPERTY(bool canGoUp READ canGoUp NOTIFY currentPathChanged)
@@ -29,18 +30,19 @@ public:
         PathRole,
         IsDirRole,
         SizeRole,
-        ModifiedRole
+        ModifiedRole,
+        PreviewPathRole  // Add new role
     };
-    
+
     static FileModel* create(QQmlEngine *qmlEngine, QJSEngine *jsEngine);
     static FileModel* instance();
-    
+
     int rowCount(const QModelIndex &parent = QModelIndex()) const override;
     QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
     QHash<int, QByteArray> roleNames() const override;
-    
+
     QString currentPath() const { return m_currentPath; }
-    
+
     Q_INVOKABLE void loadDirectory(const QString &path, const QVariantList &files);
     Q_INVOKABLE void clear();
     Q_INVOKABLE QString getParentPath() const;
@@ -54,11 +56,13 @@ private:
     explicit FileModel(QObject *parent = nullptr);
     FileModel(const FileModel&) = delete;
     FileModel& operator=(const FileModel&) = delete;
-    
+
     static FileModel *s_instance;
-    
+
     QList<FileItem> m_files;
     QString m_currentPath;
+
+    bool isImageFile(const QString &fileName) const;
 };
 
 #endif // FILEMODEL_H

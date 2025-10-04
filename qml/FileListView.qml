@@ -936,10 +936,37 @@ Rectangle {
                                 }
                             }
 
-                            Label {
-                                text: (delegateRoot.model.isDir ? "📁 " : "📄 ") + delegateRoot.model.name
+                            RowLayout {
                                 Layout.fillWidth: true
-                                elide: Text.ElideRight
+                                spacing: 8
+
+                                Image {
+                                    Layout.preferredWidth: 24
+                                    Layout.preferredHeight: 24
+                                    fillMode: Image.PreserveAspectFit
+                                    source: {
+                                        if (delegateRoot.model.isDir) {
+                                            return "qrc:/icons/folder.svg"
+                                        }
+                                        if (delegateRoot.model.previewPath) {
+                                            return delegateRoot.model.previewPath
+                                        }
+                                        return "qrc:/icons/file.svg"
+                                    }
+
+                                    // Fallback for failed preview loads
+                                    onStatusChanged: {
+                                        if (status === Image.Error && !delegateRoot.model.isDir) {
+                                            source = "qrc:/icons/file.svg"
+                                        }
+                                    }
+                                }
+
+                                Label {
+                                    text: delegateRoot.model.name
+                                    Layout.fillWidth: true
+                                    elide: Text.ElideRight
+                                }
                             }
 
                             Label {
@@ -1525,10 +1552,60 @@ Rectangle {
                                         }
                                     }
 
-                                    Label {
-                                        anchors.centerIn: parent
-                                        text: tileDelegateRoot.itemIsDir ? "📁" : "📄"
-                                        font.pixelSize: 48
+                                    Item {
+                                        Layout.fillWidth: true
+                                        Layout.preferredHeight: parent.height * (2/3) - 1
+                                        Layout.margins: 4
+
+                                        CheckBox {
+                                            visible: !tileDelegateRoot.isParentItem
+                                            anchors.left: parent.left
+                                            anchors.top: parent.top
+                                            checked: root.isItemChecked(tileDelegateRoot.itemPath)
+                                            onClicked: {
+                                                root.toggleItemChecked(tileDelegateRoot.itemPath)
+                                            }
+                                        }
+
+                                        // Icon for folders and non-image files
+                                        Image {
+                                            id: iconImage
+                                            anchors.centerIn: parent
+                                            width: 64
+                                            height: 64
+                                            fillMode: Image.PreserveAspectFit
+                                            visible: !previewImage.visible
+                                            source: {
+                                                if (tileDelegateRoot.isParentItem || tileDelegateRoot.itemIsDir) {
+                                                    return "qrc:/icons/folder.svg"
+                                                }
+                                                return "qrc:/icons/file.svg"
+                                            }
+                                            smooth: true
+                                        }
+
+                                        // Preview for image files
+                                        Image {
+                                            id: previewImage
+                                            anchors.fill: parent
+                                            anchors.margins: 8
+                                            fillMode: Image.PreserveAspectFit
+                                            visible: !tileDelegateRoot.isParentItem &&
+                                                     !tileDelegateRoot.itemIsDir &&
+                                                     tileDelegateRoot.model.previewPath &&
+                                                     status === Image.Ready
+                                            source: tileDelegateRoot.model.previewPath || ""
+                                            smooth: true
+                                            mipmap: true
+                                            cache: true
+                                            asynchronous: true
+
+                                            onStatusChanged: {
+                                                if (status === Image.Error) {
+                                                    visible = false
+                                                }
+                                            }
+                                        }
                                     }
                                 }
 
