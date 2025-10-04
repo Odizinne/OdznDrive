@@ -307,3 +307,28 @@ QString FileManager::createZipFromMultiplePaths(const QStringList &paths, const 
 
     return ".temp/" + zipFileName;
 }
+
+bool FileManager::renameItem(const QString &path, const QString &newName)
+{
+    if (!isValidPath(path)) {
+        return false;
+    }
+
+    QString absPath = getAbsolutePath(path);
+    QFileInfo info(absPath);
+
+    if (!info.exists()) {
+        return false;
+    }
+
+    // Get parent directory
+    QDir parentDir = info.dir();
+    QString newAbsPath = parentDir.filePath(newName);
+
+    // Check if target already exists
+    if (QFileInfo::exists(newAbsPath)) {
+        return false;
+    }
+
+    return QFile::rename(absPath, newAbsPath);
+}

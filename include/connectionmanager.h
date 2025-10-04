@@ -59,6 +59,7 @@ public:
     Q_INVOKABLE void moveItem(const QString &fromPath, const QString &toPath);
     Q_INVOKABLE void downloadMultiple(const QStringList &remotePaths, const QString &localPath, const QString &zipName);
     Q_INVOKABLE void deleteMultiple(const QStringList &paths);
+    Q_INVOKABLE void renameItem(const QString &path, const QString &newName);
     Q_INVOKABLE void getStorageInfo();
     Q_INVOKABLE void cancelUpload();
     Q_INVOKABLE void cancelAllUploads();
@@ -88,6 +89,7 @@ signals:
     void serverNameChanged();
     void multipleDeleted();
     void thumbnailReady(const QString &path);
+    void itemRenamed(const QString &path, const QString &newName);
 
 private slots:
     void onConnected();

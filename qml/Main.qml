@@ -36,6 +36,10 @@ ApplicationWindow {
             }
         }
 
+        function onItemRenamed(fromPath, newName) {
+            ConnectionManager.listDirectory(FileModel.currentPath, UserSettings.foldersFirst)
+        }
+
         function onDirectoryListed(path, files) {
             FileModel.loadDirectory(path, files)
         }

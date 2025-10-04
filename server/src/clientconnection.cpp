@@ -161,8 +161,36 @@ void ClientConnection::handleCommand(const QJsonObject &command)
         handleGetThumbnail(params);
     } else if (type == "download_multiple") {
         handleDownloadMultiple(params);
+    } else if (type == "rename_item") {
+        handleRenameItem(params);
     } else {
         sendError("Unknown command type");
+    }
+}
+
+void ClientConnection::handleRenameItem(const QJsonObject &params)
+{
+    QString path = params["path"].toString();
+    QString newName = params["newName"].toString();
+
+    if (newName.contains('/') || newName.contains('\\')) {
+        sendError("Invalid name: cannot contain path separators");
+        return;
+    }
+
+    if (newName.isEmpty() || newName == "." || newName == "..") {
+        sendError("Invalid name");
+        return;
+    }
+
+    if (m_fileManager->renameItem(path, newName)) {
+        QJsonObject data;
+        data["path"] = path;
+        data["newName"] = newName;
+        data["success"] = true;
+        sendResponse("rename_item", data);
+    } else {
+        sendError("Failed to rename item");
     }
 }
 

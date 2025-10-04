@@ -18,6 +18,7 @@ public:
     bool deleteFile(const QString &relativePath);
     bool deleteDirectory(const QString &relativePath);
     bool moveItem(const QString &fromPath, const QString &toPath);
+    bool renameItem(const QString &path, const QString &newName);
 
     qint64 getTotalSize() const;
     qint64 getAvailableSpace(qint64 limit) const;

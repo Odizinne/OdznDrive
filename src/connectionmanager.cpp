@@ -696,6 +696,8 @@ void ConnectionManager::handleResponse(const QJsonObject &response)
         qint64 used = data["used"].toVariant().toLongLong();
         qint64 available = data["available"].toVariant().toLongLong();
         emit storageInfo(total, used, available);
+    } else if (type == "rename_item") {
+        emit itemRenamed(data["path"].toString(), data["newName"].toString());
     } else if (type == "server_info") {
         setServerName(data["name"].toString());
     }
@@ -767,4 +769,17 @@ void ConnectionManager::downloadMultiple(const QStringList &remotePaths, const Q
     params["paths"] = pathsArray;
     params["zipName"] = zipName;
     sendCommand("download_multiple", params);
+}
+
+void ConnectionManager::renameItem(const QString &path, const QString &newName)
+{
+    if (!m_authenticated) {
+        emit errorOccurred("Not authenticated");
+        return;
+    }
+
+    QJsonObject params;
+    params["path"] = path;
+    params["newName"] = newName;
+    sendCommand("rename_item", params);
 }
