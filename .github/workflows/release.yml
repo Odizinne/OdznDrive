@@ -35,15 +35,15 @@ jobs:
           run_id: ${{ inputs.workflow_run_id }}
           if_no_artifact_found: fail
 
-      - name: Download Windows Client Installer
-        uses: dawidd6/action-download-artifact@v9
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          workflow: build.yml
-          workflow_conclusion: success
-          name: OdznDrive_Installer
-          run_id: ${{ inputs.workflow_run_id }}
-          if_no_artifact_found: fail
+#      - name: Download Windows Client Installer
+#        uses: dawidd6/action-download-artifact@v9
+#        with:
+#          github_token: ${{ secrets.GITHUB_TOKEN }}
+#          workflow: build.yml
+#          workflow_conclusion: success
+#          name: OdznDrive_Installer
+#          run_id: ${{ inputs.workflow_run_id }}
+#          if_no_artifact_found: fail
 
       - name: Download Linux Client artifact
         uses: dawidd6/action-download-artifact@v9
@@ -104,15 +104,15 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Upload Windows Client Installer
-        uses: actions/upload-release-asset@v1
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: OdznDrive_Installer.exe
-          asset_name: OdznDrive_Installer.exe
-          asset_content_type: application/vnd.microsoft.portable-executable
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#      - name: Upload Windows Client Installer
+#        uses: actions/upload-release-asset@v1
+#        with:
+#          upload_url: ${{ steps.create_release.outputs.upload_url }}
+#          asset_path: OdznDrive_Installer.exe
+#          asset_name: OdznDrive_Installer.exe
+#          asset_content_type: application/vnd.microsoft.portable-executable
+#        env:
+#          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload Linux Client zip
         uses: actions/upload-release-asset@v1
@@ -132,4 +132,5 @@ jobs:
           asset_name: OdznDriveServer_linux_x64.zip
           asset_content_type: application/zip
         env:
+
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
