@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Controls.Material
+import QtQuick.Controls.Material.impl
 import QtQuick.Layouts
 import Odizinne.OdznDrive
 
@@ -11,7 +12,7 @@ ApplicationWindow {
     minimumWidth: 1280
     minimumHeight: 720
     title: "OdznDrive Client"
-    Material.theme: Constants.darkMode ? Material.Dark : Material.Light
+    Material.theme: UserSettings.darkMode ? Material.Dark : Material.Light
     color: Constants.backgroundColor
     Material.accent: "#FF9F5A"
     Material.primary: "#E67E22"
@@ -136,9 +137,19 @@ ApplicationWindow {
         }
     }
 
-    footer: Rectangle {
-        height: 44
-        color: Constants.surfaceColor
+    footer: Item {
+        height: 50 + 24
+
+        Rectangle {
+            anchors.fill: parent
+            anchors.margins: 12
+            color: Constants.surfaceColor
+            radius: 5
+            layer.enabled: true
+            layer.effect: ElevationEffect {
+                elevation: 6
+                fullWidth: false
+            }
 
         RowLayout {
             anchors.fill: parent
@@ -206,6 +217,7 @@ ApplicationWindow {
                 }
             }
         }
+    }
     }
 
     FileListView {

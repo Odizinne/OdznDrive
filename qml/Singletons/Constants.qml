@@ -1,13 +1,10 @@
 pragma Singleton
 import QtQuick
-import QtQuick.Controls.Material
 
 QtObject {
-    property bool darkMode: true
-    readonly property int materialTheme: darkMode ? Material.Dark : Material.Light
-    property color backgroundColor: darkMode ? "#191c21" : "#f6f8fc"
-    property color surfaceColor: darkMode ? "#212530" : "#ffffff"
-    property color listHeaderColor: darkMode ? "#282c35" : "#eff2f8"
-    property color alternateRowColor: darkMode ? "#25292f" : "#f4f6fb"
-    property color borderColor: darkMode ? "#383c45" : "#d8dde8"
+    property color backgroundColor: UserSettings.darkMode ? "#20252b" : "#e8ecf4"
+    property color surfaceColor: UserSettings.darkMode ? "#2b303a" : "#ffffff"
+    property color listHeaderColor: UserSettings.darkMode ? "#2f353f" : "#d9e1ed"
+    property color alternateRowColor: UserSettings.darkMode ? "#2c313a" : "#f0f4f9"
+    property color borderColor: UserSettings.darkMode ? "#40454e" : "#bcc5d4"
 }

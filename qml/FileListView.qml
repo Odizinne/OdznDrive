@@ -2,6 +2,7 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import QtQuick.Controls.Material
+import QtQuick.Controls.Material.impl
 import QtQuick.Controls.impl
 import QtQuick.Layouts
 import Odizinne.OdznDrive
@@ -11,7 +12,6 @@ Rectangle {
     id: root
     color: Constants.backgroundColor
 
-    // Track checked items
     property var checkedItems: ({})
     property int checkedCount: 0
 
@@ -330,7 +330,7 @@ Rectangle {
             icon.height: 16
             onClicked: {
                 if (contextMenu.itemIsDir) {
-                    root.openFolderDownloadDialog(items[0].path, items[0].name + ".zip")
+                    root.openFolderDownloadDialog(contextMenu.itemPath, contextMenu.itemName + ".zip")
                 } else {
                     root.openFileDownloadDialog(contextMenu.itemPath, contextMenu.itemName)
                 }
@@ -395,8 +395,14 @@ Rectangle {
         height: 45
         gradient: Gradient {
             orientation: Gradient.Horizontal
-            GradientStop { position: 0.0; color: "#D87020" }
-            GradientStop { position: 1.0; color: "#FFB070" }
+            GradientStop { position: 0.0; color: "#E07830" }
+            GradientStop { position: 1.0; color: "#F0A060" }
+        }
+        radius: 5
+        layer.enabled: true
+        layer.effect: ElevationEffect {
+            elevation: 6
+            fullWidth: false
         }
         RowLayout {
             anchors.fill: parent
@@ -448,19 +454,28 @@ Rectangle {
                 icon.width: 16
                 icon.height: 16
                 enabled: ConnectionManager.authenticated
-                onClicked: {
-                    let items = root.getCheckedItems()
+                ToolButton {
+                    visible: root.checkedCount > 0
+                    icon.source: "qrc:/icons/download.svg"
+                    icon.width: 16
+                    icon.height: 16
+                    enabled: ConnectionManager.authenticated
+                    onClicked: {
+                        let items = root.getCheckedItems()
 
-                    // If only 1 item, treat as single download
-                    if (items.length === 1) {
-                        if (items[0].isDir) {
-                            root.openFolderDownloadDialog(items[0].path, items[0].name + ".zip")
+                        if (items.length === 1) {
+                            if (items[0].isDir) {
+                                root.openFolderDownloadDialog(items[0].path, items[0].name + ".zip")
+                            } else {
+                                root.openFileDownloadDialog(items[0].path, items[0].name)
+                            }
                         } else {
-                            root.openFileDownloadDialog(contextMenu.itemPath, contextMenu.itemName)
+                            root.openMultiDownloadDialog(root.getCheckedPaths())
                         }
-                    } else {
-                        root.openMultiDownloadDialog(root.getCheckedPaths())
                     }
+                    ToolTip.visible: hovered
+                    ToolTip.text: root.checkedCount === 1 ? "Download" : "Download as zip"
+                    Material.roundedScale: Material.ExtraSmallScale
                 }
                 ToolTip.visible: hovered
                 ToolTip.text: root.checkedCount === 1 ? "Download" : "Download as zip"
@@ -706,6 +721,7 @@ Rectangle {
 
         BreadcrumbBar {
             Layout.fillWidth: true
+            Layout.margins: 12
         }
 
         Loader {
@@ -728,18 +744,20 @@ Rectangle {
                 width: scrollView.width
                 model: FilterProxyModel
                 interactive: false
+                spacing: 5
 
                 headerPositioning: ListView.OverlayHeader
                 header: Item {
                     width: listView.width
-                    height: 45 + (FileModel.canGoUp ? 50 : 0)
+                    height: 55 + (FileModel.canGoUp ? 60 : 0)
                     z: 2
 
                     Rectangle {
                         id: columnHeader
                         width: parent.width
-                        height: 45
-                        color: Constants.listHeaderColor
+                        height: 55
+                        clip: true
+                        color: Constants.backgroundColor
 
                         RowLayout {
                             anchors.fill: parent
@@ -821,14 +839,6 @@ Rectangle {
                             }
                         }
 
-                        Rectangle {
-                            anchors.left: parent.left
-                            anchors.bottom: parent.bottom
-                            height: 1
-                            width: parent.width
-                            color: Constants.alternateRowColor
-                        }
-
                         RowLayout {
                             anchors.fill: parent
                             anchors.leftMargin: 10
@@ -886,12 +896,23 @@ Rectangle {
                             }
                         }
                     }
+
+                    Rectangle {
+                        anchors.top: parentDirItem.bottom
+                        anchors.topMargin: 5
+                        anchors.bottomMargin: 5
+                        height: 1
+                        width: parent.width - 30
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        color: Constants.listHeaderColor
+                        visible: parentDirItem.visible && listView.count > 0
+                    }
                 }
 
                 delegate: Item {
                     id: delegateRoot
                     width: listView.width
-                    height: 50
+                    height: 55
                     required property var model
                     required property int index
 
@@ -909,20 +930,15 @@ Rectangle {
 
                     Rectangle {
                         id: delegateBackground
-                        anchors.fill: parent
+                        anchors.left: parent.left
+                        anchors.right: parent.right
+                        anchors.top: parent.top
+                        height: 50
                         color: {
                             if (root.currentDropTarget === delegateRoot && delegateRoot.model.isDir && root.draggedItemPath !== delegateRoot.model.path) {
                                 return Constants.listHeaderColor
                             }
                             return hoverHandler.hovered ? Constants.alternateRowColor : "transparent"
-                        }
-
-                        Rectangle {
-                            anchors.left: parent.left
-                            anchors.bottom: parent.bottom
-                            height: 1
-                            width: parent.width
-                            color: Constants.alternateRowColor
                         }
 
                         RowLayout {
@@ -1086,6 +1102,16 @@ Rectangle {
                                 }
                             }
                         }
+                    }
+
+                    Rectangle {
+                        anchors.top: delegateBackground.bottom
+                        anchors.topMargin: 5
+                        height: 1
+                        width: parent.width - 30
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        color: Constants.listHeaderColor
+                        visible: delegateRoot.index !== listView.count - 1
                     }
                 }
 

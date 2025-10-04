@@ -7,4 +7,5 @@ Settings {
     property string serverPassword: ""
     property bool listView: true
     property bool foldersFirst: true
+    property bool darkMode: true
 }
