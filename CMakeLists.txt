@@ -108,6 +108,13 @@ qt_add_qml_module(${PROJECT_NAME}
     SOURCES include/filedialoghelper.h src/filedialoghelper.cpp
     QML_FILES qml/CustomMenu.qml
     QML_FILES qml/CustomScrollView.qml
+    QML_FILES qml/Separator.qml
+    QML_FILES qml/RenameDialog.qml
+    QML_FILES qml/NewFolderDialog.qml
+    QML_FILES qml/DeleteConfirmDialog.qml
+    QML_FILES qml/MultiDeleteConfirmDialog.qml
+    QML_FILES qml/ItemContextMenu.qml
+    QML_FILES qml/EmptySpaceMenu.qml
 )
 
 target_link_libraries(${PROJECT_NAME} PRIVATE

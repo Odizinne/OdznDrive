@@ -152,129 +152,24 @@ Rectangle {
         }
     }
 
-    CustomDialog {
+    RenameDialog {
         id: renameDialog
-        title: "Rename"
-        width: 300
-        parent: Overlay.overlay
         anchors.centerIn: parent
-
-        property string itemPath: ""
-        property string itemName: ""
-
-        ColumnLayout {
-            anchors.fill: parent
-            spacing: 10
-
-            TextField {
-                id: renameField
-                Layout.fillWidth: true
-                Layout.preferredHeight: 35
-                placeholderText: "Enter new name"
-                onAccepted: renameDialog.accepted()
-            }
-        }
-
-        standardButtons: Dialog.Ok | Dialog.Cancel
-
-        onAccepted: {
-            if (renameField.text.trim() !== "") {
-                ConnectionManager.renameItem(itemPath, renameField.text.trim())
-            }
-        }
-
-        onAboutToShow: {
-            renameField.text = itemName
-            renameField.selectAll()
-            renameField.forceActiveFocus()
-        }
-
-        onRejected: {
-            renameField.clear()
-        }
     }
 
-    CustomDialog {
+    NewFolderDialog {
         id: newFolderDialog
-        title: "Create New Folder"
-        width: 300
-        parent: Overlay.overlay
         anchors.centerIn: parent
-
-        ColumnLayout {
-            anchors.fill: parent
-            spacing: 10
-
-            TextField {
-                id: folderNameField
-                Layout.fillWidth: true
-                Layout.preferredHeight: 35
-                placeholderText: "Enter folder name"
-                onAccepted: newFolderDialog.accepted()
-            }
-        }
-
-        standardButtons: Dialog.Ok | Dialog.Cancel
-
-        onAccepted: {
-            if (folderNameField.text.trim() !== "") {
-                let newPath = FileModel.currentPath
-                if (newPath && !newPath.endsWith('/')) {
-                    newPath += '/'
-                }
-                newPath += folderNameField.text.trim()
-                ConnectionManager.createDirectory(newPath)
-                folderNameField.clear()
-            }
-        }
-
-        onRejected: {
-            folderNameField.clear()
-        }
     }
 
-    CustomDialog {
+    DeleteConfirmDialog {
         id: deleteConfirmDialog
-        title: "Confirm Delete"
-        property string itemPath: ""
-        property bool isDirectory: false
-        parent: Overlay.overlay
         anchors.centerIn: parent
-
-        Label {
-            text: "Are you sure you want to delete this " +
-                  (deleteConfirmDialog.isDirectory ? "folder" : "file") + "?"
-        }
-
-        standardButtons: Dialog.Yes | Dialog.No
-
-        onAccepted: {
-            if (isDirectory) {
-                ConnectionManager.deleteDirectory(itemPath)
-            } else {
-                ConnectionManager.deleteFile(itemPath)
-            }
-        }
     }
 
-    CustomDialog {
+    MultiDeleteConfirmDialog {
         id: multiDeleteConfirmDialog
-        title: "Confirm Delete"
-        property int itemCount: 0
-        parent: Overlay.overlay
         anchors.centerIn: parent
-
-        Label {
-            text: "Are you sure you want to delete " + multiDeleteConfirmDialog.itemCount + " item(s)?"
-        }
-
-        standardButtons: Dialog.Yes | Dialog.No
-
-        onAccepted: {
-            let paths = root.getCheckedPaths()
-            ConnectionManager.deleteMultiple(paths)
-            root.uncheckAll()
-        }
     }
 
     DropArea {
@@ -337,101 +232,11 @@ Rectangle {
         }
     }
 
-    CustomMenu {
+    EmptySpaceMenu {
         id: emptySpaceMenu
-        width: 200
-
-        MenuItem {
-            text: "New Folder"
-            icon.source: "qrc:/icons/plus.svg"
-            icon.width: 16
-            icon.height: 16
-            enabled: ConnectionManager.authenticated
-            onClicked: newFolderDialog.open()
-        }
-    }
-
-    component ItemContextMenu: CustomMenu {
-        id: contextMenu
-        width: 200
-
-        required property string itemPath
-        required property string itemName
-        required property bool itemIsDir
-
-        MenuItem {
-            text: contextMenu.itemName
-            enabled: false
-        }
-
-        MenuItem {
-            text: "Download"
-            icon.source: "qrc:/icons/download.svg"
-            icon.width: 16
-            icon.height: 16
-            onClicked: {
-                if (contextMenu.itemIsDir) {
-                    root.openFolderDownloadDialog(contextMenu.itemPath, contextMenu.itemName + ".zip")
-                } else {
-                    root.openFileDownloadDialog(contextMenu.itemPath, contextMenu.itemName)
-                }
-            }
-        }
-
-        MenuItem {
-            text: "Rename"
-            icon.source: "qrc:/icons/rename.svg"
-            icon.width: 16
-            icon.height: 16
-            onClicked: {
-                renameDialog.itemPath = contextMenu.itemPath
-                renameDialog.itemName = contextMenu.itemName
-                renameDialog.open()
-            }
-        }
-
-        MenuItem {
-            text: "Delete"
-            icon.source: "qrc:/icons/delete.svg"
-            icon.width: 16
-            icon.height: 16
-            onClicked: {
-                deleteConfirmDialog.itemPath = contextMenu.itemPath
-                deleteConfirmDialog.isDirectory = contextMenu.itemIsDir
-                deleteConfirmDialog.open()
-            }
-        }
-    }
-
-    component EmptySpaceMenu: CustomMenu {
-        width: 200
-
-        MenuItem {
-            text: "New Folder"
-            icon.source: "qrc:/icons/plus.svg"
-            icon.width: 16
-            icon.height: 16
-            enabled: ConnectionManager.authenticated
-            onClicked: newFolderDialog.open()
-        }
-
-        MenuItem {
-            text: "Upload Files"
-            icon.source: "qrc:/icons/upload.svg"
-            icon.width: 16
-            icon.height: 16
-            enabled: ConnectionManager.authenticated
-            onClicked: root.openUploadDialog()
-        }
-
-        MenuItem {
-            text: "Refresh"
-            icon.source: "qrc:/icons/refresh.svg"
-            icon.width: 16
-            icon.height: 16
-            enabled: ConnectionManager.authenticated
-            onClicked: ConnectionManager.listDirectory(FileModel.currentPath, UserSettings.foldersFirst)
-        }
+        onNewFolderClicked: newFolderDialog.open()
+        onUploadFilesClicked: root.openUploadDialog()
+        onRefreshClicked: ConnectionManager.listDirectory(FileModel.currentPath, UserSettings.foldersFirst)
     }
 
     // Shared Breadcrumb Bar Component
@@ -813,7 +618,7 @@ Rectangle {
 
         CustomScrollView {
             id: scrollView
-            ContextMenu.menu: EmptySpaceMenu {}
+            ContextMenu.menu: emptySpaceMenu
 
             ListView {
                 id: listView
@@ -974,14 +779,8 @@ Rectangle {
                         }
                     }
 
-                    Rectangle {
+                    Separator {
                         anchors.top: parentDirItem.bottom
-                        anchors.topMargin: 5
-                        anchors.bottomMargin: 5
-                        height: 1
-                        width: parent.width - 30
-                        anchors.horizontalCenter: parent.horizontalCenter
-                        color: Constants.listHeaderColor
                         visible: parentDirItem.visible && listView.count > 0
                     }
                 }
@@ -997,12 +796,30 @@ Rectangle {
                     property string itemName: model.name
                     property bool itemIsDir: model.isDir
 
-                    ContextMenu.menu: delContextMenu
-                    ItemContextMenu {
-                        id: delContextMenu
-                        itemPath: delegateRoot.model.path
-                        itemName: delegateRoot.model.name
-                        itemIsDir: delegateRoot.model.isDir
+                    ContextMenu.menu: ItemContextMenu {
+                        id: contextMenu
+                        itemPath: delegateRoot.itemPath
+                        itemName: delegateRoot.itemName
+                        itemIsDir: delegateRoot.itemIsDir
+                        onDownloadCLicked: {
+                            if (contextMenu.itemIsDir) {
+                                root.openFolderDownloadDialog(contextMenu.itemPath, contextMenu.itemName + ".zip")
+                            } else {
+                                root.openFileDownloadDialog(contextMenu.itemPath, contextMenu.itemName)
+                            }
+                        }
+
+                        onRenameClicked: {
+                            renameDialog.itemPath = contextMenu.itemPath
+                            renameDialog.itemName = contextMenu.itemName
+                            renameDialog.open()
+                        }
+
+                        onDeleteClicked: {
+                            deleteConfirmDialog.itemPath = contextMenu.itemPath
+                            deleteConfirmDialog.isDirectory = contextMenu.itemIsDir
+                            deleteConfirmDialog.open()
+                        }
                     }
 
                     Rectangle {
@@ -1181,13 +998,8 @@ Rectangle {
                         }
                     }
 
-                    Rectangle {
+                    Separator {
                         anchors.top: delegateBackground.bottom
-                        anchors.topMargin: 5
-                        height: 1
-                        width: parent.width - 30
-                        anchors.horizontalCenter: parent.horizontalCenter
-                        color: Constants.listHeaderColor
                         visible: delegateRoot.index !== listView.count - 1
                     }
                 }
@@ -1214,7 +1026,7 @@ Rectangle {
 
         CustomScrollView {
             id: tileScrollView
-            ContextMenu.menu: EmptySpaceMenu {}
+            ContextMenu.menu: emptySpaceMenu
 
             contentWidth: width
             contentHeight: tileContainer.implicitHeight
@@ -1568,6 +1380,33 @@ Rectangle {
 
                             ContextMenu.menu: tileDelegateRoot.isParentItem ? parentItemMenu : tileContextMenu
 
+                            ItemContextMenu {
+                                id: tileContextMenu
+                                itemPath: tileDelegateRoot.itemPath
+                                itemName: tileDelegateRoot.itemName
+                                itemIsDir: tileDelegateRoot.itemIsDir
+
+                                onDownloadCLicked: {
+                                    if (tileContextMenu.itemIsDir) {
+                                        root.openFolderDownloadDialog(tileContextMenu.itemPath, tileContextMenu.itemName + ".zip")
+                                    } else {
+                                        root.openFileDownloadDialog(tileContextMenu.itemPath, tileContextMenu.itemName)
+                                    }
+                                }
+
+                                onRenameClicked: {
+                                    renameDialog.itemPath = tileContextMenu.itemPath
+                                    renameDialog.itemName = tileContextMenu.itemName
+                                    renameDialog.open()
+                                }
+
+                                onDeleteClicked: {
+                                    deleteConfirmDialog.itemPath = tileContextMenu.itemPath
+                                    deleteConfirmDialog.isDirectory = tileContextMenu.itemIsDir
+                                    deleteConfirmDialog.open()
+                                }
+                            }
+
                             CustomMenu {
                                 id: parentItemMenu
                                 width: 200
@@ -1581,13 +1420,6 @@ Rectangle {
                                         ConnectionManager.listDirectory(FileModel.getParentPath(), UserSettings.foldersFirst)
                                     }
                                 }
-                            }
-
-                            ItemContextMenu {
-                                id: tileContextMenu
-                                itemPath: tileDelegateRoot.itemPath
-                                itemName: tileDelegateRoot.itemName
-                                itemIsDir: tileDelegateRoot.itemIsDir
                             }
                         }
                     }
