@@ -1,12 +1,7 @@
 #define AppName       "OdznDrive"
 #define AppSourceDir  "..\build\OdznDrive\"
 #define AppExeName    "OdznDrive.exe"
-#define                MajorVersion    
-#define                MinorVersion    
-#define                RevisionVersion    
-#define                BuildVersion    
-#define TempVersion    GetVersionComponents(AppSourceDir + "bin\" + AppExeName, MajorVersion, MinorVersion, RevisionVersion, BuildVersion)
-#define AppVersion     str(MajorVersion) + "." + str(MinorVersion) + "." + str(RevisionVersion) + ".0"
+#define AppVersion    "0.1.0.0"
 #define AppPublisher  "Odizinne"
 #define AppURL        "https://github.com/Odizinne/OdznDrive"
 #define AppIcon       "..\Resources\icons\icon.ico"
