@@ -1,12 +1,12 @@
 cmake_minimum_required(VERSION 3.21)
 
-project(OdznDriveServer VERSION 0.3.0 LANGUAGES CXX)
+project(OdznDriveServer VERSION 0.3.1 LANGUAGES CXX)
 
 set(CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}/install" CACHE PATH "Installation directory" FORCE)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-find_package(Qt6 REQUIRED COMPONENTS Core Network WebSockets)
+find_package(Qt6 REQUIRED COMPONENTS Core Gui Network WebSockets)
 
 qt_standard_project_setup()
 
@@ -34,6 +34,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE include)
 
 target_link_libraries(${PROJECT_NAME} PRIVATE
     Qt6::Core
+    Qt6::Gui
     Qt6::Network
     Qt6::WebSockets
 )

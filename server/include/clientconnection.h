@@ -4,6 +4,7 @@
 #include <QObject>
 #include <QWebSocket>
 #include <QFile>
+
 #include "filemanager.h"
 
 class ClientConnection : public QObject
@@ -39,6 +40,7 @@ private:
     void handleCancelUpload(const QJsonObject &params);
     void handleCancelDownload(const QJsonObject &params);
     void handleMoveItem(const QJsonObject &params);
+    void handleGetThumbnail(const QJsonObject &params);
     void handleGetStorageInfo();
     void handleGetServerInfo();
 

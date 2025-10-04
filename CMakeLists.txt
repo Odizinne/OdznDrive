@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.21)
 
-project(OdznDrive VERSION 0.3.0 LANGUAGES CXX)
+project(OdznDrive VERSION 0.3.1 LANGUAGES CXX)
 
 set(CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}/install" CACHE PATH "Installation directory" FORCE)
 set(CMAKE_CXX_STANDARD 17)
@@ -15,11 +15,13 @@ set(SOURCES
     src/main.cpp
     src/connectionmanager.cpp
     src/filemodel.cpp
+    src/imagepreviewprovider.cpp
 )
 
 set(HEADERS
     include/connectionmanager.h
     include/filemodel.h
+    include/imagepreviewprovider.h
 )
 
 set(QML_FILES

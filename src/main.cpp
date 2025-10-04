@@ -1,6 +1,8 @@
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
 #include <QIcon>
+#include "imagepreviewprovider.h"
+#include "connectionmanager.h"
 
 int main(int argc, char *argv[])
 {
@@ -10,7 +12,15 @@ int main(int argc, char *argv[])
     QGuiApplication::setOrganizationName("Odizinne");
     QGuiApplication::setApplicationName("OdznDrive");
     QGuiApplication::setWindowIcon(QIcon(":/icons/icon.png"));
+
     QQmlApplicationEngine engine;
+
+    // Create and register image provider
+    ImagePreviewProvider *imageProvider = new ImagePreviewProvider();
+    engine.addImageProvider("preview", imageProvider);
+
+    // Set the provider in ConnectionManager
+    ConnectionManager::instance()->setImageProvider(imageProvider);
 
     QObject::connect(&engine, &QQmlApplicationEngine::objectCreationFailed,
                      &app, []() { QCoreApplication::exit(-1); },

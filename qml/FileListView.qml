@@ -944,6 +944,8 @@ Rectangle {
                                     Layout.preferredWidth: 24
                                     Layout.preferredHeight: 24
                                     fillMode: Image.PreserveAspectFit
+                                    cache: false
+                                    asynchronous: true
                                     source: {
                                         if (delegateRoot.model.isDir) {
                                             return "qrc:/icons/folder.svg"
@@ -1547,7 +1549,6 @@ Rectangle {
                                         }
                                     }
 
-                                    // Icon for folders and non-image files
                                     Image {
                                         id: iconImage
                                         anchors.centerIn: parent
@@ -1564,22 +1565,16 @@ Rectangle {
                                             return "qrc:/icons/file.svg"
                                         }
                                         smooth: true
-
-                                        // Debug
-                                        onStatusChanged: {
-                                            if (status === Image.Error) {
-                                                console.log("Icon failed to load:", source)
-                                            }
-                                        }
                                     }
 
-                                    // Preview for image files
                                     Image {
                                         id: previewImage
                                         anchors.centerIn: parent
                                         width: parent.width - 16
                                         height: parent.height - 16
                                         fillMode: Image.PreserveAspectFit
+                                        cache: false
+                                        asynchronous: true
                                         visible: !tileDelegateRoot.isParentItem &&
                                                  !tileDelegateRoot.itemIsDir &&
                                                  tileDelegateRoot.model.previewPath !== "" &&
@@ -1587,17 +1582,6 @@ Rectangle {
                                         source: tileDelegateRoot.model.previewPath || ""
                                         smooth: true
                                         mipmap: true
-                                        cache: true
-                                        asynchronous: true
-
-                                        onStatusChanged: {
-                                            if (status === Image.Error) {
-                                                console.log("Preview failed for:", tileDelegateRoot.model.name)
-                                                visible = false
-                                            } else if (status === Image.Ready) {
-                                                console.log("Preview loaded for:", tileDelegateRoot.model.name)
-                                            }
-                                        }
                                     }
                                 }
 

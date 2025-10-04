@@ -1,10 +1,12 @@
 #include "connectionmanager.h"
+#include "imagepreviewprovider.h"
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QJsonArray>
 #include <QFile>
 #include <QFileInfo>
 #include <QUrl>
+#include <QBuffer>
 
 ConnectionManager* ConnectionManager::s_instance = nullptr;
 
@@ -21,6 +23,7 @@ ConnectionManager::ConnectionManager(QObject *parent)
     , m_uploadTotalSize(0)
     , m_uploadSentSize(0)
     , m_serverName("Unknown Server")
+    , m_imageProvider(nullptr)
 {
     connect(m_socket, &QWebSocket::connected, this, &ConnectionManager::onConnected);
     connect(m_socket, &QWebSocket::disconnected, this, &ConnectionManager::onDisconnected);
@@ -44,6 +47,11 @@ ConnectionManager* ConnectionManager::instance()
         s_instance = new ConnectionManager();
     }
     return s_instance;
+}
+
+void ConnectionManager::setImageProvider(ImagePreviewProvider *provider)
+{
+    m_imageProvider = provider;
 }
 
 void ConnectionManager::connectToServer(const QString &url, const QString &password)
@@ -227,6 +235,23 @@ void ConnectionManager::moveItem(const QString &fromPath, const QString &toPath)
     sendCommand("move_item", params);
 }
 
+void ConnectionManager::requestThumbnail(const QString &path)
+{
+    if (!m_authenticated || !m_imageProvider) {
+        return;
+    }
+
+    // Don't request if already cached
+    if (m_imageProvider->hasImage(path)) {
+        return;
+    }
+
+    QJsonObject params;
+    params["path"] = path;
+    params["maxSize"] = 256;
+    sendCommand("get_thumbnail", params);
+}
+
 void ConnectionManager::onConnected()
 {
     setConnected(true);
@@ -247,6 +272,10 @@ void ConnectionManager::onDisconnected()
     cleanupCurrentDownload();
     m_uploadQueue.clear();
     emit uploadQueueSizeChanged();
+
+    if (m_imageProvider) {
+        m_imageProvider->clear();
+    }
 }
 
 void ConnectionManager::onTextMessageReceived(const QString &message)
@@ -529,6 +558,33 @@ void ConnectionManager::handleResponse(const QJsonObject &response)
         QJsonArray filesArray = data["files"].toArray();
         QVariantList files = filesArray.toVariantList();
         emit directoryListed(path, files);
+
+        // Request thumbnails for images
+        if (m_imageProvider) {
+            for (const QVariant &fileVar : files) {
+                QVariantMap fileMap = fileVar.toMap();
+                if (!fileMap["isDir"].toBool()) {
+                    QString fileName = fileMap["name"].toString().toLower();
+                    if (fileName.endsWith(".jpg") || fileName.endsWith(".jpeg") ||
+                        fileName.endsWith(".png") || fileName.endsWith(".gif") ||
+                        fileName.endsWith(".bmp") || fileName.endsWith(".webp")) {
+                        requestThumbnail(fileMap["path"].toString());
+                    }
+                }
+            }
+        }
+    } else if (type == "thumbnail_data") {
+        if (m_imageProvider) {
+            QString path = data["path"].toString();
+            QString base64Data = data["data"].toString();
+
+            QByteArray imageData = QByteArray::fromBase64(base64Data.toUtf8());
+            QImage image;
+            if (image.loadFromData(imageData)) {
+                m_imageProvider->addImage(path, image);
+                emit thumbnailReady(path);
+            }
+        }
     } else if (type == "create_directory") {
         emit directoryCreated(data["path"].toString());
     } else if (type == "delete_file") {

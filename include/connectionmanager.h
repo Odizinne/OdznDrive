@@ -8,6 +8,8 @@
 #include <QQueue>
 #include <qqml.h>
 
+class ImagePreviewProvider;
+
 struct UploadQueueItem {
     QString localPath;
     QString remotePath;
@@ -40,6 +42,8 @@ public:
     QString currentDownloadFileName() const { return m_currentDownloadFileName; }
     bool isZipping() const { return m_isZipping; }
     QString serverName() const { return m_serverName; }
+
+    void setImageProvider(ImagePreviewProvider *provider);
 
     Q_INVOKABLE void connectToServer(const QString &url, const QString &password);
     Q_INVOKABLE void disconnect();
@@ -80,6 +84,7 @@ signals:
     void storageInfo(qint64 total, qint64 used, qint64 available);
     void errorOccurred(const QString &error);
     void serverNameChanged();
+    void thumbnailReady(const QString &path);
 
 private slots:
     void onConnected();
@@ -107,6 +112,7 @@ private:
     void setCurrentDownloadFileName(const QString &fileName);
     void setIsZipping(bool zipping);
     void setServerName(const QString &name);
+    void requestThumbnail(const QString &path);
 
     static ConnectionManager *s_instance;
 
@@ -135,6 +141,9 @@ private:
     qint64 m_uploadSentSize;
     QString m_currentUploadFileName;
     QString m_serverName;
+
+    // Image preview
+    ImagePreviewProvider *m_imageProvider;
 
     static const qint64 CHUNK_SIZE = 1024 * 1024; // 1MB chunks
 };

@@ -71,7 +71,7 @@ QHash<int, QByteArray> FileModel::roleNames() const
 bool FileModel::isImageFile(const QString &fileName) const
 {
     static const QStringList imageExtensions = {
-        ".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp", ".svg", ".ico"
+        ".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp"
     };
 
     QString lower = fileName.toLower();
@@ -100,9 +100,9 @@ void FileModel::loadDirectory(const QString &path, const QVariantList &files)
         item.size = obj["size"].toLongLong();
         item.modified = obj["modified"].toString();
 
-        // Set preview path for images
+        // Set preview path for images using image provider
         if (!item.isDir && isImageFile(item.name)) {
-            item.previewPath = obj["previewUrl"].toString();
+            item.previewPath = "image://preview/" + item.path;
         }
 
         m_files.append(item);

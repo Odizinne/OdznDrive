@@ -5,6 +5,8 @@
 #include <QJsonArray>
 #include <QFileInfo>
 #include <QDir>
+#include <QBuffer>
+#include <QImage>
 
 ClientConnection::ClientConnection(QWebSocket *socket, FileManager *fileManager, QObject *parent)
     : QObject(parent)
@@ -153,9 +155,46 @@ void ClientConnection::handleCommand(const QJsonObject &command)
         handleGetStorageInfo();
     } else if (type == "get_server_info") {
         handleGetServerInfo();
+    } else if (type == "get_thumbnail") {
+        handleGetThumbnail(params);
     } else {
         sendError("Unknown command type");
     }
+}
+
+void ClientConnection::handleGetThumbnail(const QJsonObject &params)
+{
+    QString path = params["path"].toString();
+    int maxSize = params["maxSize"].toInt(256);
+
+    if (!m_fileManager->isValidPath(path)) {
+        sendError("Invalid file path");
+        return;
+    }
+
+    QString absPath = m_fileManager->getAbsolutePath(path);
+    QImage image(absPath);
+
+    if (image.isNull()) {
+        return; // Silently fail for non-image files
+    }
+
+    // Scale image to thumbnail size
+    if (image.width() > maxSize || image.height() > maxSize) {
+        image = image.scaled(maxSize, maxSize, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+    }
+
+    // Convert to JPEG base64
+    QByteArray imageData;
+    QBuffer buffer(&imageData);
+    buffer.open(QIODevice::WriteOnly);
+    image.save(&buffer, "JPEG", 85);
+
+    QJsonObject data;
+    data["path"] = path;
+    data["data"] = QString::fromUtf8(imageData.toBase64());
+
+    sendResponse("thumbnail_data", data);
 }
 
 void ClientConnection::handleGetServerInfo()
