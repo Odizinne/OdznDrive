@@ -14,10 +14,15 @@ ClientConnection::ClientConnection(QWebSocket *socket, FileManager *fileManager,
     , m_uploadFile(nullptr)
     , m_uploadExpectedSize(0)
     , m_uploadReceivedSize(0)
+    , m_downloadFile(nullptr)
+    , m_downloadTotalSize(0)
+    , m_downloadSentSize(0)
+    , m_isZipDownload(false)
 {
     connect(m_socket, &QWebSocket::textMessageReceived, this, &ClientConnection::onTextMessageReceived);
     connect(m_socket, &QWebSocket::binaryMessageReceived, this, &ClientConnection::onBinaryMessageReceived);
     connect(m_socket, &QWebSocket::disconnected, this, &ClientConnection::onDisconnected);
+    connect(m_socket, &QWebSocket::bytesWritten, this, &ClientConnection::onBytesWritten);
 }
 
 ClientConnection::~ClientConnection()
@@ -26,6 +31,8 @@ ClientConnection::~ClientConnection()
         m_uploadFile->close();
         delete m_uploadFile;
     }
+
+    cleanupDownload();
 
     if (m_socket) {
         m_socket->deleteLater();
@@ -89,6 +96,17 @@ void ClientConnection::onDisconnected()
     emit disconnected();
 }
 
+void ClientConnection::onBytesWritten(qint64 bytes)
+{
+    Q_UNUSED(bytes)
+
+    if (m_downloadFile && m_downloadFile->isOpen()) {
+        if (m_socket->bytesToWrite() < CHUNK_SIZE * 2) {
+            sendNextDownloadChunk();
+        }
+    }
+}
+
 void ClientConnection::handleCommand(const QJsonObject &command)
 {
     QString type = command["type"].toString();
@@ -121,10 +139,14 @@ void ClientConnection::handleCommand(const QJsonObject &command)
         handleDeleteDirectory(params);
     } else if (type == "download_file") {
         handleDownloadFile(params);
+    } else if (type == "download_directory") {
+        handleDownloadDirectory(params);
     } else if (type == "upload_file") {
         handleUploadFile(params);
     } else if (type == "cancel_upload") {
         handleCancelUpload(params);
+    } else if (type == "cancel_download") {
+        handleCancelDownload(params);
     } else if (type == "move_item") {
         handleMoveItem(params);
     } else if (type == "get_storage_info") {
@@ -155,7 +177,6 @@ void ClientConnection::handleCancelUpload(const QJsonObject &params)
         delete m_uploadFile;
         m_uploadFile = nullptr;
 
-        // Delete the partial file
         QFile::remove(absPath);
 
         m_uploadPath.clear();
@@ -166,6 +187,17 @@ void ClientConnection::handleCancelUpload(const QJsonObject &params)
         data["success"] = true;
         sendResponse("upload_cancelled", data);
     }
+}
+
+void ClientConnection::handleCancelDownload(const QJsonObject &params)
+{
+    Q_UNUSED(params)
+
+    cleanupDownload();
+
+    QJsonObject data;
+    data["success"] = true;
+    sendResponse("download_cancelled", data);
 }
 
 void ClientConnection::sendResponse(const QString &type, const QJsonObject &data)
@@ -251,18 +283,172 @@ void ClientConnection::handleDeleteDirectory(const QJsonObject &params)
 void ClientConnection::handleDownloadFile(const QJsonObject &params)
 {
     QString path = params["path"].toString();
-    QByteArray data = m_fileManager->readFile(path);
 
-    if (!data.isEmpty()) {
-        QJsonObject metadata;
-        metadata["path"] = path;
-        metadata["size"] = data.size();
-        sendResponse("download_start", metadata);
-
-        m_socket->sendBinaryMessage(data);
-    } else {
-        sendError("Failed to read file");
+    if (!m_fileManager->isValidPath(path)) {
+        sendError("Invalid file path");
+        return;
     }
+
+    QString absPath = m_fileManager->getAbsolutePath(path);
+    QFileInfo fileInfo(absPath);
+
+    if (!fileInfo.exists() || !fileInfo.isFile()) {
+        sendError("File not found");
+        return;
+    }
+
+    cleanupDownload();
+
+    m_downloadFile = new QFile(absPath);
+    if (!m_downloadFile->open(QIODevice::ReadOnly)) {
+        sendError("Failed to open file");
+        delete m_downloadFile;
+        m_downloadFile = nullptr;
+        return;
+    }
+
+    m_downloadPath = path;
+    m_downloadTotalSize = fileInfo.size();
+    m_downloadSentSize = 0;
+    m_isZipDownload = false;
+
+    QJsonObject metadata;
+    metadata["path"] = path;
+    metadata["name"] = fileInfo.fileName();
+    metadata["size"] = m_downloadTotalSize;
+    metadata["isDirectory"] = false;
+    sendResponse("download_start", metadata);
+
+    // Start sending chunks
+    for (int i = 0; i < 3 && m_downloadSentSize < m_downloadTotalSize; ++i) {
+        sendNextDownloadChunk();
+    }
+}
+
+void ClientConnection::handleDownloadDirectory(const QJsonObject &params)
+{
+    QString path = params["path"].toString();
+
+    if (!m_fileManager->isValidPath(path)) {
+        sendError("Invalid directory path");
+        return;
+    }
+
+    QString absPath = m_fileManager->getAbsolutePath(path);
+    QFileInfo fileInfo(absPath);
+
+    if (!fileInfo.exists() || !fileInfo.isDir()) {
+        sendError("Directory not found");
+        return;
+    }
+
+    // Get directory name for zip file
+    QString dirName = fileInfo.fileName();
+    if (dirName.isEmpty()) {
+        dirName = "root";
+    }
+
+    // Notify client that zipping is starting
+    QJsonObject zipData;
+    zipData["status"] = "zipping";
+    zipData["name"] = dirName;
+    sendResponse("download_zipping", zipData);
+
+    // Create zip file using system zip command
+    QString zipPath = m_fileManager->createZipFromDirectory(path, dirName);
+
+    if (zipPath.isEmpty()) {
+        sendError("Failed to create zip file");
+        return;
+    }
+
+    // Now download the zip file
+    QString absZipPath = m_fileManager->getAbsolutePath(zipPath);
+    QFileInfo zipInfo(absZipPath);
+
+    if (!zipInfo.exists()) {
+        sendError("Zip file not found");
+        return;
+    }
+
+    cleanupDownload();
+
+    m_downloadFile = new QFile(absZipPath);
+    if (!m_downloadFile->open(QIODevice::ReadOnly)) {
+        sendError("Failed to open zip file");
+        delete m_downloadFile;
+        m_downloadFile = nullptr;
+        return;
+    }
+
+    m_downloadPath = zipPath;
+    m_downloadTotalSize = zipInfo.size();
+    m_downloadSentSize = 0;
+    m_isZipDownload = true;
+
+    QJsonObject metadata;
+    metadata["path"] = zipPath;
+    metadata["name"] = dirName + ".zip";
+    metadata["size"] = m_downloadTotalSize;
+    metadata["isDirectory"] = true;
+    sendResponse("download_start", metadata);
+
+    // Start sending chunks
+    for (int i = 0; i < 3 && m_downloadSentSize < m_downloadTotalSize; ++i) {
+        sendNextDownloadChunk();
+    }
+}
+
+void ClientConnection::sendNextDownloadChunk()
+{
+    if (!m_downloadFile || !m_downloadFile->isOpen()) {
+        return;
+    }
+
+    if (m_downloadSentSize >= m_downloadTotalSize) {
+        cleanupDownload();
+
+        QJsonObject data;
+        data["path"] = m_downloadPath;
+        data["success"] = true;
+        sendResponse("download_complete", data);
+
+        // Delete temporary zip file if this was a directory download
+        if (m_isZipDownload) {
+            QString absPath = m_fileManager->getAbsolutePath(m_downloadPath);
+            QFile::remove(absPath);
+        }
+
+        m_downloadPath.clear();
+        m_isZipDownload = false;
+        return;
+    }
+
+    if (m_socket->bytesToWrite() >= CHUNK_SIZE * 2) {
+        return;
+    }
+
+    QByteArray chunk = m_downloadFile->read(CHUNK_SIZE);
+    if (chunk.isEmpty() && m_downloadSentSize < m_downloadTotalSize) {
+        sendError("Failed to read file chunk");
+        cleanupDownload();
+        return;
+    }
+
+    m_socket->sendBinaryMessage(chunk);
+    m_downloadSentSize += chunk.size();
+}
+
+void ClientConnection::cleanupDownload()
+{
+    if (m_downloadFile) {
+        m_downloadFile->close();
+        delete m_downloadFile;
+        m_downloadFile = nullptr;
+    }
+
+    m_downloadTotalSize = 0;
+    m_downloadSentSize = 0;
 }
 
 void ClientConnection::handleUploadFile(const QJsonObject &params)
@@ -285,10 +471,8 @@ void ClientConnection::handleUploadFile(const QJsonObject &params)
     QString absPath = m_fileManager->getAbsolutePath(path);
     QFileInfo fileInfo(absPath);
 
-    // Create parent directory if it doesn't exist
     QDir().mkpath(fileInfo.absolutePath());
 
-    // Clean up any existing upload file
     if (m_uploadFile) {
         m_uploadFile->close();
         delete m_uploadFile;

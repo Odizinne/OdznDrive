@@ -13,7 +13,10 @@ ConnectionManager::ConnectionManager(QObject *parent)
     , m_socket(new QWebSocket(QString(), QWebSocketProtocol::VersionLatest, this))
     , m_connected(false)
     , m_authenticated(false)
+    , m_downloadFile(nullptr)
     , m_downloadExpectedSize(0)
+    , m_downloadReceivedSize(0)
+    , m_isZipping(false)
     , m_uploadFile(nullptr)
     , m_uploadTotalSize(0)
     , m_uploadSentSize(0)
@@ -133,7 +136,6 @@ void ConnectionManager::uploadFile(const QString &localPath, const QString &remo
     }
     file.close();
 
-    // Check if queue is empty BEFORE adding
     bool queueWasEmpty = m_uploadQueue.isEmpty();
 
     UploadQueueItem item;
@@ -142,7 +144,6 @@ void ConnectionManager::uploadFile(const QString &localPath, const QString &remo
     m_uploadQueue.enqueue(item);
     emit uploadQueueSizeChanged();
 
-    // Only start upload if queue was empty AND nothing is currently uploading
     if (queueWasEmpty && !m_uploadFile && m_uploadLocalPath.isEmpty()) {
         startNextUpload();
     }
@@ -176,12 +177,31 @@ void ConnectionManager::downloadFile(const QString &remotePath, const QString &l
         return;
     }
 
-    m_downloadPath = localPath;
-    m_downloadBuffer.clear();
+    cleanupCurrentDownload();
+
+    m_downloadRemotePath = remotePath;
+    m_downloadLocalPath = localPath;
 
     QJsonObject params;
     params["path"] = remotePath;
     sendCommand("download_file", params);
+}
+
+void ConnectionManager::downloadDirectory(const QString &remotePath, const QString &localPath)
+{
+    if (!m_authenticated) {
+        emit errorOccurred("Not authenticated");
+        return;
+    }
+
+    cleanupCurrentDownload();
+
+    m_downloadRemotePath = remotePath;
+    m_downloadLocalPath = localPath;
+
+    QJsonObject params;
+    params["path"] = remotePath;
+    sendCommand("download_directory", params);
 }
 
 void ConnectionManager::getStorageInfo()
@@ -224,6 +244,7 @@ void ConnectionManager::onDisconnected()
     setStatusMessage("Disconnected");
 
     cleanupCurrentUpload();
+    cleanupCurrentDownload();
     m_uploadQueue.clear();
     emit uploadQueueSizeChanged();
 }
@@ -238,30 +259,45 @@ void ConnectionManager::onTextMessageReceived(const QString &message)
 
 void ConnectionManager::onBinaryMessageReceived(const QByteArray &message)
 {
-    if (m_downloadPath.isEmpty()) {
+    if (!m_downloadFile || m_downloadLocalPath.isEmpty()) {
         return;
     }
 
     m_downloadBuffer.append(message);
+    m_downloadReceivedSize += message.size();
 
     if (m_downloadExpectedSize > 0) {
-        int progress = (m_downloadBuffer.size() * 100) / m_downloadExpectedSize;
+        int progress = (m_downloadReceivedSize * 100) / m_downloadExpectedSize;
         emit downloadProgress(progress);
     }
 
-    if (m_downloadBuffer.size() >= m_downloadExpectedSize) {
-        QFile file(m_downloadPath);
-        if (file.open(QIODevice::WriteOnly)) {
-            file.write(m_downloadBuffer);
-            file.close();
-            emit downloadComplete(m_downloadPath);
-        } else {
-            emit errorOccurred("Failed to save file: " + m_downloadPath);
+    if (m_downloadReceivedSize >= m_downloadExpectedSize) {
+        if (!m_downloadFile->write(m_downloadBuffer)) {
+            emit errorOccurred("Failed to write to file");
         }
+        m_downloadFile->flush();
+        m_downloadFile->close();
+        delete m_downloadFile;
+        m_downloadFile = nullptr;
 
-        m_downloadPath.clear();
+        emit downloadComplete(m_downloadLocalPath);
+
+        m_downloadRemotePath.clear();
+        m_downloadLocalPath.clear();
         m_downloadBuffer.clear();
         m_downloadExpectedSize = 0;
+        m_downloadReceivedSize = 0;
+        setCurrentDownloadFileName("");
+        setIsZipping(false);
+    } else {
+        if (m_downloadBuffer.size() >= CHUNK_SIZE) {
+            if (!m_downloadFile->write(m_downloadBuffer)) {
+                emit errorOccurred("Failed to write to file");
+                cleanupCurrentDownload();
+                return;
+            }
+            m_downloadBuffer.clear();
+        }
     }
 }
 
@@ -298,7 +334,6 @@ void ConnectionManager::sendNextChunk()
         return;
     }
 
-    // Don't send if socket buffer is too full
     if (m_socket->bytesToWrite() >= CHUNK_SIZE * 2) {
         return;
     }
@@ -314,7 +349,6 @@ void ConnectionManager::sendNextChunk()
     m_socket->sendBinaryMessage(chunk);
     m_uploadSentSize += chunk.size();
 
-    // Calculate progress based on what's actually been sent through the socket
     qint64 effectivelyTransferred = m_uploadSentSize - m_socket->bytesToWrite();
     int progress = (effectivelyTransferred * 100) / m_uploadTotalSize;
     if (progress > 100) progress = 100;
@@ -351,7 +385,6 @@ void ConnectionManager::cancelUpload()
         emit errorOccurred("Upload cancelled by user");
     }
 
-    // Start next upload in queue if any
     startNextUpload();
 }
 
@@ -361,6 +394,19 @@ void ConnectionManager::cancelAllUploads()
     m_uploadQueue.clear();
     emit uploadQueueSizeChanged();
     setStatusMessage("All uploads cancelled");
+}
+
+void ConnectionManager::cancelDownload()
+{
+    if (!m_downloadRemotePath.isEmpty()) {
+        QJsonObject params;
+        sendCommand("cancel_download", params);
+    }
+
+    cleanupCurrentDownload();
+    setStatusMessage("Download cancelled");
+    setIsZipping(false);
+    emit errorOccurred("Download cancelled by user");
 }
 
 void ConnectionManager::startNextUpload()
@@ -376,7 +422,7 @@ void ConnectionManager::startNextUpload()
     QFile file(item.localPath);
     if (!file.open(QIODevice::ReadOnly)) {
         emit errorOccurred("Cannot open file: " + item.localPath);
-        startNextUpload(); // Try next file
+        startNextUpload();
         return;
     }
 
@@ -404,11 +450,44 @@ void ConnectionManager::cleanupCurrentUpload()
     }
 }
 
+void ConnectionManager::cleanupCurrentDownload()
+{
+    if (m_downloadFile) {
+        m_downloadFile->close();
+        delete m_downloadFile;
+        m_downloadFile = nullptr;
+    }
+
+    m_downloadBuffer.clear();
+    m_downloadExpectedSize = 0;
+    m_downloadReceivedSize = 0;
+    m_downloadRemotePath.clear();
+    m_downloadLocalPath.clear();
+    setCurrentDownloadFileName("");
+    setIsZipping(false);
+}
+
 void ConnectionManager::setCurrentUploadFileName(const QString &fileName)
 {
     if (m_currentUploadFileName != fileName) {
         m_currentUploadFileName = fileName;
         emit currentUploadFileNameChanged();
+    }
+}
+
+void ConnectionManager::setCurrentDownloadFileName(const QString &fileName)
+{
+    if (m_currentDownloadFileName != fileName) {
+        m_currentDownloadFileName = fileName;
+        emit currentDownloadFileNameChanged();
+    }
+}
+
+void ConnectionManager::setIsZipping(bool zipping)
+{
+    if (m_isZipping != zipping) {
+        m_isZipping = zipping;
+        emit isZippingChanged();
     }
 }
 
@@ -422,17 +501,18 @@ void ConnectionManager::handleResponse(const QJsonObject &response)
         setStatusMessage("Error: " + error);
         emit errorOccurred(error);
 
-        // If we got an error and we're not authenticated yet, disconnect
         if (!m_authenticated) {
             m_socket->close();
         }
 
-        // Clean up current upload and try next one
         cleanupCurrentUpload();
         m_uploadLocalPath.clear();
         m_uploadRemotePath.clear();
         m_uploadTotalSize = 0;
         m_uploadSentSize = 0;
+
+        cleanupCurrentDownload();
+
         startNextUpload();
         return;
     }
@@ -442,7 +522,6 @@ void ConnectionManager::handleResponse(const QJsonObject &response)
             setAuthenticated(true);
             setStatusMessage("Authenticated");
         } else {
-            // Authentication failed, disconnect
             m_socket->close();
         }
     } else if (type == "list_directory") {
@@ -459,11 +538,9 @@ void ConnectionManager::handleResponse(const QJsonObject &response)
     } else if (type == "move_item") {
         emit itemMoved(data["from"].toString(), data["to"].toString());
     } else if (type == "upload_ready") {
-        // Start chunked upload
         m_uploadFile = new QFile(m_uploadLocalPath);
         if (m_uploadFile->open(QIODevice::ReadOnly)) {
             emit uploadProgress(0);
-            // Send initial chunks to fill the pipeline
             for (int i = 0; i < 3 && m_uploadSentSize < m_uploadTotalSize; ++i) {
                 sendNextChunk();
             }
@@ -484,14 +561,36 @@ void ConnectionManager::handleResponse(const QJsonObject &response)
             m_uploadFile = nullptr;
         }
 
-        // Start next upload in queue
         startNextUpload();
     } else if (type == "upload_cancelled") {
-        // Server confirmed cancellation
         setStatusMessage("Upload cancelled");
+    } else if (type == "download_zipping") {
+        QString name = data["name"].toString();
+        setCurrentDownloadFileName(name);
+        setIsZipping(true);
     } else if (type == "download_start") {
+        QString fileName = data["name"].toString();
         m_downloadExpectedSize = data["size"].toVariant().toLongLong();
+        m_downloadReceivedSize = 0;
+        m_downloadBuffer.clear();
+
+        setCurrentDownloadFileName(fileName);
+        setIsZipping(false);
+
+        m_downloadFile = new QFile(m_downloadLocalPath);
+        if (!m_downloadFile->open(QIODevice::WriteOnly)) {
+            emit errorOccurred("Failed to create download file");
+            delete m_downloadFile;
+            m_downloadFile = nullptr;
+            cleanupCurrentDownload();
+            return;
+        }
+
         emit downloadProgress(0);
+    } else if (type == "download_complete") {
+        // Server confirms download is complete
+    } else if (type == "download_cancelled") {
+        setStatusMessage("Download cancelled");
     } else if (type == "storage_info") {
         qint64 total = data["total"].toVariant().toLongLong();
         qint64 used = data["used"].toVariant().toLongLong();

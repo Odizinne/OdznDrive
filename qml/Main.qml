@@ -39,7 +39,9 @@ ApplicationWindow {
 
         function onErrorOccurred(error) {
             uploadProgressDialog.close()
-            if (error !== "Upload cancelled by user") {
+            downloadProgressDialog.close()
+
+            if (error !== "Upload cancelled by user" && error !== "Download cancelled by user") {
                 errorDialog.text = error
                 errorDialog.open()
 
@@ -63,11 +65,12 @@ ApplicationWindow {
         }
 
         function onDownloadProgress(progress) {
-            // Could add download progress UI here
+            downloadProgressDialog.progress = progress
+            downloadProgressDialog.open()
         }
 
         function onDownloadComplete(path) {
-            // Could add download complete notification here
+            downloadProgressDialog.close()
         }
 
         function onDirectoryCreated(path) {
@@ -234,6 +237,42 @@ ApplicationWindow {
 
             Label {
                 text: uploadProgressDialog.progress + "%"
+                Layout.alignment: Qt.AlignHCenter
+            }
+        }
+    }
+
+    Dialog {
+        id: downloadProgressDialog
+        title: ConnectionManager.isZipping ? "Compressing Folder" : "Downloading File"
+        modal: true
+        closePolicy: Popup.NoAutoClose
+        anchors.centerIn: parent
+        standardButtons: Dialog.Cancel
+
+        property int progress: 0
+
+        onRejected: {
+            ConnectionManager.cancelDownload()
+        }
+
+        ColumnLayout {
+            spacing: 15
+
+            Label {
+                text: ConnectionManager.currentDownloadFileName || "Preparing download..."
+                font.bold: true
+            }
+
+            ProgressBar {
+                Layout.preferredWidth: 350
+                Layout.fillWidth: true
+                indeterminate: ConnectionManager.isZipping
+                value: ConnectionManager.isZipping ? 0 : (downloadProgressDialog.progress / 100)
+            }
+
+            Label {
+                text: ConnectionManager.isZipping ? "Compressing..." : downloadProgressDialog.progress + "%"
                 Layout.alignment: Qt.AlignHCenter
             }
         }

@@ -64,26 +64,55 @@ Rectangle {
         }
     }
 
-    // Download dialog
     FileDialog {
-        id: downloadDialog
+        id: fileDownloadDialog
         fileMode: FileDialog.SaveFile
         property string remotePath: ""
+        property string defaultName: ""
+
+        currentFile: defaultName ? "file:///" + defaultName : ""
 
         onAccepted: {
             let localPath = selectedFile.toString()
 
-            // Remove file:// prefix to get local path
             if (localPath.startsWith("file://")) {
                 localPath = localPath.substring(7)
             }
 
-            // On Windows, remove leading slash before drive letter
             if (localPath.match(/^\/[A-Za-z]:\//)) {
                 localPath = localPath.substring(1)
             }
 
             ConnectionManager.downloadFile(remotePath, localPath)
+        }
+    }
+
+    // Folder download dialog
+    FileDialog {
+        id: folderDownloadDialog
+        fileMode: FileDialog.SaveFile
+        property string remotePath: ""
+        property string defaultName: ""
+
+        currentFile: defaultName ? "file:///" + defaultName : ""
+        nameFilters: ["Zip files (*.zip)"]
+
+        onAccepted: {
+            let localPath = selectedFile.toString()
+
+            if (localPath.startsWith("file://")) {
+                localPath = localPath.substring(7)
+            }
+
+            if (localPath.match(/^\/[A-Za-z]:\//)) {
+                localPath = localPath.substring(1)
+            }
+
+            if (!localPath.endsWith(".zip")) {
+                localPath += ".zip"
+            }
+
+            ConnectionManager.downloadDirectory(remotePath, localPath)
         }
     }
 
@@ -647,10 +676,16 @@ Rectangle {
                         icon.source: "qrc:/icons/download.svg"
                         icon.width: 16
                         icon.height: 16
-                        visible: !delegateRoot.model.isDir
                         onClicked: {
-                            downloadDialog.remotePath = delegateRoot.model.path
-                            downloadDialog.open()
+                            if (delegateRoot.model.isDir) {
+                                folderDownloadDialog.remotePath = delegateRoot.model.path
+                                folderDownloadDialog.defaultName = delegateRoot.model.name + ".zip"
+                                folderDownloadDialog.open()
+                            } else {
+                                fileDownloadDialog.remotePath = delegateRoot.model.path
+                                fileDownloadDialog.defaultName = delegateRoot.model.name
+                                fileDownloadDialog.open()
+                            }
                         }
                     }
                     MenuItem {

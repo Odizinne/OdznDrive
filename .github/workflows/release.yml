@@ -80,16 +80,6 @@ jobs:
         with:
           tag_name: ${{ env.new_tag }}
           release_name: OdznDrive ${{ env.new_tag }}
-          body: |
-            ## OdznDrive Release ${{ env.new_tag }}
-            
-            **Client Version:** ${{ steps.client_version.outputs.version }}
-            **Server Version:** ${{ steps.server_version.outputs.version }}
-            
-            ### Downloads
-            - **Windows Client:** `OdznDrive_win64_msvc2022.zip` or use the installer
-            - **Linux Client:** `OdznDrive_linux_x64.zip`
-            - **Linux Server:** `OdznDriveServer_linux_x64.zip`
           draft: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

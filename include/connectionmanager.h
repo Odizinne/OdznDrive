@@ -24,6 +24,8 @@ class ConnectionManager : public QObject
     Q_PROPERTY(QString statusMessage READ statusMessage NOTIFY statusMessageChanged)
     Q_PROPERTY(int uploadQueueSize READ uploadQueueSize NOTIFY uploadQueueSizeChanged)
     Q_PROPERTY(QString currentUploadFileName READ currentUploadFileName NOTIFY currentUploadFileNameChanged)
+    Q_PROPERTY(QString currentDownloadFileName READ currentDownloadFileName NOTIFY currentDownloadFileNameChanged)
+    Q_PROPERTY(bool isZipping READ isZipping NOTIFY isZippingChanged)
     Q_PROPERTY(QString serverName READ serverName NOTIFY serverNameChanged)
 
 public:
@@ -35,6 +37,8 @@ public:
     QString statusMessage() const { return m_statusMessage; }
     int uploadQueueSize() const { return m_uploadQueue.size(); }
     QString currentUploadFileName() const { return m_currentUploadFileName; }
+    QString currentDownloadFileName() const { return m_currentDownloadFileName; }
+    bool isZipping() const { return m_isZipping; }
     QString serverName() const { return m_serverName; }
 
     Q_INVOKABLE void connectToServer(const QString &url, const QString &password);
@@ -47,10 +51,12 @@ public:
     Q_INVOKABLE void uploadFile(const QString &localPath, const QString &remotePath);
     Q_INVOKABLE void uploadFiles(const QStringList &localPaths, const QString &remoteDir);
     Q_INVOKABLE void downloadFile(const QString &remotePath, const QString &localPath);
+    Q_INVOKABLE void downloadDirectory(const QString &remotePath, const QString &localPath);
     Q_INVOKABLE void moveItem(const QString &fromPath, const QString &toPath);
     Q_INVOKABLE void getStorageInfo();
     Q_INVOKABLE void cancelUpload();
     Q_INVOKABLE void cancelAllUploads();
+    Q_INVOKABLE void cancelDownload();
     Q_INVOKABLE void getServerInfo();
 
 signals:
@@ -59,6 +65,8 @@ signals:
     void statusMessageChanged();
     void uploadQueueSizeChanged();
     void currentUploadFileNameChanged();
+    void currentDownloadFileNameChanged();
+    void isZippingChanged();
 
     void directoryListed(const QString &path, const QVariantList &files);
     void directoryCreated(const QString &path);
@@ -94,7 +102,10 @@ private:
     void sendNextChunk();
     void startNextUpload();
     void cleanupCurrentUpload();
+    void cleanupCurrentDownload();
     void setCurrentUploadFileName(const QString &fileName);
+    void setCurrentDownloadFileName(const QString &fileName);
+    void setIsZipping(bool zipping);
     void setServerName(const QString &name);
 
     static ConnectionManager *s_instance;
@@ -105,10 +116,17 @@ private:
     QString m_statusMessage;
     QString m_password;
 
-    QString m_downloadPath;
+    // Download state
+    QString m_downloadRemotePath;
+    QString m_downloadLocalPath;
+    QFile *m_downloadFile;
     QByteArray m_downloadBuffer;
     qint64 m_downloadExpectedSize;
+    qint64 m_downloadReceivedSize;
+    QString m_currentDownloadFileName;
+    bool m_isZipping;
 
+    // Upload state
     QQueue<UploadQueueItem> m_uploadQueue;
     QString m_uploadLocalPath;
     QString m_uploadRemotePath;
