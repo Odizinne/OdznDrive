@@ -304,35 +304,9 @@ Rectangle {
         standardButtons: Dialog.Yes | Dialog.No
 
         onAccepted: {
-            let items = root.getCheckedItems()
-
-            // Sort: files first, then directories (to avoid deleting parent before children)
-            items.sort((a, b) => {
-                if (a.isDir === b.isDir) return 0
-                return a.isDir ? 1 : -1
-            })
-
+            let paths = root.getCheckedPaths()
+            ConnectionManager.deleteMultiple(paths)
             root.uncheckAll()
-
-            // Delete items sequentially with small delay
-            let index = 0
-            let deleteNext = function() {
-                if (index >= items.length) return
-
-                let item = items[index]
-                if (item.isDir) {
-                    ConnectionManager.deleteDirectory(item.path)
-                } else {
-                    ConnectionManager.deleteFile(item.path)
-                }
-
-                index++
-                if (index < items.length) {
-                    Qt.callLater(deleteNext)
-                }
-            }
-
-            deleteNext()
         }
     }
 

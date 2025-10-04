@@ -520,6 +520,28 @@ void ConnectionManager::setIsZipping(bool zipping)
     }
 }
 
+void ConnectionManager::deleteMultiple(const QStringList &paths)
+{
+    if (!m_authenticated) {
+        emit errorOccurred("Not authenticated");
+        return;
+    }
+
+    if (paths.isEmpty()) {
+        emit errorOccurred("No paths provided");
+        return;
+    }
+
+    QJsonObject params;
+    QJsonArray pathsArray;
+    for (const QString &path : paths) {
+        pathsArray.append(path);
+    }
+    params["paths"] = pathsArray;
+
+    sendCommand("delete_multiple", params);
+}
+
 void ConnectionManager::handleResponse(const QJsonObject &response)
 {
     QString type = response["type"].toString();
@@ -558,10 +580,8 @@ void ConnectionManager::handleResponse(const QJsonObject &response)
         QJsonArray filesArray = data["files"].toArray();
         QVariantList files = filesArray.toVariantList();
 
-        // First emit the directory listing
         emit directoryListed(path, files);
 
-        // Request thumbnails for images (or use cached ones)
         if (m_imageProvider) {
             for (const QVariant &fileVar : files) {
                 QVariantMap fileMap = fileVar.toMap();
@@ -573,11 +593,9 @@ void ConnectionManager::handleResponse(const QJsonObject &response)
 
                         QString filePath = fileMap["path"].toString();
 
-                        // If already cached, emit signal immediately
                         if (m_imageProvider->hasImage(filePath)) {
                             emit thumbnailReady(filePath);
                         } else {
-                            // Otherwise request from server
                             requestThumbnail(filePath);
                         }
                     }
@@ -602,6 +620,9 @@ void ConnectionManager::handleResponse(const QJsonObject &response)
         emit fileDeleted(data["path"].toString());
     } else if (type == "delete_directory") {
         emit directoryDeleted(data["path"].toString());
+    } else if (type == "delete_multiple") {
+        // Refresh the current directory after multiple deletions
+        emit directoryListed(QString(), QVariantList());
     } else if (type == "move_item") {
         emit itemMoved(data["from"].toString(), data["to"].toString());
     } else if (type == "upload_ready") {

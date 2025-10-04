@@ -265,31 +265,34 @@ QString FileManager::createZipFromMultiplePaths(const QStringList &paths, const 
     // Remove existing zip if any
     QFile::remove(zipPath);
 
-    // Prepare arguments for zip command
+    // Prepare arguments for zip command using RELATIVE paths
     QStringList args;
     args << "-r" << zipPath;
 
-    // Add all paths
+    // Add all paths as relative paths
     for (const QString &path : paths) {
         if (!isValidPath(path)) {
             continue;
         }
+
+        // Use the relative path directly, not absolute
         QString absPath = getAbsolutePath(path);
         if (QFileInfo(absPath).exists()) {
-            args << absPath;
+            // Add the relative path, which is what we want in the zip
+            args << path;
         }
     }
 
-    if (args.size() <= 2) { // Only "-r" and zipPath, no actual files
+    if (args.size() <= 2) {
         return QString();
     }
 
-    // Use system zip command
+    // Set working directory to storage root so relative paths work
     QProcess process;
     process.setWorkingDirectory(m_rootPath);
     process.start("zip", args);
 
-    if (!process.waitForFinished(300000)) { // 5 minutes timeout
+    if (!process.waitForFinished(300000)) {
         return QString();
     }
 
@@ -297,6 +300,5 @@ QString FileManager::createZipFromMultiplePaths(const QStringList &paths, const 
         return QString();
     }
 
-    // Return relative path to the zip file
     return ".temp/" + zipFileName;
 }

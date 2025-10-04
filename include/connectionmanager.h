@@ -58,6 +58,7 @@ public:
     Q_INVOKABLE void downloadDirectory(const QString &remotePath, const QString &localPath);
     Q_INVOKABLE void moveItem(const QString &fromPath, const QString &toPath);
     Q_INVOKABLE void downloadMultiple(const QStringList &remotePaths, const QString &localPath, const QString &zipName);
+    Q_INVOKABLE void deleteMultiple(const QStringList &paths);
     Q_INVOKABLE void getStorageInfo();
     Q_INVOKABLE void cancelUpload();
     Q_INVOKABLE void cancelAllUploads();

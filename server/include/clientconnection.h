@@ -42,6 +42,7 @@ private:
     void handleMoveItem(const QJsonObject &params);
     void handleGetThumbnail(const QJsonObject &params);
     void handleDownloadMultiple(const QJsonObject &params);
+    void handleDeleteMultiple(const QJsonObject &params);
     void handleGetStorageInfo();
     void handleGetServerInfo();
 

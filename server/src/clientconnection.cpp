@@ -139,6 +139,8 @@ void ClientConnection::handleCommand(const QJsonObject &command)
         handleDeleteFile(params);
     } else if (type == "delete_directory") {
         handleDeleteDirectory(params);
+    } else if (type == "delete_multiple") {
+        handleDeleteMultiple(params);
     } else if (type == "download_file") {
         handleDownloadFile(params);
     } else if (type == "download_directory") {
@@ -162,6 +164,59 @@ void ClientConnection::handleCommand(const QJsonObject &command)
     } else {
         sendError("Unknown command type");
     }
+}
+
+void ClientConnection::handleDeleteMultiple(const QJsonObject &params)
+{
+    QJsonArray pathsArray = params["paths"].toArray();
+
+    if (pathsArray.isEmpty()) {
+        sendError("No paths provided");
+        return;
+    }
+
+    QStringList deletedFiles;
+    QStringList deletedDirs;
+    QStringList failed;
+
+    for (const QJsonValue &val : pathsArray) {
+        QString path = val.toString();
+
+        if (!m_fileManager->isValidPath(path)) {
+            failed.append(path);
+            continue;
+        }
+
+        QString absPath = m_fileManager->getAbsolutePath(path);
+        QFileInfo info(absPath);
+
+        if (!info.exists()) {
+            failed.append(path);
+            continue;
+        }
+
+        if (info.isDir()) {
+            if (m_fileManager->deleteDirectory(path)) {
+                deletedDirs.append(path);
+            } else {
+                failed.append(path);
+            }
+        } else {
+            if (m_fileManager->deleteFile(path)) {
+                deletedFiles.append(path);
+            } else {
+                failed.append(path);
+            }
+        }
+    }
+
+    QJsonObject data;
+    data["deletedFiles"] = QJsonArray::fromStringList(deletedFiles);
+    data["deletedDirs"] = QJsonArray::fromStringList(deletedDirs);
+    data["failed"] = QJsonArray::fromStringList(failed);
+    data["success"] = failed.isEmpty();
+
+    sendResponse("delete_multiple", data);
 }
 
 void ClientConnection::handleGetThumbnail(const QJsonObject &params)
