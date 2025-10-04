@@ -1,5 +1,5 @@
 #define AppName       "OdznDrive"
-#define AppSourceDir  "..\build\OdznDrive\"
+#define AppSourceDir  "..\build\install\"
 #define AppExeName    "OdznDrive.exe"
 #define AppVersion    "0.1.0.0"
 #define AppPublisher  "Odizinne"
