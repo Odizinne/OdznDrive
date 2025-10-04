@@ -31,7 +31,7 @@ jobs:
         with:
           version: ${{ env.QT_VERSION }}
           arch: 'win64_msvc2022_64'
-          modules: 'qtwebsockets'
+          modules: 'qtwebsockets qt5compat'
           add-tools-to-path: true
           cache: true
 
