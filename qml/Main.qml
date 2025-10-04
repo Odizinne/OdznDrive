@@ -161,6 +161,7 @@ ApplicationWindow {
                 Layout.preferredWidth: 300
                 Layout.preferredHeight: 35
                 placeholderText: "Filter..."
+                onTextChanged: FilterProxyModel.filterText = text
             }
 
             Item {
@@ -218,7 +219,7 @@ ApplicationWindow {
         closePolicy: Popup.NoAutoClose
         anchors.centerIn: parent
         standardButtons: Dialog.Cancel
-
+        Material.roundedScale: Material.ExtraSmallScale
         property int progress: 0
 
         onRejected: {
@@ -261,6 +262,7 @@ ApplicationWindow {
         closePolicy: Popup.NoAutoClose
         anchors.centerIn: parent
         standardButtons: Dialog.Cancel
+        Material.roundedScale: Material.ExtraSmallScale
 
         property int progress: 0
 
@@ -297,6 +299,7 @@ ApplicationWindow {
         property alias text: errorLabel.text
         modal: true
         anchors.centerIn: parent
+        Material.roundedScale: Material.ExtraSmallScale
 
         Label {
             id: errorLabel
@@ -308,5 +311,7 @@ ApplicationWindow {
     SettingsDialog {
         id: settingsDialog
         anchors.centerIn: parent
+        Material.roundedScale: Material.ExtraSmallScale
+
     }
 }

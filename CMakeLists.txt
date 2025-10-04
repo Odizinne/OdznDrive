@@ -102,6 +102,7 @@ qt_add_qml_module(${PROJECT_NAME}
     URI Odizinne.OdznDrive
     VERSION 1.0
     QML_FILES ${QML_FILES} ${QML_SINGLETONS}
+    SOURCES include/filterproxymodel.h src/filterproxymodel.cpp
 )
 
 target_link_libraries(${PROJECT_NAME} PRIVATE

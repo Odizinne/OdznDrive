@@ -33,8 +33,8 @@ Rectangle {
 
     function checkAll() {
         let newChecked = {}
-        for (let i = 0; i < FileModel.count; i++) {
-            let item = FileModel.data(FileModel.index(i, 0), 257) // PathRole
+        for (let i = 0; i < FilterProxyModel.rowCount(); i++) {
+            let item = FilterProxyModel.data(FilterProxyModel.index(i, 0), 258) // PathRole
             newChecked[item] = true
         }
         checkedItems = newChecked
@@ -68,14 +68,14 @@ Rectangle {
 
     function getCheckedItems() {
         let items = []
-        for (let i = 0; i < FileModel.count; i++) {
-            let idx = FileModel.index(i, 0)
-            let path = FileModel.data(idx, 258) // PathRole
+        for (let i = 0; i < FilterProxyModel.rowCount(); i++) {
+            let idx = FilterProxyModel.index(i, 0)
+            let path = FilterProxyModel.data(idx, 258) // PathRole
             if (isItemChecked(path)) {
                 items.push({
                     path: path,
-                    name: FileModel.data(idx, 257), // NameRole
-                    isDir: FileModel.data(idx, 259) // IsDirRole
+                    name: FilterProxyModel.data(idx, 257), // NameRole
+                    isDir: FilterProxyModel.data(idx, 259) // IsDirRole
                 })
             }
         }
@@ -230,6 +230,7 @@ Rectangle {
         modal: true
         parent: Overlay.overlay
         anchors.centerIn: parent
+        Material.roundedScale: Material.ExtraSmallScale
 
         ColumnLayout {
             spacing: 10
@@ -273,6 +274,7 @@ Rectangle {
         modal: true
         parent: Overlay.overlay
         anchors.centerIn: parent
+        Material.roundedScale: Material.ExtraSmallScale
 
         Label {
             text: "Are you sure you want to delete this " +
@@ -297,6 +299,7 @@ Rectangle {
         modal: true
         parent: Overlay.overlay
         anchors.centerIn: parent
+        Material.roundedScale: Material.ExtraSmallScale
 
         Label {
             text: "Are you sure you want to delete " + multiDeleteConfirmDialog.itemCount + " item(s)?"
@@ -808,7 +811,7 @@ Rectangle {
             ListView {
                 id: listView
                 width: scrollView.width
-                model: FileModel
+                model: FilterProxyModel
                 interactive: false
 
                 headerPositioning: ListView.OverlayHeader
@@ -832,15 +835,15 @@ Rectangle {
                             CheckBox {
                                 id: headerCheckbox
                                 Layout.preferredWidth: 30
-                                checked: root.checkedCount > 0 && root.checkedCount === FileModel.count
-                                tristate: root.checkedCount > 0 && root.checkedCount < FileModel.count
+                                checked: root.checkedCount > 0 && root.checkedCount === FilterProxyModel.rowCount()
+                                tristate: root.checkedCount > 0 && root.checkedCount < FilterProxyModel.rowCount()
                                 checkState: {
                                     if (root.checkedCount === 0) return Qt.Unchecked
-                                    if (root.checkedCount === FileModel.count) return Qt.Checked
+                                    if (root.checkedCount === FilterProxyModel.rowCount()) return Qt.Checked
                                     return Qt.PartiallyChecked
                                 }
                                 onClicked: {
-                                    if (root.checkedCount === FileModel.count) {
+                                    if (root.checkedCount === FilterProxyModel.rowCount()) {
                                         root.uncheckAll()
                                     } else {
                                         root.checkAll()
@@ -1174,9 +1177,9 @@ Rectangle {
                 Label {
                     anchors.centerIn: parent
                     text: ConnectionManager.authenticated ?
-                              (FileModel.count === 0 ? "Empty folder\n\nDrag files here to upload" : "") :
+                              (FilterProxyModel.rowCount() === 0 ? "Empty folder\n\nDrag files here to upload" : "") :
                               "Not connected"
-                    visible: FileModel.count === 0
+                    visible: FilterProxyModel.rowCount() === 0
                     opacity: 0.5
                     font.pixelSize: 16
                     horizontalAlignment: Text.AlignHCenter
@@ -1203,7 +1206,7 @@ Rectangle {
                         let endRow = bottomRight.row
 
                         for (let row = startRow; row <= endRow; row++) {
-                            let path = FileModel.data(FileModel.index(row, 0), 257) // PathRole
+                            let path = FileModel.data(FileModel.index(row, 0), 258) // PathRole
                             let previewPath = FileModel.data(FileModel.index(row, 0), 262) // PreviewPathRole
 
                             // Find and update in tile model
@@ -1240,14 +1243,14 @@ Rectangle {
                             })
                         }
 
-                        for (let i = 0; i < FileModel.count; i++) {
+                        for (let i = 0; i < FilterProxyModel.rowCount(); i++) {
                             append({
-                                "name": FileModel.data(FileModel.index(i, 0), 257),        // NameRole
-                                "path": FileModel.data(FileModel.index(i, 0), 258),        // PathRole
-                                "isDir": FileModel.data(FileModel.index(i, 0), 259),       // IsDirRole
-                                "size": FileModel.data(FileModel.index(i, 0), 260),        // SizeRole
-                                "modified": FileModel.data(FileModel.index(i, 0), 261),    // ModifiedRole
-                                "previewPath": FileModel.data(FileModel.index(i, 0), 262) || "",  // PreviewPathRole
+                                "name": FilterProxyModel.data(FilterProxyModel.index(i, 0), 257),        // NameRole
+                                "path": FilterProxyModel.data(FilterProxyModel.index(i, 0), 258),        // PathRole
+                                "isDir": FilterProxyModel.data(FilterProxyModel.index(i, 0), 259),       // IsDirRole
+                                "size": FilterProxyModel.data(FilterProxyModel.index(i, 0), 260),        // SizeRole
+                                "modified": FilterProxyModel.data(FilterProxyModel.index(i, 0), 261),    // ModifiedRole
+                                "previewPath": FilterProxyModel.data(FilterProxyModel.index(i, 0), 262) || "",  // PreviewPathRole
                                 "isParent": false
                             })
                         }
@@ -1262,6 +1265,13 @@ Rectangle {
                         tileModel.refresh()
                     }
                     function onCountChanged() {
+                        tileModel.refresh()
+                    }
+                }
+
+                Connections {
+                    target: FilterProxyModel
+                    function onFilterTextChanged() {
                         tileModel.refresh()
                     }
                 }
@@ -1521,9 +1531,9 @@ Rectangle {
                 Label {
                     anchors.centerIn: parent
                     text: ConnectionManager.authenticated ?
-                              (FileModel.count === 0 ? "Empty folder\n\nDrag files here to upload" : "") :
+                              (FilterProxyModel.rowCount() === 0 ? "Empty folder\n\nDrag files here to upload" : "") :
                               "Not connected"
-                    visible: FileModel.count === 0
+                    visible: FilterProxyModel.rowCount() === 0
                     opacity: 0.5
                     font.pixelSize: 16
                     horizontalAlignment: Text.AlignHCenter
