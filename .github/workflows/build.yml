@@ -55,24 +55,24 @@ jobs:
           name: OdznDrive_win64_msvc2022
           path: build/OdznDrive_win64_msvc2022.zip
 
-      - name: Update .iss version
-        shell: pwsh
-        run: |
-          $content = Get-Content tools/installer.iss
-          $new = $content -replace '(?<=#define AppVersion ")[^"]+', "${{ steps.client_version.outputs.version }}"
-          Set-Content tools/installer.iss -Value $new
+#      - name: Update .iss version
+#        shell: pwsh
+#        run: |
+#          $content = Get-Content tools/installer.iss
+#          $new = $content -replace '(?<=#define AppVersion ")[^"]+', "${{ steps.client_version.outputs.version }}"
+#          Set-Content tools/installer.iss -Value $new
 
-      - name: Create Client Installer
-        shell: pwsh
-        run: |
-          $env:Path += ";${env:ProgramFiles(x86)}\Inno Setup 6"
-          iscc.exe tools/installer.iss
+#      - name: Create Client Installer
+#        shell: pwsh
+#        run: |
+#          $env:Path += ";${env:ProgramFiles(x86)}\Inno Setup 6"
+#          iscc.exe tools/installer.iss
 
-      - name: Upload Client Installer
-        uses: actions/upload-artifact@v4
-        with:
-          name: OdznDrive_Installer
-          path: tools/Output/OdznDrive_Installer.exe
+#      - name: Upload Client Installer
+#        uses: actions/upload-artifact@v4
+#        with:
+#          name: OdznDrive_Installer
+#          path: tools/Output/OdznDrive_Installer.exe
 
   build-linux:
     runs-on: ubuntu-22.04
@@ -122,4 +122,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: OdznDriveServer_linux_x64
+
           path: build-server/OdznDriveServer_linux_x64.zip
