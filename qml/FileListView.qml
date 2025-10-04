@@ -4,7 +4,6 @@ import QtQuick
 import QtQuick.Controls.Material
 import QtQuick.Controls.impl
 import QtQuick.Layouts
-import QtQuick.Dialogs
 import Odizinne.OdznDrive
 import Qt5Compat.GraphicalEffects
 
@@ -73,10 +72,10 @@ Rectangle {
             let path = FilterProxyModel.data(idx, 258) // PathRole
             if (isItemChecked(path)) {
                 items.push({
-                    path: path,
-                    name: FilterProxyModel.data(idx, 257), // NameRole
-                    isDir: FilterProxyModel.data(idx, 259) // IsDirRole
-                })
+                               path: path,
+                               name: FilterProxyModel.data(idx, 257), // NameRole
+                               isDir: FilterProxyModel.data(idx, 259) // IsDirRole
+                           })
             }
         }
         return items
@@ -114,108 +113,37 @@ Rectangle {
     property string draggedItemName: ""
     property var currentDropTarget: null
 
-    // File upload dialog
-    FileDialog {
-        id: uploadDialog
-        fileMode: FileDialog.OpenFiles
-        onAccepted: {
-            let files = []
-            for (let i = 0; i < selectedFiles.length; i++) {
-                let fileUrl = selectedFiles[i].toString()
-
-                let localPath = fileUrl
-                if (localPath.startsWith("file://")) {
-                    localPath = localPath.substring(7)
-                }
-
-                if (localPath.match(/^\/[A-Za-z]:\//)) {
-                    localPath = localPath.substring(1)
-                }
-
-                files.push(localPath)
-            }
-
-            if (files.length > 0) {
-                ConnectionManager.uploadFiles(files, FileModel.currentPath)
-            }
+    function openUploadDialog() {
+        let files = FileDialogHelper.openFiles("Select Files to Upload")
+        if (files.length > 0) {
+            ConnectionManager.uploadFiles(files, FileModel.currentPath)
         }
     }
 
-    FileDialog {
-        id: fileDownloadDialog
-        fileMode: FileDialog.SaveFile
-        property string remotePath: ""
-        property string defaultName: ""
-
-        currentFile: defaultName ? "file:///" + defaultName : ""
-
-        onAccepted: {
-            let localPath = selectedFile.toString()
-
-            if (localPath.startsWith("file://")) {
-                localPath = localPath.substring(7)
-            }
-
-            if (localPath.match(/^\/[A-Za-z]:\//)) {
-                localPath = localPath.substring(1)
-            }
-
+    function openFileDownloadDialog(remotePath, defaultName) {
+        let localPath = FileDialogHelper.saveFile("Save File", defaultName, "")
+        if (localPath !== "") {
             ConnectionManager.downloadFile(remotePath, localPath)
         }
     }
 
-    FileDialog {
-        id: folderDownloadDialog
-        fileMode: FileDialog.SaveFile
-        property string remotePath: ""
-        property string defaultName: ""
-
-        currentFile: defaultName ? "file:///" + defaultName : ""
-        nameFilters: ["Zip files (*.zip)"]
-
-        onAccepted: {
-            let localPath = selectedFile.toString()
-
-            if (localPath.startsWith("file://")) {
-                localPath = localPath.substring(7)
-            }
-
-            if (localPath.match(/^\/[A-Za-z]:\//)) {
-                localPath = localPath.substring(1)
-            }
-
+    function openFolderDownloadDialog(remotePath, defaultName) {
+        let localPath = FileDialogHelper.saveFile("Save Folder as Zip", defaultName, "Zip files (*.zip)")
+        if (localPath !== "") {
             if (!localPath.endsWith(".zip")) {
                 localPath += ".zip"
             }
-
             ConnectionManager.downloadDirectory(remotePath, localPath)
         }
     }
 
-    FileDialog {
-        id: multiDownloadDialog
-        fileMode: FileDialog.SaveFile
-        property var itemPaths: []
-
-        currentFile: "file:///" + root.getMultiDownloadDefaultName()
-        nameFilters: ["Zip files (*.zip)"]
-
-        onAccepted: {
-            let localPath = selectedFile.toString()
-
-            if (localPath.startsWith("file://")) {
-                localPath = localPath.substring(7)
-            }
-
-            if (localPath.match(/^\/[A-Za-z]:\//)) {
-                localPath = localPath.substring(1)
-            }
-
+    function openMultiDownloadDialog(itemPaths) {
+        let localPath = FileDialogHelper.saveFile("Save as Zip", root.getMultiDownloadDefaultName(), "Zip files (*.zip)")
+        if (localPath !== "") {
             if (!localPath.endsWith(".zip")) {
                 localPath += ".zip"
             }
 
-            // Extract zip name without extension
             let fileName = localPath.split('/').pop().split('\\').pop()
             let zipName = fileName.endsWith('.zip') ? fileName.slice(0, -4) : fileName
 
@@ -402,13 +330,9 @@ Rectangle {
             icon.height: 16
             onClicked: {
                 if (contextMenu.itemIsDir) {
-                    folderDownloadDialog.remotePath = contextMenu.itemPath
-                    folderDownloadDialog.defaultName = contextMenu.itemName + ".zip"
-                    folderDownloadDialog.open()
+                    root.openFolderDownloadDialog(items[0].path, items[0].name + ".zip")
                 } else {
-                    fileDownloadDialog.remotePath = contextMenu.itemPath
-                    fileDownloadDialog.defaultName = contextMenu.itemName
-                    fileDownloadDialog.open()
+                    root.openFileDownloadDialog(contextMenu.itemPath, contextMenu.itemName)
                 }
             }
         }
@@ -451,7 +375,7 @@ Rectangle {
             icon.width: 16
             icon.height: 16
             enabled: ConnectionManager.authenticated
-            onClicked: uploadDialog.open()
+            onClicked: root.openUploadDialog()
         }
 
         MenuItem {
@@ -495,7 +419,7 @@ Rectangle {
                 icon.width: 16
                 icon.height: 16
                 enabled: ConnectionManager.authenticated
-                onClicked: uploadDialog.open()
+                onClicked: root.openUploadDialog()
                 ToolTip.visible: hovered
                 ToolTip.text: "Upload files"
                 Material.roundedScale: Material.ExtraSmallScale
@@ -527,18 +451,12 @@ Rectangle {
                     // If only 1 item, treat as single download
                     if (items.length === 1) {
                         if (items[0].isDir) {
-                            folderDownloadDialog.remotePath = items[0].path
-                            folderDownloadDialog.defaultName = items[0].name + ".zip"
-                            folderDownloadDialog.open()
+                            root.openFolderDownloadDialog(items[0].path, items[0].name + ".zip")
                         } else {
-                            fileDownloadDialog.remotePath = items[0].path
-                            fileDownloadDialog.defaultName = items[0].name
-                            fileDownloadDialog.open()
+                            root.openFileDownloadDialog(contextMenu.itemPath, contextMenu.itemName)
                         }
                     } else {
-                        // Multiple items - download as zip
-                        multiDownloadDialog.itemPaths = root.getCheckedPaths()
-                        multiDownloadDialog.open()
+                        root.openMultiDownloadDialog(root.getCheckedPaths())
                     }
                 }
                 ToolTip.visible: hovered
@@ -1172,11 +1090,11 @@ Rectangle {
                     anchors.centerIn: parent
                     text: ConnectionManager.authenticated ?
                               (FileModel.count === 0 ? "Empty folder\n\nDrag files here to upload" :
-                               FilterProxyModel.rowCount() === 0 ? "No items match filter" : "") :
+                                                       FilterProxyModel.rowCount() === 0 ? "No items match filter" : "") :
                               "Not connected"
                     visible: ConnectionManager.authenticated ?
-                                (FileModel.count === 0 || FilterProxyModel.rowCount() === 0) :
-                                true
+                                 (FileModel.count === 0 || FilterProxyModel.rowCount() === 0) :
+                                 true
                     opacity: 0.5
                     font.pixelSize: 16
                     horizontalAlignment: Text.AlignHCenter
@@ -1230,26 +1148,26 @@ Rectangle {
 
                         if (FileModel.canGoUp) {
                             append({
-                                "name": "..",
-                                "path": FileModel.getParentPath(),
-                                "isDir": true,
-                                "size": 0,
-                                "modified": "",
-                                "previewPath": "",
-                                "isParent": true
-                            })
+                                       "name": "..",
+                                       "path": FileModel.getParentPath(),
+                                       "isDir": true,
+                                       "size": 0,
+                                       "modified": "",
+                                       "previewPath": "",
+                                       "isParent": true
+                                   })
                         }
 
                         for (let i = 0; i < FilterProxyModel.rowCount(); i++) {
                             append({
-                                "name": FilterProxyModel.data(FilterProxyModel.index(i, 0), 257),        // NameRole
-                                "path": FilterProxyModel.data(FilterProxyModel.index(i, 0), 258),        // PathRole
-                                "isDir": FilterProxyModel.data(FilterProxyModel.index(i, 0), 259),       // IsDirRole
-                                "size": FilterProxyModel.data(FilterProxyModel.index(i, 0), 260),        // SizeRole
-                                "modified": FilterProxyModel.data(FilterProxyModel.index(i, 0), 261),    // ModifiedRole
-                                "previewPath": FilterProxyModel.data(FilterProxyModel.index(i, 0), 262) || "",  // PreviewPathRole
-                                "isParent": false
-                            })
+                                       "name": FilterProxyModel.data(FilterProxyModel.index(i, 0), 257),        // NameRole
+                                       "path": FilterProxyModel.data(FilterProxyModel.index(i, 0), 258),        // PathRole
+                                       "isDir": FilterProxyModel.data(FilterProxyModel.index(i, 0), 259),       // IsDirRole
+                                       "size": FilterProxyModel.data(FilterProxyModel.index(i, 0), 260),        // SizeRole
+                                       "modified": FilterProxyModel.data(FilterProxyModel.index(i, 0), 261),    // ModifiedRole
+                                       "previewPath": FilterProxyModel.data(FilterProxyModel.index(i, 0), 262) || "",  // PreviewPathRole
+                                       "isParent": false
+                                   })
                         }
                     }
 
@@ -1570,11 +1488,11 @@ Rectangle {
                     anchors.centerIn: parent
                     text: ConnectionManager.authenticated ?
                               (FileModel.count === 0 ? "Empty folder\n\nDrag files here to upload" :
-                               FilterProxyModel.rowCount() === 0 ? "No items match filter" : "") :
+                                                       FilterProxyModel.rowCount() === 0 ? "No items match filter" : "") :
                               "Not connected"
                     visible: ConnectionManager.authenticated ?
-                                (FileModel.count === 0 || FilterProxyModel.rowCount() === 0) :
-                                true
+                                 (FileModel.count === 0 || FilterProxyModel.rowCount() === 0) :
+                                 true
                     opacity: 0.5
                     font.pixelSize: 16
                     horizontalAlignment: Text.AlignHCenter

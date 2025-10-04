@@ -108,7 +108,7 @@ jobs:
           mkdir -p "$INSTALL_DIR"
           echo "Copying files to $INSTALL_DIR..."
           cp -r "$SCRIPT_DIR"/* "$INSTALL_DIR/"
-          chmod +x "$INSTALL_DIR/OdznDrive"
+          chmod +x "$INSTALL_DIR/bin/OdznDrive"
           echo "Creating desktop entry..."
           cat > "$DESKTOP_FILE" << DESKTOP_EOF
           [Desktop Entry]
@@ -116,7 +116,7 @@ jobs:
           Type=Application
           Name=OdznDrive
           Comment=OdznDrive Client
-          Exec=$INSTALL_DIR/OdznDrive
+          Exec=$INSTALL_DIR/bin/OdznDrive
           Icon=$INSTALL_DIR/icon.png
           Terminal=false
           Categories=Utility;Network;

@@ -7,7 +7,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_AUTORCC ON)
 
-find_package(Qt6 REQUIRED COMPONENTS Core Qml Quick Network WebSockets)
+find_package(Qt6 REQUIRED COMPONENTS Core Qml Quick Network WebSockets Widgets)
 
 qt_standard_project_setup(REQUIRES 6.8)
 
@@ -104,6 +104,7 @@ qt_add_qml_module(${PROJECT_NAME}
     QML_FILES ${QML_FILES} ${QML_SINGLETONS}
     SOURCES include/filterproxymodel.h src/filterproxymodel.cpp
     QML_FILES qml/CustomDialog.qml
+    SOURCES include/filedialoghelper.h src/filedialoghelper.cpp
 )
 
 target_link_libraries(${PROJECT_NAME} PRIVATE
@@ -112,6 +113,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     Qt6::Quick
     Qt6::Network
     Qt6::WebSockets
+    Qt6::Widgets
 )
 
 install(TARGETS ${PROJECT_NAME}

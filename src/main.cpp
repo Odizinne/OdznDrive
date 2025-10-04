@@ -1,4 +1,4 @@
-#include <QGuiApplication>
+#include <QApplication>
 #include <QQmlApplicationEngine>
 #include <QIcon>
 #include "imagepreviewprovider.h"
@@ -7,11 +7,11 @@
 int main(int argc, char *argv[])
 {
     qputenv("QT_QUICK_CONTROLS_MATERIAL_VARIANT", "Dense");
-    QGuiApplication app(argc, argv);
+    QApplication app(argc, argv);
 
-    QGuiApplication::setOrganizationName("Odizinne");
-    QGuiApplication::setApplicationName("OdznDrive");
-    QGuiApplication::setWindowIcon(QIcon(":/icons/icon.png"));
+    QApplication::setOrganizationName("Odizinne");
+    QApplication::setApplicationName("OdznDrive");
+    QApplication::setWindowIcon(QIcon(":/icons/icon.png"));
 
     QQmlApplicationEngine engine;
 
