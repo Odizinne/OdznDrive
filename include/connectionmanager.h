@@ -86,6 +86,7 @@ signals:
     void storageInfo(qint64 total, qint64 used, qint64 available);
     void errorOccurred(const QString &error);
     void serverNameChanged();
+    void multipleDeleted();
     void thumbnailReady(const QString &path);
 
 private slots:

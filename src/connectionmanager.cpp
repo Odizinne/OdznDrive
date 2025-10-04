@@ -621,8 +621,7 @@ void ConnectionManager::handleResponse(const QJsonObject &response)
     } else if (type == "delete_directory") {
         emit directoryDeleted(data["path"].toString());
     } else if (type == "delete_multiple") {
-        // Refresh the current directory after multiple deletions
-        emit directoryListed(QString(), QVariantList());
+        emit multipleDeleted();
     } else if (type == "move_item") {
         emit itemMoved(data["from"].toString(), data["to"].toString());
     } else if (type == "upload_ready") {

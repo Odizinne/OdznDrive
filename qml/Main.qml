@@ -93,6 +93,11 @@ ApplicationWindow {
             storageUpdateTimer.restart()
         }
 
+        function onMultipleDeleted() {
+            ConnectionManager.listDirectory(FileModel.currentPath)
+            storageUpdateTimer.restart()
+        }
+
         function onItemMoved(fromPath, toPath) {
             ConnectionManager.listDirectory(FileModel.currentPath)
             storageUpdateTimer.restart()

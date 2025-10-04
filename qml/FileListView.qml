@@ -69,12 +69,13 @@ Rectangle {
     function getCheckedItems() {
         let items = []
         for (let i = 0; i < FileModel.count; i++) {
-            let path = FileModel.data(FileModel.index(i, 0), 257) // PathRole
+            let idx = FileModel.index(i, 0)
+            let path = FileModel.data(idx, 258) // PathRole
             if (isItemChecked(path)) {
                 items.push({
                     path: path,
-                    name: FileModel.data(FileModel.index(i, 0), 256), // NameRole
-                    isDir: FileModel.data(FileModel.index(i, 0), 258) // IsDirRole
+                    name: FileModel.data(idx, 257), // NameRole
+                    isDir: FileModel.data(idx, 259) // IsDirRole
                 })
             }
         }
@@ -803,7 +804,7 @@ Rectangle {
                         }
 
                         property bool itemIsDir: true
-                        property string itemPath: FileModel.getParentPath()
+                        property string itemPath: FileModel.canGoUp ? FileModel.getParentPath() : ""
                         property string itemName: ".."
 
                         Rectangle {
