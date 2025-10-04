@@ -1456,8 +1456,9 @@ Rectangle {
                     height: Math.ceil(count / Math.floor(width / cellWidth)) * cellHeight
                     interactive: false
 
-                    property int targetColumns: 6
-                    property real cellSize: Math.floor(width / targetColumns)
+                    property int minCellWidth: 210
+                    property int columns: Math.max(1, Math.floor(width / minCellWidth))
+                    property real cellSize: Math.floor(width / columns)
                     cellWidth: cellSize
                     cellHeight: cellSize
 
@@ -1511,7 +1512,7 @@ Rectangle {
 
                                 Item {
                                     Layout.fillWidth: true
-                                    Layout.fillHeight: true
+                                    Layout.preferredHeight: parent.height * (2/3) - 1
                                     Layout.margins: 4
 
                                     CheckBox {
@@ -1539,32 +1540,23 @@ Rectangle {
 
                                 Item {
                                     Layout.fillWidth: true
-                                    Layout.preferredHeight: 50
-                                    Layout.margins: 8
-
-                                    ColumnLayout {
+                                    Layout.preferredHeight: parent.height * (1/3)
+                                    Layout.leftMargin: 8
+                                    Layout.rightMargin: 8
+                                    Label {
+                                        //anchors.left: parent.left
+                                        //anchors.right: parent.right
+                                        //anchors.verticalCenter: parent.verticalCenter
                                         anchors.fill: parent
-                                        spacing: 2
-
-                                        Label {
-                                            text: tileDelegateRoot.itemName
-                                            Layout.fillWidth: true
-                                            elide: Text.ElideMiddle
-                                            horizontalAlignment: Text.AlignHCenter
-                                            font.bold: tileDelegateRoot.isParentItem ? true : root.isItemChecked(tileDelegateRoot.itemPath)
-                                            font.pixelSize: 12
-                                            wrapMode: Text.NoWrap
-                                            opacity: tileDelegateRoot.isParentItem ? 0.7 : 1.0
-                                        }
-
-                                        Label {
-                                            text: tileDelegateRoot.itemIsDir ? "" : root.formatSize(tileDelegateRoot.model.size)
-                                            Layout.fillWidth: true
-                                            horizontalAlignment: Text.AlignHCenter
-                                            font.pixelSize: 10
-                                            opacity: 0.6
-                                            visible: !tileDelegateRoot.itemIsDir
-                                        }
+                                        anchors.bottomMargin: 10
+                                        text: tileDelegateRoot.itemName
+                                        elide: Text.ElideMiddle
+                                        horizontalAlignment: Text.AlignHCenter
+                                        verticalAlignment: Text.AlignVCenter
+                                        font.bold: tileDelegateRoot.isParentItem ? true : root.isItemChecked(tileDelegateRoot.itemPath)
+                                        font.pixelSize: 12
+                                        wrapMode: Text.NoWrap
+                                        opacity: tileDelegateRoot.isParentItem ? 0.7 : 1.0
                                     }
                                 }
                             }
