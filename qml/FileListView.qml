@@ -1108,6 +1108,32 @@ Rectangle {
             id: tileScrollView
             clip: true
 
+            // Add connections for thumbnail updates
+                    Connections {
+                        target: FileModel
+
+                        function onDataChanged(topLeft, bottomRight, roles) {
+                            // When FileModel data changes (thumbnail arrives), refresh tile model
+                            if (roles.length === 0 || roles.includes(262)) { // PreviewPathRole = 262
+                                let startRow = topLeft.row
+                                let endRow = bottomRight.row
+
+                                for (let row = startRow; row <= endRow; row++) {
+                                    let path = FileModel.data(FileModel.index(row, 0), 257) // PathRole
+                                    let previewPath = FileModel.data(FileModel.index(row, 0), 262) // PreviewPathRole
+
+                                    // Find and update in tile model
+                                    for (let i = 0; i < tileModel.count; i++) {
+                                        if (tileModel.get(i).path === path && !tileModel.get(i).isParent) {
+                                            tileModel.setProperty(i, "previewPath", previewPath)
+                                            break
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
             Item {
                 width: tileScrollView.width
                 implicitHeight: breadcrumbBar.height + tileGrid.y + tileGrid.height + 10

@@ -100,8 +100,13 @@ void FileModel::loadDirectory(const QString &path, const QVariantList &files)
         item.size = obj["size"].toLongLong();
         item.modified = obj["modified"].toString();
 
-        // DON'T set preview path here - wait for thumbnail to arrive
-        item.previewPath = "";
+        // Check if thumbnail already exists in cache
+        if (!item.isDir && isImageFile(item.name)) {
+            // Will be set by ConnectionManager if thumbnail exists in cache
+            item.previewPath = "";
+        } else {
+            item.previewPath = "";
+        }
 
         m_files.append(item);
     }

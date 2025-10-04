@@ -557,9 +557,11 @@ void ConnectionManager::handleResponse(const QJsonObject &response)
         QString path = data["path"].toString();
         QJsonArray filesArray = data["files"].toArray();
         QVariantList files = filesArray.toVariantList();
+
+        // First emit the directory listing
         emit directoryListed(path, files);
 
-        // Request thumbnails for images
+        // Request thumbnails for images (or use cached ones)
         if (m_imageProvider) {
             for (const QVariant &fileVar : files) {
                 QVariantMap fileMap = fileVar.toMap();
@@ -568,7 +570,16 @@ void ConnectionManager::handleResponse(const QJsonObject &response)
                     if (fileName.endsWith(".jpg") || fileName.endsWith(".jpeg") ||
                         fileName.endsWith(".png") || fileName.endsWith(".gif") ||
                         fileName.endsWith(".bmp") || fileName.endsWith(".webp")) {
-                        requestThumbnail(fileMap["path"].toString());
+
+                        QString filePath = fileMap["path"].toString();
+
+                        // If already cached, emit signal immediately
+                        if (m_imageProvider->hasImage(filePath)) {
+                            emit thumbnailReady(filePath);
+                        } else {
+                            // Otherwise request from server
+                            requestThumbnail(filePath);
+                        }
                     }
                 }
             }
