@@ -153,18 +153,19 @@ ApplicationWindow {
 
             RowLayout {
                 anchors.fill: parent
-                anchors.leftMargin: 5
+                anchors.leftMargin: 8
                 anchors.rightMargin: 10
-                spacing: 4
+                spacing: 7
 
                 ToolButton {
-                    icon.source: "qrc:/icons/cog.svg"
-                    icon.width: 16
-                    icon.height: 16
-                    onClicked: settingsDialog.open()
-                    ToolTip.visible: hovered
-                    ToolTip.text: "Settings"
-                    Material.roundedScale: Material.ExtraSmallScale
+                    Layout.preferredHeight: 50
+                    Layout.preferredWidth: 50
+                    Image {
+                        anchors.centerIn: parent
+                        sourceSize.height: 28
+                        sourceSize.width: 28
+                        source: "qrc:/icons/icon.png"
+                    }
                 }
 
                 TextField {
@@ -249,6 +250,7 @@ ApplicationWindow {
 
     FileListView {
         anchors.fill: parent
+        onShowSettings: settingsDialog.open()
     }
 
     CustomDialog {

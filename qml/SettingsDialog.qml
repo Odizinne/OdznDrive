@@ -4,6 +4,7 @@ import QtQuick.Controls.Material
 import Odizinne.OdznDrive
 
 CustomDialog {
+    id: root
     title: "Settings"
     standardButtons: Dialog.NoButton
     closePolicy: ConnectionManager.connected ? Popup.CloseOnEscape | Popup.CloseOnPressOutside : Popup.NoAutoClose
@@ -14,11 +15,9 @@ CustomDialog {
             flat: true
             text: "Close"
             enabled: ConnectionManager.connected
-            onClicked: close()
+            onClicked: root.close()
         }
     }
-
-
 
     ColumnLayout {
         anchors.fill: parent
@@ -104,6 +103,18 @@ CustomDialog {
                     UserSettings.foldersFirst = checked
                     ConnectionManager.listDirectory(FileModel.currentPath, checked)
                 }
+            }
+        }
+
+        RowLayout {
+            Label {
+                text: "Dark mode"
+                Layout.fillWidth: true
+            }
+
+            Switch {
+                checked: UserSettings.darkMode
+                onClicked: UserSettings.darkMode = checked
             }
         }
     }

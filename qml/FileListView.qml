@@ -11,7 +11,7 @@ import Qt5Compat.GraphicalEffects
 Rectangle {
     id: root
     color: Constants.backgroundColor
-
+    signal showSettings()
     property var checkedItems: ({})
     property int checkedCount: 0
 
@@ -155,19 +155,18 @@ Rectangle {
     CustomDialog {
         id: newFolderDialog
         title: "Create New Folder"
+        width: 300
         parent: Overlay.overlay
         anchors.centerIn: parent
 
         ColumnLayout {
+            anchors.fill: parent
             spacing: 10
-
-            Label {
-                text: "Folder name:"
-            }
 
             TextField {
                 id: folderNameField
-                Layout.preferredWidth: 300
+                Layout.fillWidth: true
+                Layout.preferredHeight: 35
                 placeholderText: "Enter folder name"
                 onAccepted: newFolderDialog.accepted()
             }
@@ -395,8 +394,14 @@ Rectangle {
         height: 45
         gradient: Gradient {
             orientation: Gradient.Horizontal
-            GradientStop { position: 0.0; color: "#E07830" }
-            GradientStop { position: 1.0; color: "#F0A060" }
+            GradientStop {
+                position: 0.0
+                color: !UserSettings.darkMode ? "#E07830" : "#F0A860"
+            }
+            GradientStop {
+                position: 1.0
+                color: !UserSettings.darkMode ? "#F0A060" : "#FFB880"
+            }
         }
         radius: 4
         layer.enabled: true
@@ -456,6 +461,7 @@ Rectangle {
                 icon.source: "qrc:/icons/download.svg"
                 icon.width: 16
                 icon.height: 16
+                icon.color: "black"
                 enabled: ConnectionManager.authenticated
                 ToolButton {
                     visible: root.checkedCount > 0
@@ -723,6 +729,17 @@ Rectangle {
                 icon.color: "black"
                 ToolTip.visible: hovered
                 ToolTip.text: UserSettings.listView ? "Tile view" : "List view"
+                Material.roundedScale: Material.ExtraSmallScale
+            }
+
+            ToolButton {
+                icon.source: "qrc:/icons/cog.svg"
+                icon.width: 16
+                icon.height: 16
+                onClicked: root.showSettings()
+                ToolTip.visible: hovered
+                ToolTip.text: "Settings"
+                icon.color: "black"
                 Material.roundedScale: Material.ExtraSmallScale
             }
         }
