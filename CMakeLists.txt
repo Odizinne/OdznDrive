@@ -115,6 +115,10 @@ qt_add_qml_module(${PROJECT_NAME}
     QML_FILES qml/MultiDeleteConfirmDialog.qml
     QML_FILES qml/ItemContextMenu.qml
     QML_FILES qml/EmptySpaceMenu.qml
+    QML_FILES qml/ErrorDialog.qml
+    QML_FILES qml/DownloadProgressDialog.qml
+    QML_FILES qml/UploadProgressDialog.qml
+    QML_FILES qml/FooterBar.qml
 )
 
 target_link_libraries(${PROJECT_NAME} PRIVATE

@@ -109,9 +109,9 @@ ApplicationWindow {
         }
 
         function onStorageInfo(total, used, available) {
-            storageBar.value = used / total
-            occupiedLabel.text = root.formatStorage(used)
-            totalLabel.text = root.formatStorage(total)
+            footerBar.storagePercentage = used / total
+            footerBar.storageOccupied = root.formatStorage(used)
+            footerBar.storageTotal = root.formatStorage(total)
         }
 
         function onUploadQueueSizeChanged() {
@@ -141,115 +141,8 @@ ApplicationWindow {
         }
     }
 
-    footer: Item {
-        height: 50 + 24
-
-        Rectangle {
-            anchors.fill: parent
-            anchors.margins: 12
-            color: Constants.surfaceColor
-            radius: 4
-            layer.enabled: true
-            layer.effect: RoundedElevationEffect {
-                elevation: 6
-                roundedScale: 4
-            }
-
-            RowLayout {
-                anchors.fill: parent
-                anchors.leftMargin: 8
-                anchors.rightMargin: 10
-                spacing: 7
-
-                ToolButton {
-                    Layout.preferredHeight: 50
-                    Layout.preferredWidth: 50
-                    Image {
-                        anchors.centerIn: parent
-                        sourceSize.height: 28
-                        sourceSize.width: 28
-                        source: "qrc:/icons/icon.png"
-                    }
-                }
-
-                TextField {
-                    id: filterField
-                    Layout.preferredWidth: 300
-                    Layout.preferredHeight: 35
-                    placeholderText: "Filter..."
-                    onTextChanged: FilterProxyModel.filterText = text
-                }
-
-                Item {
-                    Layout.fillWidth: true
-                }
-
-                ColumnLayout {
-                    spacing: 4
-
-                    Item {
-                        id: storageBar
-                        Layout.preferredWidth: 150
-                        Layout.preferredHeight: 8
-
-                        property real value: 0
-
-                        Rectangle {
-                            anchors.fill: parent
-                            radius: 4
-                            color: Constants.borderColor
-                            opacity: 1
-
-                            Rectangle {
-                                width: parent.width * storageBar.value
-                                height: parent.height
-                                radius: 4
-                                color: storageBar.value < 0.5 ? "#66BB6A" : storageBar.value < 0.85 ? "#FF9800" : "#F44336"
-
-                                Behavior on width {
-                                    NumberAnimation {
-                                        duration: 200
-                                        easing.type: Easing.OutCubic
-                                    }
-                                }
-
-                                Behavior on color {
-                                    ColorAnimation {
-                                        duration: 200
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    RowLayout {
-                        Layout.alignment: Qt.AlignRight
-                        spacing: 4
-
-                        Label {
-                            id: occupiedLabel
-                            text: "--"
-                            font.pixelSize: 11
-                            font.bold: true
-                            opacity: 0.7
-                        }
-
-                        Label {
-                            text: "/"
-                            font.pixelSize: 11
-                            opacity: 0.7
-                        }
-
-                        Label {
-                            id: totalLabel
-                            text: "--"
-                            font.pixelSize: 11
-                            opacity: 0.7
-                        }
-                    }
-                }
-            }
-        }
+    footer: FooterBar {
+        id: footerBar
     }
 
     FileListView {
@@ -257,92 +150,19 @@ ApplicationWindow {
         onShowSettings: settingsDialog.open()
     }
 
-    CustomDialog {
+    UploadProgressDialog {
         id: uploadProgressDialog
-        title: "Uploading Files"
-        closePolicy: Popup.NoAutoClose
         anchors.centerIn: parent
-        standardButtons: Dialog.Cancel
-        property int progress: 0
-
-        onRejected: {
-            ConnectionManager.cancelAllUploads()
-        }
-
-        ColumnLayout {
-            spacing: 15
-
-            Label {
-                text: ConnectionManager.currentUploadFileName || "Preparing upload..."
-                font.bold: true
-            }
-
-            Label {
-                text: ConnectionManager.uploadQueueSize > 0 ?
-                          `${ConnectionManager.uploadQueueSize} file(s) remaining in queue` :
-                          "Upload in progress..."
-                visible: ConnectionManager.uploadQueueSize > 0
-                opacity: 0.7
-            }
-
-            ProgressBar {
-                Layout.preferredWidth: 350
-                Layout.fillWidth: true
-                value: uploadProgressDialog.progress / 100
-            }
-
-            Label {
-                text: uploadProgressDialog.progress + "%"
-                Layout.alignment: Qt.AlignHCenter
-            }
-        }
     }
 
-    CustomDialog {
+    DownloadProgressDialog {
         id: downloadProgressDialog
-        title: ConnectionManager.isZipping ? "Compressing Folder" : "Downloading File"
-        closePolicy: Popup.NoAutoClose
         anchors.centerIn: parent
-        standardButtons: Dialog.Cancel
-
-        property int progress: 0
-
-        onRejected: {
-            ConnectionManager.cancelDownload()
-        }
-
-        ColumnLayout {
-            spacing: 15
-
-            Label {
-                text: ConnectionManager.currentDownloadFileName || "Preparing download..."
-                font.bold: true
-            }
-
-            ProgressBar {
-                Layout.preferredWidth: 350
-                Layout.fillWidth: true
-                indeterminate: ConnectionManager.isZipping
-                value: ConnectionManager.isZipping ? 0 : (downloadProgressDialog.progress / 100)
-            }
-
-            Label {
-                text: ConnectionManager.isZipping ? "Compressing..." : downloadProgressDialog.progress + "%"
-                Layout.alignment: Qt.AlignHCenter
-            }
-        }
     }
 
-    CustomDialog {
+    ErrorDialog {
         id: errorDialog
-        title: "Error"
-        width: 300
-        property alias text: errorLabel.text
         anchors.centerIn: parent
-        Label {
-            id: errorLabel
-        }
-        standardButtons: Dialog.Ok
     }
 
     SettingsDialog {
