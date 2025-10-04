@@ -393,8 +393,11 @@ Rectangle {
         id: breadcrumbBar
         width: parent.width
         height: 45
-        color: Material.primary
-
+        gradient: Gradient {
+            orientation: Gradient.Horizontal
+            GradientStop { position: 0.0; color: "#D87020" }
+            GradientStop { position: 1.0; color: "#FFB070" }
+        }
         RowLayout {
             anchors.fill: parent
             anchors.leftMargin: 3

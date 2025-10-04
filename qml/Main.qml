@@ -13,8 +13,8 @@ ApplicationWindow {
     title: "OdznDrive Client"
     Material.theme: Constants.darkMode ? Material.Dark : Material.Light
     color: Constants.backgroundColor
-    Material.accent: "#66BB6A"
-    Material.primary: "#388E3C"
+    Material.accent: "#FF9F5A"
+    Material.primary: "#E67E22"
 
     Component.onCompleted: {
         if (UserSettings.autoconnect) {
