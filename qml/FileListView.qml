@@ -1307,6 +1307,35 @@ Rectangle {
                         property bool itemIsDir: model.isDir
                         property bool isParentItem: model.isParent
 
+                        // Add hover timer for tooltip
+                        Timer {
+                            id: tooltipTimer
+                            interval: 2000
+                            repeat: false
+                            onTriggered: {
+                                if (!tileDelegateRoot.isParentItem && tileHoverHandler.hovered) {
+                                    tileTooltip.visible = true
+                                }
+                            }
+                        }
+
+                        ToolTip {
+                            id: tileTooltip
+                            visible: false
+                            delay: 0
+                            timeout: -1
+                            x: tileHoverHandler.point.position.x + 15
+                            y: tileHoverHandler.point.position.y + 15
+                            text: {
+                                if (tileDelegateRoot.isParentItem) return ""
+
+                                let sizeText = tileDelegateRoot.itemIsDir ? "-" : root.formatSize(tileDelegateRoot.model.size)
+                                let dateText = root.formatDate(tileDelegateRoot.model.modified)
+
+                                return "Size: " + sizeText + "\nModified: " + dateText
+                            }
+                        }
+
                         Rectangle {
                             id: tileRect
                             anchors.fill: parent
@@ -1425,6 +1454,14 @@ Rectangle {
 
                             HoverHandler {
                                 id: tileHoverHandler
+                                onHoveredChanged: {
+                                    if (hovered) {
+                                        tooltipTimer.restart()
+                                    } else {
+                                        tooltipTimer.stop()
+                                        tileTooltip.visible = false
+                                    }
+                                }
                             }
 
                             DragHandler {
@@ -1435,6 +1472,8 @@ Rectangle {
 
                                 onActiveChanged: {
                                     if (active) {
+                                        tooltipTimer.stop()
+                                        tileTooltip.visible = false
                                         root.draggedItemPath = tileDelegateRoot.itemPath
                                         root.draggedItemName = tileDelegateRoot.itemName
                                         dragLabel.text = "Move " + tileDelegateRoot.itemName
@@ -1490,6 +1529,8 @@ Rectangle {
                                     }
                                 }
                                 onDoubleTapped: {
+                                    tooltipTimer.stop()
+                                    tileTooltip.visible = false
                                     if (tileDelegateRoot.isParentItem) {
                                         ConnectionManager.listDirectory(FileModel.getParentPath(), UserSettings.foldersFirst)
                                     } else if (tileDelegateRoot.itemIsDir) {
