@@ -29,7 +29,7 @@ ApplicationWindow {
 
         function onAuthenticatedChanged() {
             if (ConnectionManager.authenticated) {
-                ConnectionManager.listDirectory("")
+                ConnectionManager.listDirectory("", UserSettings.foldersFirst)
                 ConnectionManager.getStorageInfo()
                 ConnectionManager.getServerInfo()
             }
