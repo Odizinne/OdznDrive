@@ -413,6 +413,7 @@ Rectangle {
             ToolButton {
                 visible: root.checkedCount === 0
                 icon.source: "qrc:/icons/plus.svg"
+                icon.color: "black"
                 icon.width: 16
                 icon.height: 16
                 enabled: ConnectionManager.authenticated
@@ -425,6 +426,7 @@ Rectangle {
             ToolButton {
                 visible: root.checkedCount === 0
                 icon.source: "qrc:/icons/upload.svg"
+                icon.color: "black"
                 icon.width: 16
                 icon.height: 16
                 enabled: ConnectionManager.authenticated
@@ -437,6 +439,7 @@ Rectangle {
             ToolButton {
                 visible: root.checkedCount === 0
                 icon.source: "qrc:/icons/refresh.svg"
+                icon.color: "black"
                 icon.width: 16
                 icon.height: 16
                 enabled: ConnectionManager.authenticated
@@ -457,6 +460,7 @@ Rectangle {
                 ToolButton {
                     visible: root.checkedCount > 0
                     icon.source: "qrc:/icons/download.svg"
+                    icon.color: "black"
                     icon.width: 16
                     icon.height: 16
                     enabled: ConnectionManager.authenticated
@@ -487,6 +491,7 @@ Rectangle {
                 icon.source: "qrc:/icons/delete.svg"
                 icon.width: 16
                 icon.height: 16
+                icon.color: "black"
                 enabled: ConnectionManager.authenticated
                 onClicked: {
                     multiDeleteConfirmDialog.itemCount = root.checkedCount
@@ -502,13 +507,14 @@ Rectangle {
                 text: root.checkedCount + (root.checkedCount === 1 ? " item selected" : " items selected")
                 opacity: 0.7
                 Layout.rightMargin: 4
+                Material.foreground: "black"
             }
 
             Rectangle {
                 Layout.preferredWidth: 1
                 Layout.preferredHeight: 24
-                color: Material.foreground
-                opacity: 0.2
+                color: "black"
+                opacity: 0.3
             }
 
             Item {
@@ -543,12 +549,14 @@ Rectangle {
                                 source: "qrc:/icons/right.svg"
                                 sourceSize.width: 10
                                 sourceSize.height: 10
+                                color: "black"
                             }
 
                             Button {
                                 text: pathMeasureItem.modelData
                                 flat: true
                                 font.pixelSize: 13
+                                Material.foreground: "black"
                                 implicitWidth: contentItem.implicitWidth + 20
                                 Material.roundedScale: Material.ExtraSmallScale
                             }
@@ -570,6 +578,7 @@ Rectangle {
                         font.pixelSize: 13
                         implicitWidth: contentItem.implicitWidth + 20
                         onClicked: ConnectionManager.listDirectory("", UserSettings.foldersFirst)
+                        Material.foreground: "black"
                         font.bold: root.getPathSegments().length === 0
                         opacity: root.getPathSegments().length === 0 || rootHover.hovered ? 1 : 0.7
                         Material.roundedScale: Material.ExtraSmallScale
@@ -590,8 +599,8 @@ Rectangle {
                                 sourceSize.width: 10
                                 sourceSize.height: 10
                                 anchors.verticalCenter: parent.verticalCenter
-                                color: Material.foreground
                                 opacity: 0.7
+                                color: "black"
                             }
 
                             Button {
@@ -602,6 +611,7 @@ Rectangle {
                                 Material.roundedScale: Material.ExtraSmallScale
                                 opacity: ellipsisHover.hovered ? 1 : 0.7
                                 onClicked: hiddenPathsMenu.popup()
+                                Material.foreground: "black"
 
                                 HoverHandler {
                                     id: ellipsisHover
@@ -640,7 +650,7 @@ Rectangle {
                                 sourceSize.width: 10
                                 sourceSize.height: 10
                                 anchors.verticalCenter: parent.verticalCenter
-                                color: Material.foreground
+                                color: "black"
                                 opacity: 0.7
                             }
 
@@ -652,6 +662,7 @@ Rectangle {
                                 Material.roundedScale: Material.ExtraSmallScale
                                 font.bold: true
                                 opacity: lastSegmentHover.hovered ? 1 : 0.7
+                                Material.foreground: "black"
                                 onClicked: {
                                     ConnectionManager.listDirectory(FileModel.currentPath, UserSettings.foldersFirst)
                                 }
@@ -678,7 +689,7 @@ Rectangle {
                                 sourceSize.width: 10
                                 sourceSize.height: 10
                                 anchors.verticalCenter: parent.verticalCenter
-                                color: Material.foreground
+                                color: "black"
                                 opacity: 0.7
                             }
 
@@ -693,6 +704,7 @@ Rectangle {
                                 onClicked: {
                                     ConnectionManager.listDirectory(root.getPathUpToIndex(pathBtn.index), UserSettings.foldersFirst)
                                 }
+                                Material.foreground: "black"
 
                                 HoverHandler {
                                     id: pathBtnHover
@@ -708,6 +720,7 @@ Rectangle {
                 icon.width: 16
                 icon.height: 16
                 onClicked: UserSettings.listView = !UserSettings.listView
+                icon.color: "black"
                 ToolTip.visible: hovered
                 ToolTip.text: UserSettings.listView ? "Tile view" : "List view"
                 Material.roundedScale: Material.ExtraSmallScale
@@ -734,14 +747,14 @@ Rectangle {
     Component {
         id: listViewComponent
 
-        ScrollView {
+        CustomScrollView {
             id: scrollView
-            clip: true
             ContextMenu.menu: EmptySpaceMenu {}
 
             ListView {
                 id: listView
                 width: scrollView.width
+                height: contentHeight
                 model: FilterProxyModel
                 interactive: true
                 spacing: 5
@@ -1135,10 +1148,12 @@ Rectangle {
     Component {
         id: tileViewComponent
 
-        ScrollView {
+        CustomScrollView {
             id: tileScrollView
-            clip: true
             ContextMenu.menu: EmptySpaceMenu {}
+
+            contentWidth: width
+            contentHeight: tileContainer.implicitHeight
             // Add connections for thumbnail updates
             Connections {
                 target: FileModel
@@ -1166,6 +1181,7 @@ Rectangle {
             }
 
             Item {
+                id: tileContainer
                 width: tileScrollView.width
                 implicitHeight: tileGrid.y + tileGrid.height + 10
 
@@ -1238,7 +1254,7 @@ Rectangle {
                     property int columns: Math.max(1, Math.floor(width / minCellWidth))
                     property real cellSize: Math.floor(width / columns)
                     cellWidth: cellSize
-                    cellHeight: cellSize
+                    cellHeight: cellSize - 30
 
                     model: tileModel
 

@@ -107,6 +107,7 @@ qt_add_qml_module(${PROJECT_NAME}
     QML_FILES qml/CustomDialog.qml
     SOURCES include/filedialoghelper.h src/filedialoghelper.cpp
     QML_FILES qml/CustomMenu.qml
+    QML_FILES qml/CustomScrollView.qml
 )
 
 target_link_libraries(${PROJECT_NAME} PRIVATE
