@@ -100,10 +100,8 @@ void FileModel::loadDirectory(const QString &path, const QVariantList &files)
         item.size = obj["size"].toLongLong();
         item.modified = obj["modified"].toString();
 
-        // Set preview path for images using image provider
-        if (!item.isDir && isImageFile(item.name)) {
-            item.previewPath = "image://preview/" + item.path;
-        }
+        // DON'T set preview path here - wait for thumbnail to arrive
+        item.previewPath = "";
 
         m_files.append(item);
     }
@@ -112,6 +110,19 @@ void FileModel::loadDirectory(const QString &path, const QVariantList &files)
 
     emit currentPathChanged();
     emit countChanged();
+}
+
+void FileModel::refreshThumbnail(const QString &path)
+{
+    for (int i = 0; i < m_files.count(); ++i) {
+        if (m_files[i].path == path) {
+            // NOW set the preview path when thumbnail is ready
+            m_files[i].previewPath = "image://preview/" + path;
+            QModelIndex idx = index(i, 0);
+            emit dataChanged(idx, idx, {PreviewPathRole});
+            break;
+        }
+    }
 }
 
 void FileModel::clear()
@@ -148,3 +159,4 @@ bool FileModel::canGoUp() const
 {
     return !m_currentPath.isEmpty() && m_currentPath != "/";
 }
+

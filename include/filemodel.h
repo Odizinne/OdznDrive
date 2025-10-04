@@ -11,7 +11,7 @@ struct FileItem {
     bool isDir;
     qint64 size;
     QString modified;
-    QString previewPath;  // Add preview path
+    QString previewPath;
 };
 
 class FileModel : public QAbstractListModel
@@ -31,7 +31,7 @@ public:
         IsDirRole,
         SizeRole,
         ModifiedRole,
-        PreviewPathRole  // Add new role
+        PreviewPathRole
     };
 
     static FileModel* create(QQmlEngine *qmlEngine, QJSEngine *jsEngine);
@@ -47,6 +47,7 @@ public:
     Q_INVOKABLE void clear();
     Q_INVOKABLE QString getParentPath() const;
     Q_INVOKABLE bool canGoUp() const;
+    Q_INVOKABLE void refreshThumbnail(const QString &path);
 
 signals:
     void currentPathChanged();

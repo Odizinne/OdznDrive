@@ -39,6 +39,10 @@ ApplicationWindow {
             FileModel.loadDirectory(path, files)
         }
 
+        function onThumbnailReady(path) {
+            FileModel.refreshThumbnail(path)
+        }
+
         function onErrorOccurred(error) {
             uploadProgressDialog.close()
             downloadProgressDialog.close()
