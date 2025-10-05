@@ -11,4 +11,6 @@ QtObject {
     property color scrollBarColor: UserSettings.darkMode ? "#4f5861" : "#b5c3d6"
     property color scrollBarHoveredColor: UserSettings.darkMode ? "#5f6871" : "#95a5ba"
     property color scrollBarPressedColor: UserSettings.darkMode ? "#6f7881" : "#8595aa"
+    property color rippleHoverColor: "#AA5f6871"
+    property color contrastedRippleHoverColor: "#B1FFFFFF"
 }

@@ -263,11 +263,11 @@ Rectangle {
         }
         RowLayout {
             anchors.fill: parent
-            anchors.leftMargin: 3
+            anchors.leftMargin: 10
             anchors.rightMargin: 10
             spacing: 8
 
-            ToolButton {
+            CustomButton {
                 visible: root.checkedCount === 0
                 icon.source: "qrc:/icons/plus.svg"
                 icon.color: "black"
@@ -277,10 +277,10 @@ Rectangle {
                 onClicked: newFolderDialog.open()
                 ToolTip.visible: hovered
                 ToolTip.text: "New folder"
-                Material.roundedScale: Material.ExtraSmallScale
+                rippleHoverColor: Constants.contrastedRippleHoverColor
             }
 
-            ToolButton {
+            CustomButton {
                 visible: root.checkedCount === 0
                 icon.source: "qrc:/icons/upload.svg"
                 icon.color: "black"
@@ -290,32 +290,32 @@ Rectangle {
                 onClicked: root.openUploadDialog()
                 ToolTip.visible: hovered
                 ToolTip.text: "Upload files"
-                Material.roundedScale: Material.ExtraSmallScale
+                rippleHoverColor: Constants.contrastedRippleHoverColor
             }
 
-            ToolButton {
+            CustomButton {
                 visible: root.checkedCount === 0
                 icon.source: "qrc:/icons/refresh.svg"
                 icon.color: "black"
                 icon.width: 16
                 icon.height: 16
+                rippleHoverColor: Constants.contrastedRippleHoverColor
                 enabled: ConnectionManager.authenticated
                 onClicked: {
                     ConnectionManager.listDirectory(FileModel.currentPath, UserSettings.foldersFirst)
                 }
                 ToolTip.visible: hovered
                 ToolTip.text: "Refresh"
-                Material.roundedScale: Material.ExtraSmallScale
             }
 
-            ToolButton {
+            CustomButton {
                 visible: root.checkedCount > 0
                 icon.source: "qrc:/icons/download.svg"
                 icon.width: 16
                 icon.height: 16
                 icon.color: "black"
                 enabled: ConnectionManager.authenticated
-                ToolButton {
+                CustomButton {
                     visible: root.checkedCount > 0
                     icon.source: "qrc:/icons/download.svg"
                     icon.color: "black"
@@ -337,14 +337,14 @@ Rectangle {
                     }
                     ToolTip.visible: hovered
                     ToolTip.text: root.checkedCount === 1 ? "Download" : "Download as zip"
-                    Material.roundedScale: Material.ExtraSmallScale
+                    rippleHoverColor: Constants.contrastedRippleHoverColor
                 }
                 ToolTip.visible: hovered
                 ToolTip.text: root.checkedCount === 1 ? "Download" : "Download as zip"
-                Material.roundedScale: Material.ExtraSmallScale
+                rippleHoverColor: Constants.contrastedRippleHoverColor
             }
 
-            ToolButton {
+            CustomButton {
                 visible: root.checkedCount > 0
                 icon.source: "qrc:/icons/delete.svg"
                 icon.width: 16
@@ -357,7 +357,7 @@ Rectangle {
                 }
                 ToolTip.visible: hovered
                 ToolTip.text: "Delete selected"
-                Material.roundedScale: Material.ExtraSmallScale
+                rippleHoverColor: Constants.contrastedRippleHoverColor
             }
 
             Label {
@@ -387,12 +387,12 @@ Rectangle {
                     spacing: 6
                     height: parent.height
 
-                    Button {
+                    CustomButton {
                         text: ConnectionManager.serverName
                         flat: true
                         font.pixelSize: 13
                         implicitWidth: contentItem.implicitWidth + 20
-                        Material.roundedScale: Material.ExtraSmallScale
+                        rippleHoverColor: Constants.contrastedRippleHoverColor
                     }
 
                     Repeater {
@@ -410,13 +410,13 @@ Rectangle {
                                 color: "black"
                             }
 
-                            Button {
+                            CustomButton {
                                 text: pathMeasureItem.modelData
                                 flat: true
                                 font.pixelSize: 13
                                 Material.foreground: "black"
                                 implicitWidth: contentItem.implicitWidth + 20
-                                Material.roundedScale: Material.ExtraSmallScale
+                                rippleHoverColor: Constants.contrastedRippleHoverColor
                             }
                         }
                     }
@@ -429,7 +429,7 @@ Rectangle {
                     anchors.verticalCenter: parent.verticalCenter
                     spacing: 6
 
-                    Button {
+                    CustomButton {
                         id: rootButton
                         text: ConnectionManager.serverName
                         flat: true
@@ -439,7 +439,7 @@ Rectangle {
                         Material.foreground: "black"
                         font.bold: root.getPathSegments().length === 0
                         opacity: root.getPathSegments().length === 0 || rootHover.hovered ? 1 : 0.7
-                        Material.roundedScale: Material.ExtraSmallScale
+                        rippleHoverColor: Constants.contrastedRippleHoverColor
 
                         HoverHandler {
                             id: rootHover
@@ -461,12 +461,12 @@ Rectangle {
                                 color: "black"
                             }
 
-                            Button {
+                            CustomButton {
                                 text: "..."
                                 flat: true
                                 font.pixelSize: 13
                                 implicitWidth: contentItem.implicitWidth + 20
-                                Material.roundedScale: Material.ExtraSmallScale
+                                rippleHoverColor: Constants.contrastedRippleHoverColor
                                 opacity: ellipsisHover.hovered ? 1 : 0.7
                                 onClicked: hiddenPathsMenu.popup()
                                 Material.foreground: "black"
@@ -512,12 +512,12 @@ Rectangle {
                                 opacity: 0.7
                             }
 
-                            Button {
+                            CustomButton {
                                 text: root.getLastSegment()
                                 flat: true
                                 font.pixelSize: 13
                                 implicitWidth: contentItem.implicitWidth + 20
-                                Material.roundedScale: Material.ExtraSmallScale
+                                rippleHoverColor: Constants.contrastedRippleHoverColor
                                 font.bold: true
                                 opacity: lastSegmentHover.hovered ? 1 : 0.7
                                 Material.foreground: "black"
@@ -551,12 +551,12 @@ Rectangle {
                                 opacity: 0.7
                             }
 
-                            Button {
+                            CustomButton {
                                 text: pathBtn.modelData
                                 flat: true
                                 font.pixelSize: 13
                                 implicitWidth: contentItem.implicitWidth + 20
-                                Material.roundedScale: Material.ExtraSmallScale
+                                rippleHoverColor: Constants.contrastedRippleHoverColor
                                 font.bold: pathBtn.index === allSegmentsRepeater.count - 1
                                 opacity: pathBtn.index === allSegmentsRepeater.count - 1 || pathBtnHover.hovered ? 1 : 0.7
                                 onClicked: {
@@ -573,7 +573,7 @@ Rectangle {
                 }
             }
 
-            ToolButton {
+            CustomButton {
                 icon.source: UserSettings.listView ? "qrc:/icons/grid.svg" : "qrc:/icons/list.svg"
                 icon.width: 16
                 icon.height: 16
@@ -581,10 +581,10 @@ Rectangle {
                 icon.color: "black"
                 ToolTip.visible: hovered
                 ToolTip.text: UserSettings.listView ? "Tile view" : "List view"
-                Material.roundedScale: Material.ExtraSmallScale
+                rippleHoverColor: Constants.contrastedRippleHoverColor
             }
 
-            ToolButton {
+            CustomButton {
                 icon.source: "qrc:/icons/cog.svg"
                 icon.width: 16
                 icon.height: 16
@@ -592,7 +592,7 @@ Rectangle {
                 ToolTip.visible: hovered
                 ToolTip.text: "Settings"
                 icon.color: "black"
-                Material.roundedScale: Material.ExtraSmallScale
+                rippleHoverColor: Constants.contrastedRippleHoverColor
             }
         }
     }
@@ -828,11 +828,23 @@ Rectangle {
                         anchors.right: parent.right
                         anchors.top: parent.top
                         height: 50
-                        color: {
-                            if (root.currentDropTarget === delegateRoot && delegateRoot.model.isDir && root.draggedItemPath !== delegateRoot.model.path) {
-                                return Constants.listHeaderColor
+                        color: "transparent"
+
+                        Rectangle {
+                            anchors.fill: parent
+                            color: {
+                                if (root.currentDropTarget === delegateRoot && delegateRoot.model.isDir && root.draggedItemPath !== delegateRoot.model.path) {
+                                    return Constants.listHeaderColor
+                                }
+                                return hoverHandler.hovered ? Constants.alternateRowColor : "transparent"
                             }
-                            return hoverHandler.hovered ? Constants.alternateRowColor : "transparent"
+                            opacity: hoverHandler.hovered ? 1 : 0
+                            Behavior on opacity {
+                                NumberAnimation {
+                                    duration: 200
+                                    easing.type: Easing.OutQuad
+                                }
+                            }
                         }
 
                         RowLayout {
@@ -846,6 +858,13 @@ Rectangle {
                                 checked: root.isItemChecked(delegateRoot.model.path)
                                 onClicked: {
                                     root.toggleItemChecked(delegateRoot.model.path)
+                                }
+                                opacity: root.checkedCount !== 0 || hoverHandler.hovered ? 1 : 0
+                                Behavior on opacity {
+                                    NumberAnimation {
+                                        duration: 200
+                                        easing.type: Easing.OutQuad
+                                    }
                                 }
                             }
 
@@ -900,16 +919,22 @@ Rectangle {
                                 Layout.preferredWidth: 80
                                 spacing: 2
 
-                                ToolButton {
+                                CustomButton {
                                     icon.source: "qrc:/icons/menu.svg"
                                     icon.width: 16
                                     icon.height: 16
-                                    Layout.preferredWidth: height
+                                    //Layout.preferredWidth: height
                                     flat: true
-                                    onClicked: delContextMenu.popup()
+                                    onClicked: contextMenu.popup()
                                     Layout.alignment: Qt.AlignRight
-                                    opacity: (hoverHandler.hovered && root.draggedItemPath === "") ? 1 : 0
+                                    opacity: (hoverHandler.hovered && root.draggedItemPath === "") ? (hovered ? 1 : 0.5) : 0
                                     Material.roundedScale: Material.ExtraSmallScale
+                                    Behavior on opacity {
+                                        NumberAnimation {
+                                            duration: 200
+                                            easing.type: Easing.OutQuad
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -1179,12 +1204,8 @@ Rectangle {
                             id: tileRect
                             anchors.fill: parent
                             anchors.margins: 5
-                            color: {
-                                if (tileHoverHandler.hovered) {
-                                    return Constants.alternateRowColor
-                                }
-                                return "transparent"
-                            }
+                            radius: 4
+                            color: "transparent"
                             border.width: 1
                             border.color: {
                                 if (root.currentDropTarget === tileDelegateRoot && tileDelegateRoot.itemIsDir && root.draggedItemPath !== tileDelegateRoot.itemPath) {
@@ -1195,7 +1216,26 @@ Rectangle {
                                 }
                                 return Constants.borderColor
                             }
-                            radius: 4
+
+                            Rectangle {
+                                anchors.fill: parent
+                                radius: parent.radius
+                                color: {
+                                    if (tileHoverHandler.hovered) {
+                                        return Constants.alternateRowColor
+                                    }
+                                    return "transparent"
+                                }
+                                anchors.margins: 1
+                                opacity: tileHoverHandler.hovered ? 1 : 0
+                                Behavior on opacity {
+                                    NumberAnimation {
+                                        duration: 200
+                                        easing.type: Easing.OutQuad
+                                    }
+                                }
+                            }
+
 
                             ColumnLayout {
                                 anchors.fill: parent
@@ -1214,6 +1254,13 @@ Rectangle {
                                         checked: root.isItemChecked(tileDelegateRoot.itemPath)
                                         onClicked: {
                                             root.toggleItemChecked(tileDelegateRoot.itemPath)
+                                        }
+                                        opacity: root.checkedCount !== 0 || tileHoverHandler.hovered ? 1 : 0
+                                        Behavior on opacity {
+                                            NumberAnimation {
+                                                duration: 200
+                                                easing.type: Easing.OutQuad
+                                            }
                                         }
                                     }
 
@@ -1274,10 +1321,10 @@ Rectangle {
                                 Item {
                                     Layout.fillWidth: true
                                     Layout.preferredHeight: parent.height * (1/4)
-                                    Layout.leftMargin: 8
-                                    Layout.rightMargin: 8
                                     Label {
                                         anchors.fill: parent
+                                        anchors.leftMargin: 32
+                                        anchors.rightMargin: 32
                                         anchors.bottomMargin: 5
                                         text: tileDelegateRoot.itemName
                                         elide: Text.ElideMiddle
@@ -1287,6 +1334,25 @@ Rectangle {
                                         font.pixelSize: 13
                                         wrapMode: Text.NoWrap
                                         opacity: tileDelegateRoot.isParentItem ? 0.7 : 1.0
+                                    }
+
+                                    CustomButton {
+                                        icon.source: "qrc:/icons/menu.svg"
+                                        icon.width: 16
+                                        icon.height: 16
+                                        anchors.right: parent.right
+                                        anchors.rightMargin: 5
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        flat: true
+                                        onClicked: tileContextMenu.popup()
+                                        opacity: (tileHoverHandler.hovered && root.draggedItemPath === "") ? (hovered ? 1 : 0.5) : 0
+                                        Material.roundedScale: Material.ExtraSmallScale
+                                        Behavior on opacity {
+                                            NumberAnimation {
+                                                duration: 200
+                                                easing.type: Easing.OutQuad
+                                            }
+                                        }
                                     }
                                 }
                             }

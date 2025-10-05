@@ -29,7 +29,7 @@ CustomDialog {
             opacity: 0.7
         }
 
-        ProgressBar {
+        CustomProgressBar {
             Layout.preferredWidth: 350
             Layout.fillWidth: true
             value: uploadProgressDialog.progress / 100

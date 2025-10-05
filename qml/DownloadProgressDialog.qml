@@ -1,6 +1,7 @@
 import QtQuick.Controls.Material
 import QtQuick.Layouts
 import Odizinne.OdznDrive
+import QtQuick
 
 CustomDialog {
     id: downloadProgressDialog
@@ -22,7 +23,7 @@ CustomDialog {
             font.bold: true
         }
 
-        ProgressBar {
+        CustomProgressBar {
             Layout.preferredWidth: 350
             Layout.fillWidth: true
             indeterminate: ConnectionManager.isZipping

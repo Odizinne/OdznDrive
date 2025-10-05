@@ -1,6 +1,7 @@
 import QtQuick.Controls.Material
 
 CustomMenu {
+    id: menu
     width: 200
 
     signal newFolderClicked()
@@ -12,7 +13,7 @@ CustomMenu {
         icon.width: 16
         icon.height: 16
         enabled: ConnectionManager.authenticated
-        onClicked: newFolderClicked()
+        onClicked: menu.newFolderClicked()
     }
 
     MenuItem {
@@ -21,7 +22,7 @@ CustomMenu {
         icon.width: 16
         icon.height: 16
         enabled: ConnectionManager.authenticated
-        onClicked: uploadFilesCicked()
+        onClicked: menu.uploadFilesClicked()
     }
 
     MenuItem {
@@ -30,6 +31,6 @@ CustomMenu {
         icon.width: 16
         icon.height: 16
         enabled: ConnectionManager.authenticated
-        onClicked: refreshClicked()
+        onClicked: menu.refreshClicked()
     }
 }

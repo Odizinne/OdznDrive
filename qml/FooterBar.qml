@@ -28,9 +28,9 @@ Item {
             anchors.rightMargin: 10
             spacing: 7
 
-            ToolButton {
-                Layout.preferredHeight: 50
-                Layout.preferredWidth: 50
+            CustomButton {
+                //Layout.preferredHeight: 50
+                //Layout.preferredWidth: 50
                 Image {
                     anchors.centerIn: parent
                     sourceSize.height: 28
@@ -53,38 +53,11 @@ Item {
             ColumnLayout {
                 spacing: 4
 
-                Item {
+                CustomProgressBar {
                     Layout.preferredWidth: 150
                     Layout.preferredHeight: 8
-
-                    property real value: 0
-
-                    Rectangle {
-                        anchors.fill: parent
-                        radius: 4
-                        color: Constants.borderColor
-                        opacity: 1
-
-                        Rectangle {
-                            width: parent.width * footerBar.storagePercentage
-                            height: parent.height
-                            radius: 4
-                            color: footerBar.storagePercentage < 0.5 ? "#66BB6A" : footerBar.storagePercentage < 0.85 ? "#FF9800" : "#F44336"
-
-                            Behavior on width {
-                                NumberAnimation {
-                                    duration: 200
-                                    easing.type: Easing.OutCubic
-                                }
-                            }
-
-                            Behavior on color {
-                                ColorAnimation {
-                                    duration: 200
-                                }
-                            }
-                        }
-                    }
+                    Material.accent: footerBar.storagePercentage < 0.5 ? "#66BB6A" : footerBar.storagePercentage < 0.85 ? "#FF9800" : "#F44336"
+                    value: footerBar.storagePercentage
                 }
 
                 RowLayout {

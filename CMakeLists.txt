@@ -17,25 +17,44 @@ set(SOURCES
     src/connectionmanager.cpp
     src/filemodel.cpp
     src/imagepreviewprovider.cpp
+    src/filterproxymodel.cpp
+    src/filedialoghelper.cpp
 )
 
 set(HEADERS
     include/connectionmanager.h
     include/filemodel.h
     include/imagepreviewprovider.h
+    include/filterproxymodel.h
+    include/filedialoghelper.h
 )
 
 set(QML_FILES
     qml/Main.qml
-    qml/FileListView.qml
+    qml/FileSystemView.qml
     qml/TransferProgress.qml
     qml/SettingsDialog.qml
+    qml/CustomMenu.qml
+    qml/CustomScrollView.qml
+    qml/Separator.qml
+    qml/RenameDialog.qml
+    qml/NewFolderDialog.qml
+    qml/DeleteConfirmDialog.qml
+    qml/MultiDeleteConfirmDialog.qml
+    qml/ItemContextMenu.qml
+    qml/EmptySpaceMenu.qml
+    qml/ErrorDialog.qml
+    qml/DownloadProgressDialog.qml
+    qml/UploadProgressDialog.qml
+    qml/FooterBar.qml
+    qml/CustomDialog.qml
+
 )
 
 set(QML_SINGLETONS
     qml/Singletons/UserSettings.qml
     qml/Singletons/Constants.qml
-    qml/Singletons/Intercom.qml
+    qml/Singletons/Utils.qml
 )
 
 # Get git commit hash
@@ -103,22 +122,8 @@ qt_add_qml_module(${PROJECT_NAME}
     URI Odizinne.OdznDrive
     VERSION 1.0
     QML_FILES ${QML_FILES} ${QML_SINGLETONS}
-    SOURCES include/filterproxymodel.h src/filterproxymodel.cpp
-    QML_FILES qml/CustomDialog.qml
-    SOURCES include/filedialoghelper.h src/filedialoghelper.cpp
-    QML_FILES qml/CustomMenu.qml
-    QML_FILES qml/CustomScrollView.qml
-    QML_FILES qml/Separator.qml
-    QML_FILES qml/RenameDialog.qml
-    QML_FILES qml/NewFolderDialog.qml
-    QML_FILES qml/DeleteConfirmDialog.qml
-    QML_FILES qml/MultiDeleteConfirmDialog.qml
-    QML_FILES qml/ItemContextMenu.qml
-    QML_FILES qml/EmptySpaceMenu.qml
-    QML_FILES qml/ErrorDialog.qml
-    QML_FILES qml/DownloadProgressDialog.qml
-    QML_FILES qml/UploadProgressDialog.qml
-    QML_FILES qml/FooterBar.qml
+    QML_FILES qml/CustomProgressBar.qml
+    QML_FILES qml/CustomButton.qml
 )
 
 target_link_libraries(${PROJECT_NAME} PRIVATE

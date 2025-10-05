@@ -26,7 +26,7 @@ Rectangle {
             Layout.fillWidth: true
             spacing: 10
 
-            ProgressBar {
+            CustomProgressBar {
                 Layout.fillWidth: true
                 value: root.progress / 100
             }

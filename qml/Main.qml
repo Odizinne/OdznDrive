@@ -1,29 +1,22 @@
 import QtQuick
 import QtQuick.Controls.Material
-import QtQuick.Controls.Material.impl
-import QtQuick.Layouts
 import Odizinne.OdznDrive
 
 ApplicationWindow {
-    id: root
     visible: true
     width: 1280
     height: 720
     minimumWidth: 1280
     minimumHeight: 720
     title: "OdznDrive Client"
-    Material.theme: UserSettings.darkMode ? Material.Dark : Material.Light
     color: Constants.backgroundColor
     Material.accent: "#FF9F5A"
     Material.primary: "#E67E22"
+    Material.theme: UserSettings.darkMode ? Material.Dark : Material.Light
 
-    Component.onCompleted: {
-        if (UserSettings.autoconnect) {
-            ConnectionManager.connectToServer(UserSettings.serverUrl, UserSettings.serverPassword)
-        } else {
-            settingsDialog.open()
-        }
-    }
+    Component.onCompleted: UserSettings.autoconnect ?
+                               ConnectionManager.connectToServer(UserSettings.serverUrl, UserSettings.serverPassword)
+                             : settingsDialog.open()
 
     Connections {
         target: ConnectionManager
@@ -110,8 +103,8 @@ ApplicationWindow {
 
         function onStorageInfo(total, used, available) {
             footerBar.storagePercentage = used / total
-            footerBar.storageOccupied = root.formatStorage(used)
-            footerBar.storageTotal = root.formatStorage(total)
+            footerBar.storageOccupied = Utils.formatStorage(used)
+            footerBar.storageTotal = Utils.formatStorage(total)
         }
 
         function onUploadQueueSizeChanged() {
@@ -119,17 +112,6 @@ ApplicationWindow {
                 uploadProgressDialog.close()
             }
         }
-    }
-
-    function formatStorage(bytes) {
-        let mb = bytes / (1024 * 1024)
-
-        if (mb >= 1000) {
-            let gb = mb / 1024
-            return gb.toFixed(1) + " GB"
-        }
-
-        return Math.round(mb) + " MB"
     }
 
     Timer {
@@ -145,7 +127,7 @@ ApplicationWindow {
         id: footerBar
     }
 
-    FileListView {
+    FileSystemView {
         anchors.fill: parent
         onShowSettings: settingsDialog.open()
     }
