@@ -440,19 +440,5 @@ CustomScrollView {
                 }
             }
         }
-
-        Label {
-            anchors.centerIn: parent
-            text: ConnectionManager.authenticated ?
-                      (FileModel.count === 0 ? "Empty folder\n\nDrag files here to upload" :
-                                               FilterProxyModel.rowCount() === 0 ? "No items match filter" : "") :
-                      "Not connected"
-            visible: ConnectionManager.authenticated ?
-                         (FileModel.count === 0 || FilterProxyModel.rowCount() === 0) :
-                         true
-            opacity: 0.5
-            font.pixelSize: 16
-            horizontalAlignment: Text.AlignHCenter
-        }
     }
 }

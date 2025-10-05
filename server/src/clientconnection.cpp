@@ -128,6 +128,7 @@ void ClientConnection::handleCommand(const QJsonObject &command)
         m_pendingAuthClientVersion = clientVersion;
 
         int delayMs = QRandomGenerator::global()->bounded(2000, 3001); // 2000-3000ms
+            qInfo() << "Auth request received, delaying response by" << delayMs << "ms";
         m_authDelayTimer->start(delayMs);
 
         return;
@@ -787,7 +788,7 @@ void ClientConnection::handleDownloadMultiple(const QJsonObject &params)
 void ClientConnection::onAuthDelayTimeout()
 {
     QString clientIP = m_socket->peerAddress().toString();
-
+    qInfo() << "Auth delay complete, processing authentication for" << clientIP;
     // Check if IP is banned
     if (Config::instance().isIPBanned(clientIP)) {
         qWarning() << "Blocked authentication attempt from banned IP:" << clientIP;

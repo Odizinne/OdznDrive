@@ -5,6 +5,7 @@
 #include <QWebSocket>
 #include <QVariantList>
 #include <QFile>
+#include <QTimer>
 #include <QQueue>
 #include <qqml.h>
 
@@ -98,6 +99,7 @@ private slots:
     void onBinaryMessageReceived(const QByteArray &message);
     void onError(QAbstractSocket::SocketError error);
     void onBytesWritten(qint64 bytes);
+    void onConnectionTimeout();
 
 private:
     explicit ConnectionManager(QObject *parent = nullptr);
@@ -152,6 +154,8 @@ private:
     ImagePreviewProvider *m_imageProvider;
 
     static const qint64 CHUNK_SIZE = 1024 * 1024; // 1MB chunks
+
+    QTimer *m_connectionTimer;  // Add this
 };
 
 #endif // CONNECTIONMANAGER_H

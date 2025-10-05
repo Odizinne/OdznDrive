@@ -4,122 +4,107 @@ import Odizinne.OdznDrive
 
 Item {
     id: control
-    implicitWidth: 80
-    implicitHeight: 80
+    implicitWidth: 200
+    implicitHeight: 8
 
-    property bool spinning: true
-    property bool filling: false
-    property real fillProgress: 0.0
+    property real value: 0
+    property bool indeterminate: true
 
-    signal fillComplete()
+    signal complete()
 
-    Rectangle {
-        id: background
-        anchors.centerIn: parent
-        width: parent.width
-        height: parent.height
-        radius: width / 2
-        color: "transparent"
-        border.width: 4
-        border.color: Constants.borderColor
-        opacity: 0.3
+    onValueChanged: {
+        if (value >= 1.0 && !indeterminate) {
+            complete()
+        }
     }
 
     Rectangle {
-        id: spinner
-        anchors.centerIn: parent
-        width: parent.width
-        height: parent.height
-        radius: width / 2
-        color: "transparent"
-        border.width: 4
-        border.color: Material.accent
-        visible: !control.filling
+        anchors.fill: parent
+        radius: 4
+        color: Constants.borderColor
+        opacity: 1
 
         Rectangle {
-            width: parent.width
+            id: progressBar
+            width: control.indeterminate ? parent.width * widthFactor : parent.width * control.value
             height: parent.height
-            radius: width / 2
-            color: "transparent"
-            clip: true
+            radius: 4
+            color: Material.accent
+            x: control.indeterminate ? (parent.width - width) * position : 0
 
-            Rectangle {
-                width: parent.width
-                height: parent.height / 4
-                color: Material.accent
-                anchors.horizontalCenter: parent.horizontalCenter
-                anchors.top: parent.top
-                visible: control.spinning
+            property real position: 0
+            property real widthFactor: 0
+
+            SequentialAnimation on position {
+                running: control.indeterminate
+                loops: Animation.Infinite
+
+                NumberAnimation {
+                    from: 0
+                    to: 1
+                    duration: 1500
+                    easing.type: Easing.InOutCubic
+                }
+                NumberAnimation {
+                    from: 1
+                    to: 0
+                    duration: 1500
+                    easing.type: Easing.InOutCubic
+                }
             }
-        }
 
-        rotation: 0
+            SequentialAnimation on widthFactor {
+                running: control.indeterminate
+                loops: Animation.Infinite
 
-        RotationAnimator on rotation {
-            running: control.spinning && !control.filling
-            from: 0
-            to: 360
-            duration: 1200
-            loops: Animation.Infinite
-            easing.type: Easing.Linear
-        }
-    }
-
-    Canvas {
-        id: fillCanvas
-        anchors.fill: parent
-        visible: control.filling
-        onPaint: {
-            var ctx = getContext("2d")
-            ctx.reset()
-
-            var centerX = width / 2
-            var centerY = height / 2
-            var radius = (width / 2) - 2
-
-            // Draw filled arc
-            ctx.beginPath()
-            ctx.arc(centerX, centerY, radius, -Math.PI / 2, -Math.PI / 2 + (control.fillProgress * 2 * Math.PI), false)
-            ctx.lineWidth = 4
-            ctx.strokeStyle = Material.accent
-            ctx.stroke()
-        }
-
-        Connections {
-            target: control
-            function onFillProgressChanged() {
-                fillCanvas.requestPaint()
+                NumberAnimation {
+                    from: 0
+                    to: 0.3
+                    duration: 750
+                    easing.type: Easing.OutCubic
+                }
+                NumberAnimation {
+                    from: 0.3
+                    to: 0
+                    duration: 750
+                    easing.type: Easing.InCubic
+                }
             }
-        }
-    }
 
-    SequentialAnimation {
-        id: fillAnimation
-        running: control.filling
+            Behavior on width {
+                enabled: !control.indeterminate
+                NumberAnimation {
+                    duration: 800
+                    easing.type: Easing.OutCubic
+                }
+            }
 
-        NumberAnimation {
-            target: control
-            property: "fillProgress"
-            from: 0
-            to: 1
-            duration: 800
-            easing.type: Easing.OutCubic
-        }
-
-        ScriptAction {
-            script: control.fillComplete()
+            Behavior on x {
+                enabled: !control.indeterminate
+                NumberAnimation {
+                    duration: 200
+                    easing.type: Easing.OutCubic
+                }
+            }
         }
     }
 
     function startFilling() {
-        control.spinning = false
-        control.filling = true
-        control.fillProgress = 0
+        control.indeterminate = false
+        control.value = 0
+        fillTimer.start()
     }
 
     function reset() {
-        control.filling = false
-        control.fillProgress = 0
-        control.spinning = true
+        control.indeterminate = true
+        control.value = 0
+    }
+
+    Timer {
+        id: fillTimer
+        interval: 50
+        onTriggered: {
+            control.value = 1
+        }
     }
 }

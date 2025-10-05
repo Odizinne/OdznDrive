@@ -18,6 +18,10 @@ ApplicationWindow {
         WindowsPlatform.setTitlebarColor(UserSettings.darkMode)
         if (UserSettings.autoconnect && UserSettings.serverUrl !== "" && UserSettings.serverPassword !== "") {
             ConnectionManager.connectToServer(UserSettings.serverUrl, UserSettings.serverPassword)
+            //loginPage.setLoginToServer()
+            if (mainStack.currentItem && mainStack.currentItem.setLoginToServer) {
+                mainStack.currentItem.setLoginToServer()
+            }
         }
     }
 
@@ -29,6 +33,8 @@ ApplicationWindow {
                 ConnectionManager.listDirectory("", UserSettings.foldersFirst)
                 ConnectionManager.getStorageInfo()
                 ConnectionManager.getServerInfo()
+            } else {
+                mainStack.replace(loginPage)
             }
         }
 
@@ -125,7 +131,7 @@ ApplicationWindow {
     StackView {
         id: mainStack
         anchors.fill: parent
-        initialItem: ConnectionManager.authenticated ? fileSystemView : loginPage
+        initialItem: loginPage
 
         // Update the Connections block for authenticated state
         Connections {

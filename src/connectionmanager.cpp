@@ -25,6 +25,7 @@ ConnectionManager::ConnectionManager(QObject *parent)
     , m_uploadSentSize(0)
     , m_serverName("Unknown Server")
     , m_imageProvider(nullptr)
+    , m_connectionTimer(new QTimer(this))
 {
     connect(m_socket, &QWebSocket::connected, this, &ConnectionManager::onConnected);
     connect(m_socket, &QWebSocket::disconnected, this, &ConnectionManager::onDisconnected);
@@ -32,6 +33,10 @@ ConnectionManager::ConnectionManager(QObject *parent)
     connect(m_socket, &QWebSocket::binaryMessageReceived, this, &ConnectionManager::onBinaryMessageReceived);
     connect(m_socket, &QWebSocket::errorOccurred, this, &ConnectionManager::onError);
     connect(m_socket, &QWebSocket::bytesWritten, this, &ConnectionManager::onBytesWritten);
+
+    m_connectionTimer->setSingleShot(true);
+    m_connectionTimer->setInterval(10000);
+    connect(m_connectionTimer, &QTimer::timeout, this, &ConnectionManager::onConnectionTimeout);
 }
 
 ConnectionManager::~ConnectionManager()
@@ -87,6 +92,7 @@ void ConnectionManager::connectToServer(const QString &url, const QString &passw
         wsUrl.setPort(8888);
     }
 
+    m_connectionTimer->start();
     m_socket->open(wsUrl);
 }
 
@@ -268,6 +274,7 @@ void ConnectionManager::requestThumbnail(const QString &path)
 
 void ConnectionManager::onConnected()
 {
+    m_connectionTimer->stop();
     setConnected(true);
     setStatusMessage("Connected");
 
@@ -279,6 +286,7 @@ void ConnectionManager::onConnected()
 
 void ConnectionManager::onDisconnected()
 {
+    m_connectionTimer->stop();
     setConnected(false);
     setAuthenticated(false);
     setStatusMessage("Disconnected");
@@ -347,11 +355,23 @@ void ConnectionManager::onBinaryMessageReceived(const QByteArray &message)
 
 void ConnectionManager::onError(QAbstractSocket::SocketError error)
 {
+    m_connectionTimer->stop();
     Q_UNUSED(error)
     setConnected(false);
     setAuthenticated(false);
     setStatusMessage("Error: " + m_socket->errorString());
     emit errorOccurred(m_socket->errorString());
+}
+
+void ConnectionManager::onConnectionTimeout()
+{
+    if (!m_connected) {
+        m_socket->abort();
+        setConnected(false);
+        setAuthenticated(false);
+        setStatusMessage("Connection timeout");
+        emit errorOccurred("Connection timeout - server did not respond");
+    }
 }
 
 void ConnectionManager::onBytesWritten(qint64 bytes)

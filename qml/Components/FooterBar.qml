@@ -25,6 +25,29 @@ Item {
             spacing: 7
 
             CustomButton {
+                CustomButton {
+                    id: menuButton
+
+                    onClicked: menu.visible ? menu.close() : menu.popup(menuButton, 0, menuButton.height)
+
+                    CustomMenu {
+                        id: menu
+                        width: 200
+
+                        MenuItem {
+                            text: "Disconnect"
+                            onClicked: ConnectionManager.disconnect()
+                        }
+                    }
+
+                    Image {
+                        anchors.centerIn: parent
+                        sourceSize.height: 24
+                        sourceSize.width: 24
+                        source: "qrc:/icons/icon.png"
+                    }
+                }
+
                 Image {
                     anchors.centerIn: parent
                     sourceSize.height: 24

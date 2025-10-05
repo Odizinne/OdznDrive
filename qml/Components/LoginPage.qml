@@ -8,22 +8,41 @@ Page {
     id: loginPage
     Material.background: Constants.backgroundColor
     signal loginComplete()
+    property bool animEnabled: true
+
+    function setLoginToServer() {
+        animEnabled = false
+        loginContent.opacity = 0
+        busyContainer.opacity = 1
+        animEnabled = true
+    }
+
+    function reset() {
+        statusLabel.text = "Connecting..."
+    }
 
     Connections {
         target: ConnectionManager
 
         function onConnectedChanged() {
-            if (ConnectionManager.connected) {
-                busyIndicator.startFilling()
-            } else {
+            if (!ConnectionManager.connected) {
+                // Only handle disconnect here
                 busyIndicator.reset()
                 loginContent.opacity = 1
                 busyContainer.opacity = 0
             }
         }
 
+        function onErrorOccurred(error) {
+            busyIndicator.reset()
+            loginContent.opacity = 1
+            busyContainer.opacity = 0
+        }
+
         function onAuthenticatedChanged() {
-            if (!ConnectionManager.authenticated && !ConnectionManager.connected) {
+            if (ConnectionManager.authenticated) {
+                busyIndicator.startFilling()
+            } else if (!ConnectionManager.connected) {
                 busyIndicator.reset()
                 loginContent.opacity = 1
                 busyContainer.opacity = 0
@@ -53,6 +72,7 @@ Page {
             opacity: 1
 
             Behavior on opacity {
+                enabled: loginPage.animEnabled
                 NumberAnimation {
                     duration: 300
                     easing.type: Easing.InOutQuad
@@ -187,9 +207,9 @@ Page {
                         implicitHeight: connectButton.Material.buttonHeight
                         radius: connectButton.Material.roundedScale
                         color: connectButton.enabled ?
-                                   (connectButton.down ? Qt.darker(Material.primary, 1.2) :
-                                    connectButton.hovered ? Qt.lighter(Material.primary, 1.1) :
-                                    Material.primary) :
+                                   (connectButton.down ? Qt.darker(Constants.headerGradientStart, 1.2) :
+                                    connectButton.hovered ? Qt.lighter(Constants.headerGradientStart, 1.1) :
+                                    Constants.headerGradientStart) :
                                    Constants.borderColor
 
                         Behavior on color {
@@ -221,6 +241,7 @@ Page {
             opacity: 0
 
             Behavior on opacity {
+                enabled: loginPage.animEnabled
                 NumberAnimation {
                     duration: 300
                     easing.type: Easing.InOutQuad
@@ -234,19 +255,48 @@ Page {
                 CustomBusyIndicator {
                     id: busyIndicator
                     Layout.alignment: Qt.AlignHCenter
-                    width: 80
-                    height: 80
+                    width: 200
+                    height: 8
 
-                    onFillComplete: {
+                    onComplete: {
                         viewTransitionTimer.start()
                     }
                 }
 
                 Label {
+                    id: statusLabel
                     Layout.alignment: Qt.AlignHCenter
-                    text: busyIndicator.filling ? "Connected!" : "Connecting..."
+                    text: "Connecting..."
                     font.pixelSize: 14
                     opacity: 0.7
+
+                    Connections {
+                        target: ConnectionManager
+                        function onAuthenticatedChanged() {
+                            fadeOut.start()
+                        }
+                    }
+
+                    SequentialAnimation {
+                        id: fadeOut
+                        NumberAnimation {
+                            target: statusLabel
+                            property: "opacity"
+                            to: 0
+                            duration: 250
+                            easing.type: Easing.InQuad
+                        }
+                        ScriptAction {
+                            script: statusLabel.text = ConnectionManager.authenticated ? "Connected!" : "Connecting..."
+                        }
+                        NumberAnimation {
+                            target: statusLabel
+                            property: "opacity"
+                            to: 0.7
+                            duration: 250
+                            easing.type: Easing.OutQuad
+                        }
+                    }
                 }
             }
 
