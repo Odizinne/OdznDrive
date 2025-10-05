@@ -3,6 +3,14 @@
 
 #include <QString>
 #include <QSettings>
+#include <QMap>
+#include <QDateTime>
+
+struct BannedIP {
+    QString ip;
+    QDateTime bannedUntil;
+    int failedAttempts;
+};
 
 class Config
 {
@@ -27,6 +35,13 @@ public:
     QString serverName() const { return m_serverName; }
     void setServerName(const QString &name) { m_serverName = name; }
 
+    // Ban management
+    bool isIPBanned(const QString &ip);
+    void recordFailedAttempt(const QString &ip);
+    void clearFailedAttempts(const QString &ip);
+    void loadBannedIPs();
+    void saveBannedIPs();
+
 private:
     Config();
     Config(const Config&) = delete;
@@ -39,6 +54,8 @@ private:
     QString m_serverName;
 
     QSettings m_settings;
+    QMap<QString, BannedIP> m_bannedIPs;
+    QString getBannedIPsFilePath() const;
 };
 
 #endif // CONFIG_H

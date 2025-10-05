@@ -7,6 +7,7 @@
 #include <QDir>
 #include <QBuffer>
 #include <QImage>
+#include <QRandomGenerator>
 #include "version.h"
 
 ClientConnection::ClientConnection(QWebSocket *socket, FileManager *fileManager, QObject *parent)
@@ -21,11 +22,14 @@ ClientConnection::ClientConnection(QWebSocket *socket, FileManager *fileManager,
     , m_downloadTotalSize(0)
     , m_downloadSentSize(0)
     , m_isZipDownload(false)
+    , m_authDelayTimer(new QTimer(this))
 {
     connect(m_socket, &QWebSocket::textMessageReceived, this, &ClientConnection::onTextMessageReceived);
     connect(m_socket, &QWebSocket::binaryMessageReceived, this, &ClientConnection::onBinaryMessageReceived);
     connect(m_socket, &QWebSocket::disconnected, this, &ClientConnection::onDisconnected);
     connect(m_socket, &QWebSocket::bytesWritten, this, &ClientConnection::onBytesWritten);
+    connect(m_authDelayTimer, &QTimer::timeout, this, &ClientConnection::onAuthDelayTimeout);
+    m_authDelayTimer->setSingleShot(true);
 }
 
 ClientConnection::~ClientConnection()
@@ -119,14 +123,18 @@ void ClientConnection::handleCommand(const QJsonObject &command)
         QString password = params["password"].toString();
         QString clientVersion = params["version"].toString();
 
-        if (authenticate(password, clientVersion)) {
-            QJsonObject data;
-            data["success"] = true;
-            data["serverVersion"] = APP_VERSION_STRING;
-            sendResponse("authenticate", data);
-        } else {
-            // Error already sent in authenticate()
-        }
+        // Store credentials and start random delay timer (2-3 seconds)
+        m_pendingAuthPassword = password;
+        m_pendingAuthClientVersion = clientVersion;
+
+        int delayMs = QRandomGenerator::global()->bounded(2000, 3001); // 2000-3000ms
+        m_authDelayTimer->start(delayMs);
+
+        return;
+    }
+
+    if (!m_authenticated) {
+        sendError("Not authenticated");
         return;
     }
 
@@ -347,8 +355,13 @@ void ClientConnection::sendError(const QString &message)
 
 bool ClientConnection::authenticate(const QString &password, const QString &clientVersion)
 {
+    QString clientIP = m_socket->peerAddress().toString();
+
     // Check password first
     if (password != Config::instance().password()) {
+        Config::instance().recordFailedAttempt(clientIP);
+        qWarning() << "Failed authentication attempt from:" << clientIP
+                   << "(Invalid password)";
         sendError("Invalid password");
         return false;
     }
@@ -358,6 +371,7 @@ bool ClientConnection::authenticate(const QString &password, const QString &clie
     QStringList serverParts = QString(APP_VERSION_STRING).split('.');
 
     if (clientParts.size() < 2 || serverParts.size() < 2) {
+        Config::instance().recordFailedAttempt(clientIP);
         sendError("Invalid version format");
         return false;
     }
@@ -374,12 +388,13 @@ bool ClientConnection::authenticate(const QString &password, const QString &clie
             .arg(serverMajor)
             .arg(serverMinor);
         qWarning() << errorMsg;
+        Config::instance().recordFailedAttempt(clientIP);
         sendError(errorMsg);
         return false;
     }
 
     m_authenticated = true;
-    qInfo() << "Client authenticated successfully (version" << clientVersion << ")";
+    qInfo() << "Client authenticated successfully from" << clientIP << "(version" << clientVersion << ")";
     return true;
 }
 
@@ -767,4 +782,33 @@ void ClientConnection::handleDownloadMultiple(const QJsonObject &params)
     for (int i = 0; i < 3 && m_downloadSentSize < m_downloadTotalSize; ++i) {
         sendNextDownloadChunk();
     }
+}
+
+void ClientConnection::onAuthDelayTimeout()
+{
+    QString clientIP = m_socket->peerAddress().toString();
+
+    // Check if IP is banned
+    if (Config::instance().isIPBanned(clientIP)) {
+        qWarning() << "Blocked authentication attempt from banned IP:" << clientIP;
+        sendError("Too many failed attempts. Please try again later.");
+        m_pendingAuthPassword.clear();
+        m_pendingAuthClientVersion.clear();
+        return;
+    }
+
+    // Attempt authentication
+    if (authenticate(m_pendingAuthPassword, m_pendingAuthClientVersion)) {
+        QJsonObject data;
+        data["success"] = true;
+        data["serverVersion"] = APP_VERSION_STRING;
+        sendResponse("authenticate", data);
+
+        // Clear failed attempts on success
+        Config::instance().clearFailedAttempts(clientIP);
+    }
+    // Error already sent in authenticate()
+
+    m_pendingAuthPassword.clear();
+    m_pendingAuthClientVersion.clear();
 }

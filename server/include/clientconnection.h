@@ -4,6 +4,7 @@
 #include <QObject>
 #include <QWebSocket>
 #include <QFile>
+#include <QTimer>
 
 #include "filemanager.h"
 
@@ -23,6 +24,7 @@ private slots:
     void onBinaryMessageReceived(const QByteArray &message);
     void onDisconnected();
     void onBytesWritten(qint64 bytes);
+    void onAuthDelayTimeout();
 
 private:
     void handleCommand(const QJsonObject &command);
@@ -64,6 +66,11 @@ private:
     qint64 m_downloadTotalSize;
     qint64 m_downloadSentSize;
     bool m_isZipDownload;
+
+    // Auth delay timer
+    QTimer *m_authDelayTimer;
+    QString m_pendingAuthPassword;
+    QString m_pendingAuthClientVersion;
 
     static const qint64 CHUNK_SIZE = 1024 * 1024; // 1MB chunks
 };

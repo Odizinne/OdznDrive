@@ -16,10 +16,8 @@ ApplicationWindow {
 
     Component.onCompleted: {
         WindowsPlatform.setTitlebarColor(UserSettings.darkMode)
-        if (UserSettings.autoconnect) {
+        if (UserSettings.autoconnect && UserSettings.serverUrl !== "" && UserSettings.serverPassword !== "") {
             ConnectionManager.connectToServer(UserSettings.serverUrl, UserSettings.serverPassword)
-        } else {
-            Utils.requestSettingsDialog()
         }
     }
 
@@ -53,10 +51,6 @@ ApplicationWindow {
             if (error !== "Upload cancelled by user" && error !== "Download cancelled by user") {
                 errorDialog.text = error
                 errorDialog.open()
-
-                if (!ConnectionManager.connected) {
-                    Utils.requestSettingsDialog()
-                }
             }
         }
 
@@ -128,8 +122,38 @@ ApplicationWindow {
         }
     }
 
-    FileSystemView {
+    StackView {
+        id: mainStack
         anchors.fill: parent
+        initialItem: ConnectionManager.authenticated ? fileSystemView : loginPage
+
+        // Update the Connections block for authenticated state
+        Connections {
+            target: ConnectionManager
+            function onAuthenticatedChanged() {
+                if (ConnectionManager.authenticated) {
+                    ConnectionManager.listDirectory("", UserSettings.foldersFirst)
+                    ConnectionManager.getStorageInfo()
+                    ConnectionManager.getServerInfo()
+                } else if (mainStack.currentItem !== loginPage) {
+                    mainStack.replace(loginPage)
+                }
+            }
+        }
+    }
+
+    Component {
+        id: loginPage
+        LoginPage {
+            onLoginComplete: {
+                mainStack.replace(fileSystemView)
+            }
+        }
+    }
+
+    Component {
+        id: fileSystemView
+        FileSystemView {}
     }
 
     UploadProgressDialog {
