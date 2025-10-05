@@ -14,9 +14,14 @@ ApplicationWindow {
     Material.primary: "#E67E22"
     Material.theme: UserSettings.darkMode ? Material.Dark : Material.Light
 
-    Component.onCompleted: UserSettings.autoconnect ?
-                               ConnectionManager.connectToServer(UserSettings.serverUrl, UserSettings.serverPassword)
-                             : Utils.requestSettingsDialog()
+    Component.onCompleted: {
+        WindowsPlatform.setTitlebarColor(UserSettings.darkMode)
+        if (UserSettings.autoconnect) {
+            ConnectionManager.connectToServer(UserSettings.serverUrl, UserSettings.serverPassword)
+        } else {
+            Utils.requestSettingsDialog()
+        }
+    }
 
     Connections {
         target: ConnectionManager

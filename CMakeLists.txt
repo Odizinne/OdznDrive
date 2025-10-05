@@ -131,6 +131,7 @@ qt_add_qml_module(${PROJECT_NAME}
     URI Odizinne.OdznDrive
     VERSION 1.0
     QML_FILES ${QML_FILES} ${QML_SINGLETONS}
+    SOURCES include/windowsplatform.h src/windowsplatform.cpp
 )
 
 target_link_libraries(${PROJECT_NAME} PRIVATE
@@ -141,6 +142,10 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     Qt6::WebSockets
     Qt6::Widgets
 )
+
+if(WIN32)
+    target_link_libraries(${PROJECT_NAME} PRIVATE dwmapi)
+endif()
 
 install(TARGETS ${PROJECT_NAME}
     BUNDLE DESTINATION .

@@ -114,7 +114,10 @@ CustomDialog {
 
             Switch {
                 checked: UserSettings.darkMode
-                onClicked: UserSettings.darkMode = checked
+                onClicked: {
+                    UserSettings.darkMode = checked
+                    WindowsPlatform.setTitlebarColor(checked)
+                }
             }
         }
     }
