@@ -112,6 +112,7 @@ if(WIN32)
         ${HEADERS}
         ${SOURCES}
         resources/icons/icons.qrc
+        resources/fonts/fonts.qrc
         ${WINDOWS_RESOURCES}
     )
 else()
@@ -119,6 +120,7 @@ else()
         ${HEADERS}
         ${SOURCES}
         resources/icons/icons.qrc
+        resources/fonts/fonts.qrc
     )
 endif()
 
