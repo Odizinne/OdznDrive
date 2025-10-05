@@ -5,11 +5,7 @@ import QtQuick.Layouts
 import Odizinne.OdznDrive
 
 Item {
-    id: footerBar
     height: 50 + 24
-    property real storagePercentage: 0.0
-    property string storageOccupied: "--"
-    property string storageTotal: "--"
 
     Rectangle {
         anchors.fill: parent
@@ -54,8 +50,8 @@ Item {
                 CustomProgressBar {
                     Layout.preferredWidth: 150
                     Layout.preferredHeight: 8
-                    Material.accent: footerBar.storagePercentage < 0.5 ? "#66BB6A" : footerBar.storagePercentage < 0.85 ? "#FF9800" : "#F44336"
-                    value: footerBar.storagePercentage
+                    Material.accent: Utils.storagePercentage < 0.5 ? "#66BB6A" : Utils.storagePercentage < 0.85 ? "#FF9800" : "#F44336"
+                    value: Utils.storagePercentage
                 }
 
                 RowLayout {
@@ -63,7 +59,7 @@ Item {
                     spacing: 4
 
                     Label {
-                        text: footerBar.storageOccupied
+                        text: Utils.storageOccupied
                         font.pixelSize: 11
                         font.bold: true
                         opacity: 0.7
@@ -76,7 +72,7 @@ Item {
                     }
 
                     Label {
-                        text: footerBar.storageTotal
+                        text: Utils.storageTotal
                         font.pixelSize: 11
                         opacity: 0.7
                     }

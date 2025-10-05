@@ -107,9 +107,9 @@ ApplicationWindow {
         }
 
         function onStorageInfo(total, used, available) {
-            footerBar.storagePercentage = used / total
-            footerBar.storageOccupied = Utils.formatStorage(used)
-            footerBar.storageTotal = Utils.formatStorage(total)
+            Utils.storagePercentage = used / total
+            Utils.storageOccupied = Utils.formatStorage(used)
+            Utils.storageTotal = Utils.formatStorage(total)
         }
 
         function onUploadQueueSizeChanged() {
@@ -126,10 +126,6 @@ ApplicationWindow {
         onTriggered: {
             ConnectionManager.getStorageInfo()
         }
-    }
-
-    footer: FooterBar {
-        id: footerBar
     }
 
     FileSystemView {

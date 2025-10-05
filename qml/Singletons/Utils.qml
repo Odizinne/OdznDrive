@@ -8,6 +8,10 @@ QtObject {
     property string draggedItemPath: ""
     property string draggedItemName: ""
     property var currentDropTarget: null
+
+    property real storagePercentage: 0.0
+    property string storageOccupied: "--"
+    property string storageTotal: "--"
     signal requestSettingsDialog()
 
     function isItemChecked(path) {

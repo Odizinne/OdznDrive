@@ -5,8 +5,9 @@ import QtQuick.Controls.Material
 import QtQuick.Layouts
 import Odizinne.OdznDrive
 
-Item {
+Page {
     id: root
+    Material.background: "transparent"
 
     Connections {
         target: FileModel
@@ -122,24 +123,28 @@ Item {
         anchors.fill: parent
         spacing: 0
 
-        BreadcrumBar {
-            id: breadcrumbBar
-            Layout.margins: 12
-            Layout.preferredHeight: 45
-            Layout.fillWidth: true
-            onShowSettings: settingsDialog.open()
-            onRequestNewFolderDialog: newFolderDialog.open()
-            onRequestMultiDeleteConfirmDialog: {
-                multiDeleteConfirmDialog.itemCount = Utils.checkedCount
-                multiDeleteConfirmDialog.open()
-            }
-        }
-
         Loader {
             Layout.fillWidth: true
             Layout.fillHeight: true
             sourceComponent: UserSettings.listView ? listViewComponent : tileViewComponent
         }
+    }
+
+    header: BreadcrumBar {
+        id: breadcrumbBar
+        Layout.margins: 12
+        Layout.preferredHeight: 45
+        Layout.fillWidth: true
+        onShowSettings: settingsDialog.open()
+        onRequestNewFolderDialog: newFolderDialog.open()
+        onRequestMultiDeleteConfirmDialog: {
+            multiDeleteConfirmDialog.itemCount = Utils.checkedCount
+            multiDeleteConfirmDialog.open()
+        }
+    }
+
+    footer: FooterBar {
+        id: footerBar
     }
 
     Component {

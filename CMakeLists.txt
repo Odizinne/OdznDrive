@@ -19,6 +19,7 @@ set(SOURCES
     src/imagepreviewprovider.cpp
     src/filterproxymodel.cpp
     src/filedialoghelper.cpp
+    src/windowsplatform.cpp
 )
 
 set(HEADERS
@@ -27,6 +28,7 @@ set(HEADERS
     include/imagepreviewprovider.h
     include/filterproxymodel.h
     include/filedialoghelper.h
+    include/windowsplatform.h
 )
 
 set(QML_FILES
@@ -41,6 +43,7 @@ set(QML_FILES
     qml/Components/FooterBar.qml
     qml/Components/ItemContextMenu.qml
     qml/Components/Separator.qml
+    qml/Components/LoginPage.qml
 
     qml/CustomComponents/CustomButton.qml
     qml/CustomComponents/CustomDialog.qml
@@ -133,7 +136,6 @@ qt_add_qml_module(${PROJECT_NAME}
     URI Odizinne.OdznDrive
     VERSION 1.0
     QML_FILES ${QML_FILES} ${QML_SINGLETONS}
-    SOURCES include/windowsplatform.h src/windowsplatform.cpp
 )
 
 target_link_libraries(${PROJECT_NAME} PRIVATE
