@@ -30,22 +30,6 @@ int main(int argc, char *argv[])
                                   "Server port (default: 8888)", "port");
     parser.addOption(portOption);
 
-    QCommandLineOption storageOption(QStringList() << "s" << "storage",
-                                     "Storage root path", "path");
-    parser.addOption(storageOption);
-
-    QCommandLineOption limitOption(QStringList() << "l" << "limit",
-                                   "Storage limit in MB (default: 10240)", "mb");
-    parser.addOption(limitOption);
-
-    QCommandLineOption passwordOption(QStringList() << "pw" << "password",
-                                      "Server password", "password");
-    parser.addOption(passwordOption);
-
-    QCommandLineOption nameOption(QStringList() << "n" << "name",
-                                  "Server name (default: OdznDrive Server)", "name");
-    parser.addOption(nameOption);
-
     QCommandLineOption createUserOption(QStringList() << "create-user",
                                         "Create new user (requires 3-4 args: username password limitMB [path])");
     parser.addOption(createUserOption);
@@ -90,7 +74,6 @@ int main(int argc, char *argv[])
             qInfo() << "User created successfully!";
             qInfo() << "Username:      " << username;
 
-            // Get the actual path that was created
             User* user = Config::instance().getUser(username);
             if (user) {
                 qInfo() << "Storage path:  " << user->storagePath;
@@ -147,26 +130,8 @@ int main(int argc, char *argv[])
 
     if (parser.isSet(portOption)) {
         Config::instance().setPort(parser.value(portOption).toInt());
+        Config::instance().save();
     }
-
-    if (parser.isSet(storageOption)) {
-        Config::instance().setStorageRoot(parser.value(storageOption));
-    }
-
-    if (parser.isSet(limitOption)) {
-        qint64 limitMB = parser.value(limitOption).toLongLong();
-        Config::instance().setStorageLimit(limitMB * 1024 * 1024);
-    }
-
-    if (parser.isSet(passwordOption)) {
-        Config::instance().setPassword(parser.value(passwordOption));
-    }
-
-    if (parser.isSet(nameOption)) {
-        Config::instance().setServerName(parser.value(nameOption));
-    }
-
-    Config::instance().save();
 
     FileServer server;
 
