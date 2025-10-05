@@ -29,12 +29,10 @@ Item {
             spacing: 7
 
             CustomButton {
-                //Layout.preferredHeight: 50
-                //Layout.preferredWidth: 50
                 Image {
                     anchors.centerIn: parent
-                    sourceSize.height: 28
-                    sourceSize.width: 28
+                    sourceSize.height: 24
+                    sourceSize.width: 24
                     source: "qrc:/icons/icon.png"
                 }
             }

@@ -1,6 +1,7 @@
 import QtQuick.Controls.Material
 import QtQuick.Layouts
 import Odizinne.OdznDrive
+import QtQuick
 
 CustomDialog {
     id: uploadProgressDialog

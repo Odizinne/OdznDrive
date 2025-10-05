@@ -1,3 +1,5 @@
+pragma ComponentBehavior: Bound
+
 import QtQuick
 import QtQuick.Controls.Material
 import QtQuick.Controls.Material.impl
@@ -21,7 +23,7 @@ Button {
         layer.enabled: control.enabled && color.a > 0 && !control.flat
         layer.effect: RoundedElevationEffect {
             elevation: control.Material.elevation
-            roundedScale: control.background.radius
+            roundedScale: Material.ExtraSmallScale
         }
 
         Ripple {

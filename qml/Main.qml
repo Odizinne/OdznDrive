@@ -16,7 +16,7 @@ ApplicationWindow {
 
     Component.onCompleted: UserSettings.autoconnect ?
                                ConnectionManager.connectToServer(UserSettings.serverUrl, UserSettings.serverPassword)
-                             : settingsDialog.open()
+                             : Utils.requestSettingsDialog()
 
     Connections {
         target: ConnectionManager
@@ -50,7 +50,7 @@ ApplicationWindow {
                 errorDialog.open()
 
                 if (!ConnectionManager.connected) {
-                    settingsDialog.open()
+                    Utils.requestSettingsDialog()
                 }
             }
         }
@@ -129,7 +129,6 @@ ApplicationWindow {
 
     FileSystemView {
         anchors.fill: parent
-        onShowSettings: settingsDialog.open()
     }
 
     UploadProgressDialog {
@@ -144,11 +143,6 @@ ApplicationWindow {
 
     ErrorDialog {
         id: errorDialog
-        anchors.centerIn: parent
-    }
-
-    SettingsDialog {
-        id: settingsDialog
         anchors.centerIn: parent
     }
 }

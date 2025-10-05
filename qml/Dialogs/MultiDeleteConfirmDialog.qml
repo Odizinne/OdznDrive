@@ -1,5 +1,4 @@
 import QtQuick.Controls.Material
-import QtQuick.Layouts
 import Odizinne.OdznDrive
 import QtQuick
 
@@ -16,8 +15,8 @@ CustomDialog {
     standardButtons: Dialog.Yes | Dialog.No
 
     onAccepted: {
-        let paths = root.getCheckedPaths()
+        let paths = Utils.getCheckedPaths()
         ConnectionManager.deleteMultiple(paths)
-        root.uncheckAll()
+        Utils.uncheckAll()
     }
 }

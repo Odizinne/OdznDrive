@@ -31,25 +31,34 @@ set(HEADERS
 
 set(QML_FILES
     qml/Main.qml
-    qml/FileSystemView.qml
-    qml/TransferProgress.qml
-    qml/SettingsDialog.qml
-    qml/CustomMenu.qml
-    qml/CustomScrollView.qml
-    qml/Separator.qml
-    qml/RenameDialog.qml
-    qml/NewFolderDialog.qml
-    qml/DeleteConfirmDialog.qml
-    qml/MultiDeleteConfirmDialog.qml
-    qml/ItemContextMenu.qml
-    qml/EmptySpaceMenu.qml
-    qml/ErrorDialog.qml
-    qml/DownloadProgressDialog.qml
-    qml/UploadProgressDialog.qml
-    qml/FooterBar.qml
-    qml/CustomDialog.qml
 
+    qml/Components/BreadcrumBar.qml
+    qml/Components/DragIndicator.qml
+    qml/Components/EmptySpaceMenu.qml
+    qml/Components/FileListView.qml
+    qml/Components/FileSystemView.qml
+    qml/Components/FileTileView.qml
+    qml/Components/FooterBar.qml
+    qml/Components/ItemContextMenu.qml
+    qml/Components/Separator.qml
+
+    qml/CustomComponents/CustomButton.qml
+    qml/CustomComponents/CustomDialog.qml
+    qml/CustomComponents/CustomMenu.qml
+    qml/CustomComponents/CustomProgressBar.qml
+    qml/CustomComponents/CustomScrollView.qml
+
+    qml/Dialogs/DeleteConfirmDialog.qml
+    qml/Dialogs/DownloadProgressDialog.qml
+    qml/Dialogs/ErrorDialog.qml
+    qml/Dialogs/MultiDeleteConfirmDialog.qml
+    qml/Dialogs/NewFolderDialog.qml
+    qml/Dialogs/RenameDialog.qml
+    qml/Dialogs/SettingsDialog.qml
+    qml/Dialogs/TransferProgress.qml
+    qml/Dialogs/UploadProgressDialog.qml
 )
+
 
 set(QML_SINGLETONS
     qml/Singletons/UserSettings.qml
@@ -122,8 +131,6 @@ qt_add_qml_module(${PROJECT_NAME}
     URI Odizinne.OdznDrive
     VERSION 1.0
     QML_FILES ${QML_FILES} ${QML_SINGLETONS}
-    QML_FILES qml/CustomProgressBar.qml
-    QML_FILES qml/CustomButton.qml
 )
 
 target_link_libraries(${PROJECT_NAME} PRIVATE
