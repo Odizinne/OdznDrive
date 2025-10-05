@@ -26,7 +26,6 @@ Page {
 
         function onConnectedChanged() {
             if (!ConnectionManager.connected) {
-                // Only handle disconnect here
                 busyIndicator.reset()
                 loginContent.opacity = 1
                 busyContainer.opacity = 0
@@ -56,12 +55,12 @@ Page {
         width: 400
         height: loginContent.implicitHeight + 60
         color: Constants.surfaceColor
-        radius: 8
+        radius: 4
 
         layer.enabled: true
         layer.effect: RoundedElevationEffect {
-            elevation: 12
-            roundedScale: 8
+            elevation: 8
+            roundedScale: 4
         }
 
         ColumnLayout {
@@ -79,20 +78,15 @@ Page {
                 }
             }
 
-            Item {
+            ColumnLayout {
                 Layout.fillWidth: true
-                Layout.preferredHeight: 80
+                spacing: 15
 
                 ColumnLayout {
-                    anchors.centerIn: parent
+                    Layout.fillWidth: true
+                    Layout.alignment: Qt.AlignCenter
                     spacing: 8
-
-                    Image {
-                        Layout.alignment: Qt.AlignHCenter
-                        source: "qrc:/icons/icon.png"
-                        sourceSize.width: 48
-                        sourceSize.height: 48
-                    }
+                    Layout.bottomMargin: 20
 
                     Label {
                         Layout.alignment: Qt.AlignHCenter
@@ -108,11 +102,6 @@ Page {
                         font.pixelSize: 13
                     }
                 }
-            }
-
-            ColumnLayout {
-                Layout.fillWidth: true
-                spacing: 15
 
                 ColumnLayout {
                     Layout.fillWidth: true
@@ -153,7 +142,29 @@ Page {
 
                 RowLayout {
                     Layout.fillWidth: true
-                    Layout.topMargin: 5
+                    TapHandler {
+                        onTapped: showPasswordCheckbox.click()
+                    }
+
+                    Label {
+                        text: "Show password"
+                        Layout.fillWidth: true
+                        font.pixelSize: 13
+                    }
+
+                    CheckBox {
+                        id: showPasswordCheckbox
+                        checked: passwordField.echoMode === TextInput.Normal
+                        onClicked: checked ? passwordField.echoMode = TextInput.Normal : passwordField.echoMode = TextInput.Password
+                    }
+                }
+
+                RowLayout {
+                    Layout.fillWidth: true
+                    Layout.topMargin: -15
+                    TapHandler {
+                        onTapped: autoconnectCheckbox.click()
+                    }
 
                     Label {
                         text: "Connect automatically on startup"
@@ -235,6 +246,14 @@ Page {
             ColumnLayout {
                 anchors.centerIn: parent
                 spacing: 20
+
+                Image {
+                    source: "qrc:/icons/icon.png"
+                    sourceSize.width: 48
+                    sourceSize.height: 48
+                    Layout.bottomMargin: 25
+                    Layout.alignment: Qt.AlignHCenter
+                }
 
                 CustomBusyIndicator {
                     id: busyIndicator

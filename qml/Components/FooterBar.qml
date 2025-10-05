@@ -42,10 +42,20 @@ Item {
                             text: ConnectionManager.serverName
                             enabled: false
                         }
+                        MenuSeparator {}
                         MenuItem {
-                            text: "Settings"
-                            onClicked: footer.showSettings()
+                            text: "Folders first"
+                            checked: UserSettings.foldersFirst
+                            checkable: true
+                            onClicked: UserSettings.foldersFirst = checked
                         }
+                        MenuItem {
+                            text: "Dark mode"
+                            checkable: true
+                            checked: UserSettings.darkMode
+                            onClicked: UserSettings.darkMode = checked
+                        }
+                        MenuSeparator {}
                         MenuItem {
                             text: "Disconnect"
                             onClicked: {
