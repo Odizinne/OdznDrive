@@ -10,7 +10,7 @@ int main(int argc, char *argv[])
     qputenv("QT_QUICK_CONTROLS_MATERIAL_VARIANT", "Dense");
     QApplication app(argc, argv);
 
-    qint32 fontId = QFontDatabase::addApplicationFont(":/fonts/RobotoMono-Regular.ttf");
+    qint32 fontId = QFontDatabase::addApplicationFont(":/fonts/JetBrainsMono-Regular.ttf");
     QStringList fontList = QFontDatabase::applicationFontFamilies(fontId);
     QString family = fontList.first();
 
@@ -21,11 +21,9 @@ int main(int argc, char *argv[])
 
     QQmlApplicationEngine engine;
 
-    // Create and register image provider
     ImagePreviewProvider *imageProvider = new ImagePreviewProvider();
     engine.addImageProvider("preview", imageProvider);
 
-    // Set the provider in ConnectionManager
     ConnectionManager::instance()->setImageProvider(imageProvider);
 
     QObject::connect(&engine, &QQmlApplicationEngine::objectCreationFailed,
