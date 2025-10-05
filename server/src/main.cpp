@@ -3,14 +3,24 @@
 #include <QDebug>
 #include "fileserver.h"
 #include "config.h"
+#include "version.h"
 
 int main(int argc, char *argv[])
 {
     QCoreApplication app(argc, argv);
     QCoreApplication::setOrganizationName("Odizinne");
     QCoreApplication::setApplicationName("OdznDriveServer");
-    QCoreApplication::setApplicationVersion("1.0.0");
+    QCoreApplication::setApplicationVersion(APP_VERSION_STRING);
 
+    qInfo() << "========================================";
+    qInfo() << "          OdznDrive Server";
+    qInfo() << "========================================";
+    qInfo() << "Version:        " << APP_VERSION_STRING;
+    qInfo() << "Qt Version:     " << QT_VERSION_STRING;
+    qInfo() << "Commit Hash:    " << GIT_COMMIT_HASH;
+    qInfo() << "Build Time:     " << BUILD_TIMESTAMP;
+    qInfo() << "========================================";
+    
     QCommandLineParser parser;
     parser.setApplicationDescription("OdznDrive File Transfer Server");
     parser.addHelpOption();

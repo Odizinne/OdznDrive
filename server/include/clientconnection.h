@@ -29,7 +29,7 @@ private:
     void sendResponse(const QString &type, const QJsonObject &data);
     void sendError(const QString &message);
 
-    bool authenticate(const QString &password);
+    bool authenticate(const QString &password, const QString &clientVersion);
     void handleListDirectory(const QJsonObject &params);
     void handleCreateDirectory(const QJsonObject &params);
     void handleDeleteFile(const QJsonObject &params);

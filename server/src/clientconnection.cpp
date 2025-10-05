@@ -7,6 +7,7 @@
 #include <QDir>
 #include <QBuffer>
 #include <QImage>
+#include "version.h"
 
 ClientConnection::ClientConnection(QWebSocket *socket, FileManager *fileManager, QObject *parent)
     : QObject(parent)
@@ -116,12 +117,15 @@ void ClientConnection::handleCommand(const QJsonObject &command)
 
     if (type == "authenticate") {
         QString password = params["password"].toString();
-        if (authenticate(password)) {
+        QString clientVersion = params["version"].toString();
+
+        if (authenticate(password, clientVersion)) {
             QJsonObject data;
             data["success"] = true;
+            data["serverVersion"] = APP_VERSION_STRING;
             sendResponse("authenticate", data);
         } else {
-            sendError("Invalid password");
+            // Error already sent in authenticate()
         }
         return;
     }
@@ -341,13 +345,42 @@ void ClientConnection::sendError(const QString &message)
     sendResponse("error", error);
 }
 
-bool ClientConnection::authenticate(const QString &password)
+bool ClientConnection::authenticate(const QString &password, const QString &clientVersion)
 {
-    if (password == Config::instance().password()) {
-        m_authenticated = true;
-        return true;
+    // Check password first
+    if (password != Config::instance().password()) {
+        sendError("Invalid password");
+        return false;
     }
-    return false;
+
+    // Parse versions
+    QStringList clientParts = clientVersion.split('.');
+    QStringList serverParts = QString(APP_VERSION_STRING).split('.');
+
+    if (clientParts.size() < 2 || serverParts.size() < 2) {
+        sendError("Invalid version format");
+        return false;
+    }
+
+    int clientMajor = clientParts[0].toInt();
+    int clientMinor = clientParts[1].toInt();
+    int serverMajor = serverParts[0].toInt();
+    int serverMinor = serverParts[1].toInt();
+
+    if (clientMajor != serverMajor || clientMinor != serverMinor) {
+        QString errorMsg = QString("Version mismatch: Client %1.%2 incompatible with Server %3.%4")
+        .arg(clientMajor)
+            .arg(clientMinor)
+            .arg(serverMajor)
+            .arg(serverMinor);
+        qWarning() << errorMsg;
+        sendError(errorMsg);
+        return false;
+    }
+
+    m_authenticated = true;
+    qInfo() << "Client authenticated successfully (version" << clientVersion << ")";
+    return true;
 }
 
 void ClientConnection::handleListDirectory(const QJsonObject &params)

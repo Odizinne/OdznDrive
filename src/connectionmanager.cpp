@@ -7,6 +7,7 @@
 #include <QFileInfo>
 #include <QUrl>
 #include <QBuffer>
+#include "version.h"
 
 ConnectionManager* ConnectionManager::s_instance = nullptr;
 
@@ -272,6 +273,7 @@ void ConnectionManager::onConnected()
 
     QJsonObject params;
     params["password"] = m_password;
+    params["version"] = APP_VERSION_STRING;
     sendCommand("authenticate", params);
 }
 
