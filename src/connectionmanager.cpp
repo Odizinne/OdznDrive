@@ -596,7 +596,7 @@ void ConnectionManager::handleResponse(const QJsonObject &response)
         emit directoryListed(path, files);
 
         if (m_imageProvider) {
-            for (const QVariant &fileVar : files) {
+            for (const QVariant &fileVar : std::as_const(files)) {
                 QVariantMap fileMap = fileVar.toMap();
                 if (!fileMap["isDir"].toBool()) {
                     QString fileName = fileMap["name"].toString().toLower();
