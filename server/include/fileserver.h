@@ -5,7 +5,6 @@
 #include <QWebSocketServer>
 #include <QList>
 #include "clientconnection.h"
-#include "filemanager.h"
 
 class FileServer : public QObject
 {
@@ -14,7 +13,7 @@ class FileServer : public QObject
 public:
     explicit FileServer(QObject *parent = nullptr);
     ~FileServer();
-    
+
     bool start();
     void stop();
 
@@ -25,7 +24,6 @@ private slots:
 private:
     QWebSocketServer *m_server;
     QList<ClientConnection*> m_clients;
-    FileManager *m_fileManager;
 };
 
 #endif // FILESERVER_H

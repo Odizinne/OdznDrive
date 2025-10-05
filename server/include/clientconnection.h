@@ -31,7 +31,7 @@ private:
     void sendResponse(const QString &type, const QJsonObject &data);
     void sendError(const QString &message);
 
-    bool authenticate(const QString &password, const QString &clientVersion);
+    bool authenticate(const QString &username, const QString &password, const QString &clientVersion);
     void handleListDirectory(const QJsonObject &params);
     void handleCreateDirectory(const QJsonObject &params);
     void handleDeleteFile(const QJsonObject &params);
@@ -55,6 +55,7 @@ private:
     QWebSocket *m_socket;
     FileManager *m_fileManager;
     bool m_authenticated;
+    QString m_currentUsername;
 
     QString m_uploadPath;
     QFile *m_uploadFile;
@@ -69,6 +70,7 @@ private:
 
     // Auth delay timer
     QTimer *m_authDelayTimer;
+    QString m_pendingAuthUsername;
     QString m_pendingAuthPassword;
     QString m_pendingAuthClientVersion;
 

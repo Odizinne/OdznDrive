@@ -69,6 +69,7 @@ Page {
             anchors.margins: 30
             spacing: 20
             opacity: 1
+            visible: opacity !== 0.0
 
             Behavior on opacity {
                 enabled: loginPage.animEnabled
@@ -116,6 +117,24 @@ Page {
                         font.pixelSize: 14
                         Material.roundedScale: Material.ExtraSmallScale
                         onTextChanged: UserSettings.serverUrl = text.trim()
+                        onAccepted: passwordField.forceActiveFocus()
+                        Keys.onReturnPressed: passwordField.forceActiveFocus()
+                    }
+                }
+
+                ColumnLayout {
+                    Layout.fillWidth: true
+                    spacing: 5
+
+                    TextField {
+                        id: usernameField
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: 45
+                        placeholderText: "Username"
+                        text: UserSettings.serverUsername
+                        font.pixelSize: 14
+                        Material.roundedScale: Material.ExtraSmallScale
+                        onTextChanged: UserSettings.serverUsername = text.trim()
                         onAccepted: passwordField.forceActiveFocus()
                         Keys.onReturnPressed: passwordField.forceActiveFocus()
                     }
@@ -188,27 +207,64 @@ Page {
                     font.pixelSize: 14
                     font.bold: true
                     Material.roundedScale: Material.ExtraSmallScale
-                    enabled: urlField.text.trim() !== "" && passwordField.text.trim() !== ""
+                    enabled: urlField.text.trim() !== "" &&
+                             usernameField.text.trim() !== "" &&
+                             passwordField.text.trim() !== ""
 
                     onClicked: {
-                        if (urlField.text.trim() !== "" && passwordField.text.trim() !== "") {
+                        if (urlField.text.trim() !== "" &&
+                            usernameField.text.trim() !== "" &&
+                            passwordField.text.trim() !== "") {
                             loginContent.opacity = 0
                             busyContainer.opacity = 1
-                            ConnectionManager.connectToServer(urlField.text.trim(), passwordField.text.trim())
+                            ConnectionManager.connectToServer(
+                                urlField.text.trim(),
+                                usernameField.text.trim(),
+                                passwordField.text.trim()
+                            )
                         }
                     }
 
                     background: Rectangle {
                         implicitHeight: connectButton.Material.buttonHeight
                         radius: connectButton.Material.roundedScale
-                        color: connectButton.enabled ?
-                                   (connectButton.down ? Qt.darker(Constants.headerGradientStart, 1.2) :
-                                    connectButton.hovered ? Qt.lighter(Constants.headerGradientStart, 1.1) :
-                                    Constants.headerGradientStart) :
-                                   Constants.borderColor
 
-                        Behavior on color {
-                            ColorAnimation { duration: 150 }
+                        gradient: Gradient {
+                            orientation: Gradient.Horizontal
+                            GradientStop {
+                                position: 0.0
+                                color: Constants.headerGradientStart
+                            }
+                            GradientStop {
+                                position: 1.0
+                                color: Constants.headerGradientStop
+                            }
+                        }
+
+                        // Overlay for hover/press states
+                        Rectangle {
+                            anchors.fill: parent
+                            radius: parent.radius
+                            color: connectButton.down ? "black" : "white"
+                            opacity: connectButton.enabled ?
+                                        (connectButton.down ? 0.2 : connectButton.hovered ? 0.1 : 0) :
+                                        0
+
+                            Behavior on opacity {
+                                NumberAnimation { duration: 150 }
+                            }
+                        }
+
+                        // Disabled state overlay
+                        Rectangle {
+                            anchors.fill: parent
+                            radius: parent.radius
+                            color: Constants.borderColor
+                            opacity: connectButton.enabled ? 0 : 1
+
+                            Behavior on opacity {
+                                NumberAnimation { duration: 150 }
+                            }
                         }
 
                         layer.enabled: connectButton.enabled
@@ -223,7 +279,7 @@ Page {
                         font: connectButton.font
                         horizontalAlignment: Text.AlignHCenter
                         verticalAlignment: Text.AlignVCenter
-                        color: connectButton.enabled ? "white" : Material.foreground
+                        color: "black"
                         opacity: connectButton.enabled ? 1.0 : 0.5
                     }
                 }
@@ -234,6 +290,7 @@ Page {
             id: busyContainer
             anchors.fill: parent
             opacity: 0
+            visible: opacity !== 0.0
 
             Behavior on opacity {
                 enabled: loginPage.animEnabled
@@ -249,8 +306,8 @@ Page {
 
                 Image {
                     source: "qrc:/icons/icon.png"
-                    sourceSize.width: 48
-                    sourceSize.height: 48
+                    sourceSize.width: 64
+                    sourceSize.height: 64
                     Layout.bottomMargin: 25
                     Layout.alignment: Qt.AlignHCenter
                 }
@@ -317,6 +374,8 @@ Page {
     Component.onCompleted: {
         if (urlField.text.trim() === "") {
             urlField.forceActiveFocus()
+        } else if (usernameField.text.trim() === "") {
+            usernameField.forceActiveFocus()
         } else if (passwordField.text.trim() === "") {
             passwordField.forceActiveFocus()
         }

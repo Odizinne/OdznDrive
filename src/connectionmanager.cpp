@@ -72,7 +72,7 @@ void ConnectionManager::setImageProvider(ImagePreviewProvider *provider)
     m_imageProvider = provider;
 }
 
-void ConnectionManager::connectToServer(const QString &url, const QString &password)
+void ConnectionManager::connectToServer(const QString &url, const QString &username, const QString &password)
 {
     if (m_socket->state() != QAbstractSocket::UnconnectedState) {
         m_socket->abort();
@@ -81,6 +81,7 @@ void ConnectionManager::connectToServer(const QString &url, const QString &passw
     setConnected(false);
     setAuthenticated(false);
 
+    m_username = username;
     m_password = password;
     setStatusMessage("Connecting...");
 
@@ -279,6 +280,7 @@ void ConnectionManager::onConnected()
     setStatusMessage("Connected");
 
     QJsonObject params;
+    params["username"] = m_username;
     params["password"] = m_password;
     params["version"] = APP_VERSION_STRING;
     sendCommand("authenticate", params);

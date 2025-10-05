@@ -16,9 +16,15 @@ ApplicationWindow {
 
     Component.onCompleted: {
         WindowsPlatform.setTitlebarColor(UserSettings.darkMode)
-        if (UserSettings.autoconnect && UserSettings.serverUrl !== "" && UserSettings.serverPassword !== "") {
-            ConnectionManager.connectToServer(UserSettings.serverUrl, UserSettings.serverPassword)
-            //loginPage.setLoginToServer()
+        if (UserSettings.autoconnect &&
+            UserSettings.serverUrl !== "" &&
+            UserSettings.serverUsername !== "" &&
+            UserSettings.serverPassword !== "") {
+            ConnectionManager.connectToServer(
+                UserSettings.serverUrl,
+                UserSettings.serverUsername,
+                UserSettings.serverPassword
+            )
             if (mainStack.currentItem && mainStack.currentItem.setLoginToServer) {
                 mainStack.currentItem.setLoginToServer()
             }

@@ -5,11 +5,19 @@
 #include <QSettings>
 #include <QMap>
 #include <QDateTime>
+#include <QList>
 
 struct BannedIP {
     QString ip;
     QDateTime bannedUntil;
     int failedAttempts;
+};
+
+struct User {
+    QString username;
+    QString password;
+    QString storagePath;
+    qint64 storageLimit;
 };
 
 class Config
@@ -42,6 +50,15 @@ public:
     void loadBannedIPs();
     void saveBannedIPs();
 
+    // User management
+    QList<User> getUsers() const;
+    User* getUser(const QString &username);
+    bool createUser(const QString &username, const QString &password,
+                    qint64 storageLimit, const QString &storagePath = QString());
+    bool deleteUser(const QString &username);
+    void loadUsers();
+    void saveUsers();
+
 private:
     Config();
     Config(const Config&) = delete;
@@ -55,7 +72,11 @@ private:
 
     QSettings m_settings;
     QMap<QString, BannedIP> m_bannedIPs;
+    QList<User> m_users;
+
     QString getBannedIPsFilePath() const;
+    QString getUsersFilePath() const;
+    QString generateUserStoragePath(const QString &username) const;
 };
 
 #endif // CONFIG_H

@@ -53,7 +53,10 @@ Item {
                             text: "Dark mode"
                             checkable: true
                             checked: UserSettings.darkMode
-                            onClicked: UserSettings.darkMode = checked
+                            onClicked: {
+                                UserSettings.darkMode = checked
+                                WindowsPlatform.setTitlebarColor(checked)
+                            }
                         }
                         MenuSeparator {}
                         MenuItem {

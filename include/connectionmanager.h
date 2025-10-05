@@ -46,7 +46,7 @@ public:
 
     void setImageProvider(ImagePreviewProvider *provider);
 
-    Q_INVOKABLE void connectToServer(const QString &url, const QString &password);
+    Q_INVOKABLE void connectToServer(const QString &url, const QString &username, const QString &password);
     Q_INVOKABLE void disconnect();
 
     Q_INVOKABLE void listDirectory(const QString &path, bool foldersFirst);
@@ -128,6 +128,7 @@ private:
     bool m_connected;
     bool m_authenticated;
     QString m_statusMessage;
+    QString m_username;
     QString m_password;
 
     // Download state
