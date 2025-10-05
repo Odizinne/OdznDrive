@@ -5,7 +5,6 @@
 #include <QWindow>
 #include <windows.h>
 #include <dwmapi.h>
-#include <QSettings>
 #endif
 
 WindowsPlatform* WindowsPlatform::s_instance = nullptr;
@@ -14,10 +13,6 @@ WindowsPlatform* WindowsPlatform::s_instance = nullptr;
 WindowsPlatform::WindowsPlatform(QObject *parent)
     :QObject(parent)
 {
-#ifdef _WIN32
-    QSettings settings("Odizinne", "OdznDrive");
-    m_titlebarColorMode = settings.value("darkMide", true).toBool();
-#endif
 }
 
 WindowsPlatform* WindowsPlatform::create(QQmlEngine *qmlEngine, QJSEngine *jsEngine)
@@ -38,10 +33,6 @@ WindowsPlatform* WindowsPlatform::instance()
 
 bool WindowsPlatform::setTitlebarColor(bool darkMode) {
 #ifdef _WIN32
-    if (darkMode == m_titlebarColorMode) {
-        return true;
-    }
-    m_titlebarColorMode = darkMode;
     bool success = true;
     const QWindowList &windows = QApplication::topLevelWindows();
     for (QWindow* window : windows) {
@@ -67,12 +58,6 @@ bool WindowsPlatform::setTitlebarColor(bool darkMode) {
 
     return success;
 #else
-
-    // Not on Windows, so no effect
-
-    m_titlebarColorMode = colorMode;
-
     return false;
-
 #endif
 }

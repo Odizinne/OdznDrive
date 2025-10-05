@@ -18,10 +18,6 @@ public:
 private:
     WindowsPlatform(QObject *parent = nullptr);
     static WindowsPlatform *s_instance;
-
-#ifdef _WIN32
-    bool m_titlebarColorMode;
-#endif
 };
 
 #endif // WINDOWSPLATFORM_H
