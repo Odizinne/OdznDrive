@@ -11,7 +11,6 @@ Item {
     height: 45 + 24
     property var checkedItems: ({})
     property int checkedCount: 0
-    signal showSettings()
     signal requestNewFolderDialog()
     signal requestMultiDeleteConfirmDialog()
 
@@ -355,17 +354,6 @@ Item {
                 icon.color: "black"
                 ToolTip.visible: hovered
                 ToolTip.text: UserSettings.listView ? "Tile view" : "List view"
-                rippleHoverColor: Constants.contrastedRippleHoverColor
-            }
-
-            CustomButton {
-                icon.source: "qrc:/icons/cog.svg"
-                icon.width: 16
-                icon.height: 16
-                onClicked: root.showSettings()
-                ToolTip.visible: hovered
-                ToolTip.text: "Settings"
-                icon.color: "black"
                 rippleHoverColor: Constants.contrastedRippleHoverColor
             }
         }

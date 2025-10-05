@@ -118,12 +118,6 @@ Page {
                     Layout.fillWidth: true
                     spacing: 5
 
-                    Label {
-                        text: "Server URL"
-                        font.pixelSize: 13
-                        opacity: 0.9
-                    }
-
                     TextField {
                         id: urlField
                         Layout.fillWidth: true
@@ -132,10 +126,8 @@ Page {
                         text: UserSettings.serverUrl
                         font.pixelSize: 14
                         Material.roundedScale: Material.ExtraSmallScale
-
                         onTextChanged: UserSettings.serverUrl = text.trim()
                         onAccepted: passwordField.forceActiveFocus()
-
                         Keys.onReturnPressed: passwordField.forceActiveFocus()
                     }
                 }
@@ -143,12 +135,6 @@ Page {
                 ColumnLayout {
                     Layout.fillWidth: true
                     spacing: 5
-
-                    Label {
-                        text: "Password"
-                        font.pixelSize: 13
-                        opacity: 0.9
-                    }
 
                     TextField {
                         id: passwordField
@@ -159,10 +145,8 @@ Page {
                         echoMode: TextInput.Password
                         font.pixelSize: 14
                         Material.roundedScale: Material.ExtraSmallScale
-
                         onTextChanged: UserSettings.serverPassword = text.trim()
                         onAccepted: connectButton.clicked()
-
                         Keys.onReturnPressed: connectButton.clicked()
                     }
                 }

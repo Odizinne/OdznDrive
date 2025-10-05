@@ -5,8 +5,9 @@ import QtQuick.Layouts
 import Odizinne.OdznDrive
 
 Item {
+    id: footer
     height: 50 + 24
-
+    signal showSettings()
     Rectangle {
         anchors.fill: parent
         anchors.margins: 12
@@ -27,32 +28,36 @@ Item {
             CustomButton {
                 CustomButton {
                     id: menuButton
-
-                    onClicked: menu.visible ? menu.close() : menu.popup(menuButton, 0, menuButton.height)
-
+                    onClicked: menu.visible ? menu.close() : menu.open()
+                    icon.source: "qrc:/icons/cog.svg"
+                    icon.width: 16
+                    icon.height: 16
                     CustomMenu {
                         id: menu
                         width: 200
+                        y: menuButton.y - menu.height - 15
+                        x: menuButton.x - 8
 
                         MenuItem {
+                            text: ConnectionManager.serverName
+                            enabled: false
+                        }
+                        MenuItem {
+                            text: "Settings"
+                            onClicked: footer.showSettings()
+                        }
+                        MenuItem {
                             text: "Disconnect"
-                            onClicked: ConnectionManager.disconnect()
+                            onClicked: {
+                                menu.close()
+                                ConnectionManager.disconnect()
+                            }
+                        }
+                        MenuItem {
+                            text: "Exit"
+                            onClicked: Qt.quit()
                         }
                     }
-
-                    Image {
-                        anchors.centerIn: parent
-                        sourceSize.height: 24
-                        sourceSize.width: 24
-                        source: "qrc:/icons/icon.png"
-                    }
-                }
-
-                Image {
-                    anchors.centerIn: parent
-                    sourceSize.height: 24
-                    sourceSize.width: 24
-                    source: "qrc:/icons/icon.png"
                 }
             }
 

@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.21)
 
-project(OdznDrive VERSION 0.6.0 LANGUAGES CXX)
+project(OdznDrive VERSION 0.6.1 LANGUAGES CXX)
 
 set(CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}/install" CACHE PATH "Installation directory" FORCE)
 set(CMAKE_CXX_STANDARD 17)
@@ -50,6 +50,8 @@ set(QML_FILES
     qml/CustomComponents/CustomMenu.qml
     qml/CustomComponents/CustomProgressBar.qml
     qml/CustomComponents/CustomScrollView.qml
+    qml/CustomComponents/CustomBusyIndicator.qml
+    qml/CustomComponents/CustomStackView.qml
 
     qml/Dialogs/DeleteConfirmDialog.qml
     qml/Dialogs/DownloadProgressDialog.qml
@@ -136,7 +138,6 @@ qt_add_qml_module(${PROJECT_NAME}
     URI Odizinne.OdznDrive
     VERSION 1.0
     QML_FILES ${QML_FILES} ${QML_SINGLETONS}
-    QML_FILES qml/CustomComponents/CustomBusyIndicator.qml
 )
 
 target_link_libraries(${PROJECT_NAME} PRIVATE

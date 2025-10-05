@@ -149,7 +149,6 @@ Page {
         Layout.margins: 12
         Layout.preferredHeight: 45
         Layout.fillWidth: true
-        onShowSettings: settingsDialog.open()
         onRequestNewFolderDialog: newFolderDialog.open()
         onRequestMultiDeleteConfirmDialog: {
             multiDeleteConfirmDialog.itemCount = Utils.checkedCount
@@ -159,6 +158,7 @@ Page {
 
     footer: FooterBar {
         id: footerBar
+        onShowSettings: settingsDialog.open()
     }
 
     Component {

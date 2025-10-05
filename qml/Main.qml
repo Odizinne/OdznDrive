@@ -34,7 +34,7 @@ ApplicationWindow {
                 ConnectionManager.getStorageInfo()
                 ConnectionManager.getServerInfo()
             } else {
-                mainStack.replace(loginPage)
+                mainStack.pop()
             }
         }
 
@@ -128,31 +128,17 @@ ApplicationWindow {
         }
     }
 
-    StackView {
+    CustomStackView {
         id: mainStack
         anchors.fill: parent
         initialItem: loginPage
-
-        // Update the Connections block for authenticated state
-        Connections {
-            target: ConnectionManager
-            function onAuthenticatedChanged() {
-                if (ConnectionManager.authenticated) {
-                    ConnectionManager.listDirectory("", UserSettings.foldersFirst)
-                    ConnectionManager.getStorageInfo()
-                    ConnectionManager.getServerInfo()
-                } else if (mainStack.currentItem !== loginPage) {
-                    mainStack.replace(loginPage)
-                }
-            }
-        }
     }
 
     Component {
         id: loginPage
         LoginPage {
             onLoginComplete: {
-                mainStack.replace(fileSystemView)
+                mainStack.push(fileSystemView)
             }
         }
     }
