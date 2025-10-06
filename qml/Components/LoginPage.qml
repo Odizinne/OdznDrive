@@ -1,14 +1,23 @@
+pragma ComponentBehavior: Bound
+
 import QtQuick
 import QtQuick.Controls.Material
 import QtQuick.Controls.Material.impl
 import QtQuick.Layouts
 import Odizinne.OdznDrive
+import Qt5Compat.GraphicalEffects
 
 Page {
     id: loginPage
     Material.background: Constants.backgroundColor
     signal loginComplete()
     property bool animEnabled: true
+
+    property var bubblesColor: [
+        Qt.lighter(Material.color(Material.Blue), 1.2),
+        Qt.lighter(Material.color(Material.DeepPurple), 1.2),
+        Qt.lighter(Material.color(Material.Orange), 1.2)
+    ]
 
     function setLoginToServer() {
         animEnabled = false
@@ -49,7 +58,57 @@ Page {
         }
     }
 
+    ListModel {
+        id: bubbleModel
+        ListElement { size: 400; offsetX: -171; offsetY: -322; colorIndex: 0 }
+        ListElement { size: 325; offsetX: -326; offsetY: -138; colorIndex: 2 }
+        ListElement { size: 250; offsetX: -2;   offsetY: 46;  colorIndex: 1 }
+    }
+
+    Item {
+        id: bubble
+        anchors.fill: parent
+
+        Repeater {
+            model: bubbleModel
+            delegate: Rectangle {
+                id: bubbleShape
+                width: model.size
+                height: model.size
+                radius: width / 2
+                color: "transparent"
+
+                required property var model
+
+                x: parent.width / 2 + model.offsetX
+                y: parent.height / 2 + model.offsetY
+                property color bubbleColor: loginPage.bubblesColor[model.colorIndex]
+
+                RadialGradient {
+                    anchors.fill: parent
+                    gradient: Gradient {
+                        GradientStop { position: 0.0; color: Qt.lighter(bubbleShape.bubbleColor, 1.2) }
+                        GradientStop { position: 1.0; color: bubbleShape.bubbleColor }
+                    }
+                    horizontalRadius: width / 2
+                    verticalRadius: height / 2
+                }
+
+                layer.enabled: true
+                layer.effect: OpacityMask {
+                    maskSource: Rectangle {
+                        width: bubbleShape.width
+                        height: bubbleShape.height
+                        radius: bubbleShape.width / 2
+                        color: "white"
+                    }
+                }
+            }
+        }
+    }
+
     Rectangle {
+        visible: true
         id: loginCard
         anchors.centerIn: parent
         width: 400
@@ -221,7 +280,7 @@ Page {
                                 urlField.text.trim(),
                                 usernameField.text.trim(),
                                 passwordField.text.trim()
-                            )
+                                )
                         }
                     }
 
@@ -247,8 +306,8 @@ Page {
                             radius: parent.radius
                             color: connectButton.down ? "black" : "white"
                             opacity: connectButton.enabled ?
-                                        (connectButton.down ? 0.2 : connectButton.hovered ? 0.1 : 0) :
-                                        0
+                                         (connectButton.down ? 0.2 : connectButton.hovered ? 0.1 : 0) :
+                                         0
 
                             Behavior on opacity {
                                 NumberAnimation { duration: 150 }
@@ -315,8 +374,8 @@ Page {
                 CustomBusyIndicator {
                     id: busyIndicator
                     Layout.alignment: Qt.AlignHCenter
-                    width: 200
-                    height: 8
+                    Layout.preferredWidth: 200
+                    Layout.preferredHeight: 8
 
                     onComplete: {
                         viewTransitionTimer.start()

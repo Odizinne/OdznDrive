@@ -490,7 +490,7 @@ Page {
         id: listViewComponent
 
         FileListView {
-            ContextMenu.menu: emptySpaceMenu
+            //ContextMenu.menu: emptySpaceMenu
             onRequestRename: function(path, name) {
                 renameDialog.itemPath = path
                 renameDialog.itemName = name
@@ -518,6 +518,7 @@ Page {
             onSetDragIndicatorText: function (text) {
                 dragIndicator.text = text
             }
+            Component.onCompleted: setScrollViewMenu(emptySpaceMenu)
         }
     }
 

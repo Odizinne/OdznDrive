@@ -15,6 +15,10 @@ ColumnLayout {
     signal setDragIndicatorVisible(bool visible)
     signal setDragIndicatorText(string text)
 
+    function setScrollViewMenu(menu) {
+        scrollView.ContextMenu.menu = menu
+    }
+
     Item {
         Layout.preferredWidth: listView.width
         Layout.preferredHeight: 55 + (FileModel.canGoUp ? 60 : 0)

@@ -9,8 +9,6 @@ import Odizinne.OdznDrive
 Item {
     id: root
     height: 45 + 24
-    property var checkedItems: ({})
-    property int checkedCount: 0
     signal requestNewFolderDialog()
     signal requestMultiDeleteConfirmDialog()
 
@@ -44,7 +42,7 @@ Item {
             spacing: 8
 
             CustomButton {
-                visible: root.checkedCount === 0
+                visible: Utils.checkedCount === 0
                 icon.source: "qrc:/icons/plus.svg"
                 icon.color: "black"
                 icon.width: 16
@@ -57,7 +55,7 @@ Item {
             }
 
             CustomButton {
-                visible: root.checkedCount === 0
+                visible: Utils.checkedCount === 0
                 icon.source: "qrc:/icons/upload.svg"
                 icon.color: "black"
                 icon.width: 16
@@ -70,7 +68,7 @@ Item {
             }
 
             CustomButton {
-                visible: root.checkedCount === 0
+                visible: Utils.checkedCount === 0
                 icon.source: "qrc:/icons/refresh.svg"
                 icon.color: "black"
                 icon.width: 16
@@ -85,14 +83,14 @@ Item {
             }
 
             CustomButton {
-                visible: root.checkedCount > 0
+                visible: Utils.checkedCount > 0
                 icon.source: "qrc:/icons/download.svg"
                 icon.width: 16
                 icon.height: 16
                 icon.color: "black"
                 enabled: ConnectionManager.authenticated
                 CustomButton {
-                    visible: root.checkedCount > 0
+                    visible: Utils.checkedCount > 0
                     icon.source: "qrc:/icons/download.svg"
                     icon.color: "black"
                     icon.width: 16
@@ -112,16 +110,16 @@ Item {
                         }
                     }
                     ToolTip.visible: hovered
-                    ToolTip.text: root.checkedCount === 1 ? "Download" : "Download as zip"
+                    ToolTip.text: Utils.checkedCount === 1 ? "Download" : "Download as zip"
                     rippleHoverColor: Constants.contrastedRippleHoverColor
                 }
                 ToolTip.visible: hovered
-                ToolTip.text: root.checkedCount === 1 ? "Download" : "Download as zip"
+                ToolTip.text: Utils.checkedCount === 1 ? "Download" : "Download as zip"
                 rippleHoverColor: Constants.contrastedRippleHoverColor
             }
 
             CustomButton {
-                visible: root.checkedCount > 0
+                visible: Utils.checkedCount > 0
                 icon.source: "qrc:/icons/delete.svg"
                 icon.width: 16
                 icon.height: 16
@@ -134,8 +132,8 @@ Item {
             }
 
             Label {
-                visible: root.checkedCount > 0
-                text: root.checkedCount + (root.checkedCount === 1 ? " item selected" : " items selected")
+                visible: Utils.checkedCount > 0
+                text: Utils.checkedCount + (Utils.checkedCount === 1 ? " item selected" : " items selected")
                 opacity: 0.7
                 Layout.rightMargin: 4
                 Material.foreground: "black"
