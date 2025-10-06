@@ -48,6 +48,10 @@ private:
     void handleRenameItem(const QJsonObject &params);
     void handleGetStorageInfo();
     void handleGetServerInfo();
+    void handleCreateUser(const QJsonObject &params);
+    void handleEditUser(const QJsonObject &params);
+    void handleDeleteUser(const QJsonObject &params);
+    void handleGetUserList(const QJsonObject &params);
 
     void sendNextDownloadChunk();
     void cleanupDownload();

@@ -13,12 +13,6 @@ Page {
     signal loginComplete()
     property bool animEnabled: true
 
-    property var bubblesColor: [
-        Qt.lighter(Material.color(Material.Blue), 1.2),
-        Qt.lighter(Material.color(Material.DeepPurple), 1.2),
-        Qt.lighter(Material.color(Material.Orange), 1.2)
-    ]
-
     function setLoginToServer() {
         animEnabled = false
         loginContent.opacity = 0
@@ -26,8 +20,26 @@ Page {
         animEnabled = true
     }
 
+    function resetAnimation() {
+        animEnabled = false
+        art.opacity = 0
+        art.scale = 0.5
+        art.rotation = -90
+        animEnabled = true
+    }
+
+    function playAnimation() {
+        art.scale = 1
+        art.opacity = 1
+        art.rotation = 0
+    }
+
     function reset() {
+        loginPage.animEnabled = false
         statusLabel.text = "Connecting..."
+        loginContent.opacity = 1
+        busyContainer.opacity = 0
+        loginPage.animEnabled = true
     }
 
     Connections {
@@ -36,15 +48,11 @@ Page {
         function onConnectedChanged() {
             if (!ConnectionManager.connected) {
                 busyIndicator.reset()
-                loginContent.opacity = 1
-                busyContainer.opacity = 0
             }
         }
 
         function onErrorOccurred(error) {
             busyIndicator.reset()
-            loginContent.opacity = 1
-            busyContainer.opacity = 0
         }
 
         function onAuthenticatedChanged() {
@@ -52,8 +60,6 @@ Page {
                 busyIndicator.startFilling()
             } else if (!ConnectionManager.connected) {
                 busyIndicator.reset()
-                loginContent.opacity = 1
-                busyContainer.opacity = 0
             }
         }
     }
@@ -65,45 +71,30 @@ Page {
         ListElement { size: 250; offsetX: -2;   offsetY: 46;  colorIndex: 1 }
     }
 
-    Item {
-        id: bubble
+    LoginArt {
+        id: art
         anchors.fill: parent
+        model: bubbleModel
+        opacity: 0
+        scale: 0.5
+        rotation: -90
 
-        Repeater {
-            model: bubbleModel
-            delegate: Rectangle {
-                id: bubbleShape
-                width: model.size
-                height: model.size
-                radius: width / 2
-                color: "transparent"
+        Component.onCompleted: {
+            loginPage.playAnimation()
+        }
 
-                required property var model
+        Behavior on opacity {
+            enabled: loginPage.animEnabled
+            NumberAnimation { duration: 1400; easing.type: Easing.OutExpo }
+        }
 
-                x: parent.width / 2 + model.offsetX
-                y: parent.height / 2 + model.offsetY
-                property color bubbleColor: loginPage.bubblesColor[model.colorIndex]
-
-                RadialGradient {
-                    anchors.fill: parent
-                    gradient: Gradient {
-                        GradientStop { position: 0.0; color: Qt.lighter(bubbleShape.bubbleColor, 1.2) }
-                        GradientStop { position: 1.0; color: bubbleShape.bubbleColor }
-                    }
-                    horizontalRadius: width / 2
-                    verticalRadius: height / 2
-                }
-
-                layer.enabled: true
-                layer.effect: OpacityMask {
-                    maskSource: Rectangle {
-                        width: bubbleShape.width
-                        height: bubbleShape.height
-                        radius: bubbleShape.width / 2
-                        color: "white"
-                    }
-                }
-            }
+        Behavior on scale {
+            enabled: loginPage.animEnabled
+            NumberAnimation { duration: 1400; easing.type: Easing.OutExpo }
+        }
+        Behavior on rotation {
+            enabled: loginPage.animEnabled
+            NumberAnimation { duration: 1400; easing.type: Easing.OutExpo }
         }
     }
 

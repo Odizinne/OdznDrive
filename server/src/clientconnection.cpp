@@ -8,6 +8,7 @@
 #include <QBuffer>
 #include <QImage>
 #include <QRandomGenerator>
+#include <QDirIterator>
 #include "version.h"
 
 ClientConnection::ClientConnection(QWebSocket *socket, FileManager *fileManager, QObject *parent)
@@ -178,6 +179,14 @@ void ClientConnection::handleCommand(const QJsonObject &command)
         handleDownloadMultiple(params);
     } else if (type == "rename_item") {
         handleRenameItem(params);
+    } else if (type == "create_user") {
+        handleCreateUser(params);
+    } else if (type == "edit_user") {
+        handleEditUser(params);
+    } else if (type == "delete_user") {
+        handleDeleteUser(params);
+    } else if (type == "get_user_list") {
+        handleGetUserList(params);
     } else {
         sendError("Unknown command type");
     }
@@ -844,4 +853,154 @@ void ClientConnection::onAuthDelayTimeout()
     m_pendingAuthUsername.clear();
     m_pendingAuthPassword.clear();
     m_pendingAuthClientVersion.clear();
+}
+
+// In clientconnection.cpp
+void ClientConnection::handleCreateUser(const QJsonObject &params)
+{
+    if (!m_authenticated || !m_fileManager) {
+        sendError("Not authenticated");
+        return;
+    }
+
+    // Check if current user is admin
+    User* currentUser = Config::instance().getUser(m_currentUsername);
+    if (!currentUser || !currentUser->isAdmin) {
+        sendError("Admin privileges required");
+        return;
+    }
+
+    QString username = params["username"].toString();
+    QString password = params["password"].toString();
+    qint64 storageLimit = params["storageLimit"].toVariant().toLongLong();
+    bool isAdmin = params["isAdmin"].toBool();
+
+    if (username.isEmpty() || password.isEmpty()) {
+        sendError("Username and password are required");
+        return;
+    }
+
+    if (Config::instance().createUser(username, password, isAdmin, storageLimit)) {
+        QJsonObject data;
+        data["username"] = username;
+        data["success"] = true;
+        sendResponse("user_created", data);
+    } else {
+        sendError("Failed to create user");
+    }
+}
+
+void ClientConnection::handleEditUser(const QJsonObject &params)
+{
+    if (!m_authenticated || !m_fileManager) {
+        sendError("Not authenticated");
+        return;
+    }
+
+    // Check if current user is admin
+    User* currentUser = Config::instance().getUser(m_currentUsername);
+    if (!currentUser || !currentUser->isAdmin) {
+        sendError("Admin privileges required");
+        return;
+    }
+
+    QString username = params["username"].toString();
+    QString password = params["password"].toString();
+    qint64 storageLimit = params["storageLimit"].toVariant().toLongLong();
+    bool isAdmin = params["isAdmin"].toBool();
+
+    if (username.isEmpty()) {
+        sendError("Username is required");
+        return;
+    }
+
+    User* user = Config::instance().getUser(username);
+    if (!user) {
+        sendError("User not found");
+        return;
+    }
+
+    // Update user properties
+    if (!password.isEmpty()) {
+        user->password = password;
+    }
+    user->storageLimit = storageLimit * 1024 * 1024;
+    user->isAdmin = isAdmin;
+
+    Config::instance().saveUsers();
+
+    QJsonObject data;
+    data["username"] = username;
+    data["success"] = true;
+    sendResponse("user_edited", data);
+}
+
+void ClientConnection::handleDeleteUser(const QJsonObject &params)
+{
+    if (!m_authenticated || !m_fileManager) {
+        sendError("Not authenticated");
+        return;
+    }
+
+    // Check if current user is admin
+    User* currentUser = Config::instance().getUser(m_currentUsername);
+    if (!currentUser || !currentUser->isAdmin) {
+        sendError("Admin privileges required");
+        return;
+    }
+
+    QString username = params["username"].toString();
+
+    if (username.isEmpty()) {
+        sendError("Username is required");
+        return;
+    }
+
+    // Don't allow deleting yourself
+    if (username.toLower() == m_currentUsername.toLower()) {
+        sendError("Cannot delete your own account");
+        return;
+    }
+
+    if (Config::instance().deleteUser(username)) {
+        QJsonObject data;
+        data["username"] = username;
+        data["success"] = true;
+        sendResponse("user_deleted", data);
+    } else {
+        sendError("Failed to delete user");
+    }
+}
+
+void ClientConnection::handleGetUserList(const QJsonObject &params)
+{
+    Q_UNUSED(params)
+
+    if (!m_authenticated || !m_fileManager) {
+        sendError("Not authenticated");
+        return;
+    }
+
+    // Check if current user is admin
+    User* currentUser = Config::instance().getUser(m_currentUsername);
+    if (!currentUser || !currentUser->isAdmin) {
+        sendError("Admin privileges required");
+        return;
+    }
+
+    QList<User> users = Config::instance().getUsers();
+    QJsonArray usersArray;
+
+    for (const User &user : std::as_const(users)) {
+        QJsonObject userObj;
+        userObj["username"] = user.username;
+        userObj["storageLimit"] = user.storageLimit;
+        userObj["password"] = user.password;
+        userObj["isAdmin"] = user.isAdmin;
+        usersArray.append(userObj);
+    }
+
+    QJsonObject data;
+    data["users"] = usersArray;
+    sendResponse("user_list", data);
 }

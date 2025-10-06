@@ -70,9 +70,9 @@ int main(int argc, char *argv[])
             return 1;
         }
 
-        qint64 limitBytes = limitMB * 1024 * 1024;
+        //qint64 limitBytes = limitMB * 1024 * 1024;
 
-        if (Config::instance().createUser(username, password, isAdmin, limitBytes, path)) {
+        if (Config::instance().createUser(username, password, isAdmin, limitMB, path)) {
             qInfo() << "User created successfully!";
             qInfo() << "Username:      " << username;
             qInfo() << "Is admin:      " << isAdmin;

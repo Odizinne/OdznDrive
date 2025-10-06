@@ -41,6 +41,9 @@ ApplicationWindow {
                 ConnectionManager.getServerInfo()
             } else {
                 mainStack.pop()
+                mainStack.currentItem.reset()
+                mainStack.currentItem.resetAnimation()
+                mainStack.currentItem.playAnimation()
             }
         }
 

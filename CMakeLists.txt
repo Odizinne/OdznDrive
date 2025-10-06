@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.21)
 
-project(OdznDrive VERSION 0.8.0 LANGUAGES CXX)
+project(OdznDrive VERSION 0.8.1 LANGUAGES CXX)
 
 set(CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}/install" CACHE PATH "Installation directory" FORCE)
 set(CMAKE_CXX_STANDARD 17)
@@ -20,6 +20,7 @@ set(SOURCES
     src/filterproxymodel.cpp
     src/filedialoghelper.cpp
     src/windowsplatform.cpp
+    src/usermodel.cpp
 )
 
 set(HEADERS
@@ -29,6 +30,7 @@ set(HEADERS
     include/filterproxymodel.h
     include/filedialoghelper.h
     include/windowsplatform.h
+    include/usermodel.h
 )
 
 set(QML_FILES
@@ -44,6 +46,7 @@ set(QML_FILES
     qml/Components/ItemContextMenu.qml
     qml/Components/Separator.qml
     qml/Components/LoginPage.qml
+    qml/Components/LoginArt.qml
 
     qml/CustomComponents/CustomButton.qml
     qml/CustomComponents/CustomDialog.qml
@@ -61,6 +64,9 @@ set(QML_FILES
     qml/Dialogs/RenameDialog.qml
     qml/Dialogs/TransferProgress.qml
     qml/Dialogs/UploadProgressDialog.qml
+    qml/Dialogs/UserAddDialog.qml
+    qml/Dialogs/UserManagmentDialog.qml
+    qml/Dialogs/ConfirmDeleteUserDialog.qml
 )
 
 

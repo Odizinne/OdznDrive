@@ -8,6 +8,7 @@
 #include <QUrl>
 #include <QBuffer>
 #include "version.h"
+#include "usermodel.h"
 
 ConnectionManager* ConnectionManager::s_instance = nullptr;
 
@@ -33,6 +34,8 @@ ConnectionManager::ConnectionManager(QObject *parent)
     connect(m_socket, &QWebSocket::binaryMessageReceived, this, &ConnectionManager::onBinaryMessageReceived);
     connect(m_socket, &QWebSocket::errorOccurred, this, &ConnectionManager::onError);
     connect(m_socket, &QWebSocket::bytesWritten, this, &ConnectionManager::onBytesWritten);
+    connect(this, &ConnectionManager::userListReceived, UserModel::instance(), &UserModel::loadUsers);
+
 
     m_connectionTimer->setSingleShot(true);
     m_connectionTimer->setInterval(10000);
@@ -725,6 +728,19 @@ void ConnectionManager::handleResponse(const QJsonObject &response)
         emit itemRenamed(data["path"].toString(), data["newName"].toString());
     } else if (type == "server_info") {
         setServerName(data["name"].toString());
+    } else if (type == "user_created") {
+        emit userCreated(data["username"].toString());
+        getUserList();
+    } else if (type == "user_edited") {
+        emit userEdited(data["username"].toString());
+        getUserList();
+    } else if (type == "user_deleted") {
+        emit userDeleted(data["username"].toString());
+        getUserList();
+    } else if (type == "user_list") {
+        QJsonArray usersArray = data["users"].toArray();
+        QVariantList users = usersArray.toVariantList();
+        emit userListReceived(users);
     }
 }
 
@@ -817,21 +833,77 @@ void ConnectionManager::renameItem(const QString &path, const QString &newName)
     sendCommand("rename_item", params);
 }
 
+// In connectionmanager.cpp
+
 void ConnectionManager::createNewUser(const QString &userName, const QString &userPassword, const int &maxStorage, const bool &isAdmin)
 {
-    // todo
-    return;
+    if (!m_authenticated) {
+        emit errorOccurred("Not authenticated");
+        return;
+    }
+
+    if (!m_isAdmin) {
+        emit errorOccurred("Admin privileges required");
+        return;
+    }
+
+    QJsonObject params;
+    params["username"] = userName;
+    params["password"] = userPassword;
+    params["storageLimit"] = maxStorage;
+    params["isAdmin"] = isAdmin;
+    sendCommand("create_user", params);
 }
 
 void ConnectionManager::editExistingUser(const QString &userName, const QString &userPassword, const int &maxStorage, const bool &isAdmin)
 {
-    // todo
-    return;
+    if (!m_authenticated) {
+        emit errorOccurred("Not authenticated");
+        return;
+    }
+
+    if (!m_isAdmin) {
+        emit errorOccurred("Admin privileges required");
+        return;
+    }
+
+    QJsonObject params;
+    params["username"] = userName;
+    params["password"] = userPassword;
+    params["storageLimit"] = maxStorage;
+    params["isAdmin"] = isAdmin;
+    sendCommand("edit_user", params);
 }
 
 void ConnectionManager::deleteUser(const QString &userName)
 {
-    // todo
-    return;
+    if (!m_authenticated) {
+        emit errorOccurred("Not authenticated");
+        return;
+    }
+
+    if (!m_isAdmin) {
+        emit errorOccurred("Admin privileges required");
+        return;
+    }
+
+    QJsonObject params;
+    params["username"] = userName;
+    sendCommand("delete_user", params);
+}
+
+void ConnectionManager::getUserList()
+{
+    if (!m_authenticated) {
+        emit errorOccurred("Not authenticated");
+        return;
+    }
+
+    if (!m_isAdmin) {
+        emit errorOccurred("Admin privileges required");
+        return;
+    }
+
+    sendCommand("get_user_list", QJsonObject());
 }
 

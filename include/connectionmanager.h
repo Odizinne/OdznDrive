@@ -72,6 +72,7 @@ public:
     Q_INVOKABLE void createNewUser(const QString &userName, const QString &userPassword, const int &maxStorage, const bool &isAdmin);
     Q_INVOKABLE void editExistingUser(const QString &userName, const QString &userPassword, const int &maxStorage, const bool &isAdmin);
     Q_INVOKABLE void deleteUser(const QString &userName);
+    Q_INVOKABLE void getUserList();
 
 signals:
     void connectedChanged();
@@ -98,6 +99,10 @@ signals:
     void multipleDeleted();
     void thumbnailReady(const QString &path);
     void itemRenamed(const QString &path, const QString &newName);
+    void userCreated(const QString &username);
+    void userEdited(const QString &username);
+    void userDeleted(const QString &username);
+    void userListReceived(const QVariantList &users);
 
 private slots:
     void onConnected();

@@ -274,7 +274,7 @@ bool Config::createUser(const QString &username, const QString &password, bool i
     User user;
     user.username = username;
     user.password = password;
-    user.storageLimit = storageLimit;
+    user.storageLimit = storageLimit * 1024 * 1024;
 
     if (storagePath.isEmpty()) {
         user.storagePath = generateUserStoragePath(username);

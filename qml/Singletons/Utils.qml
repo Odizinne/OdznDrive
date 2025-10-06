@@ -131,6 +131,13 @@ QtObject {
         return Math.round(bytes / 1024 / 1024 / 1024) + " GB"
     }
 
+    function formatSizeFromKB(megabytes) {
+        if (megabytes < 1024) return megabytes + " KB"
+        if (megabytes < 1024 * 1024) return Math.round(megabytes / 1024) + " MB"
+        if (megabytes < 1024 * 1024 * 1024) return Math.round(megabytes / 1024 / 1024) + " GB"
+        return Math.round(megabytes / 1024 / 1024 / 1024) + " TB"
+    }
+
     function formatSizeFromMB(megabytes) {
         if (megabytes < 1024) return megabytes + " MB"
         if (megabytes < 1024 * 1024) return Math.round(megabytes / 1024) + " GB"
