@@ -10,6 +10,7 @@ Flickable {
     contentWidth: width
     clip: true
     contentHeight: contentItem.childrenRect.height
+    acceptedButtons: Qt.NoButton
     ScrollBar.vertical: ScrollBar {
         id: vBar
         parent: control
@@ -42,5 +43,10 @@ Flickable {
         }
 
         background: Item {}
+    }
+
+    MouseArea {
+        anchors.fill: parent
+        preventStealing: true
     }
 }

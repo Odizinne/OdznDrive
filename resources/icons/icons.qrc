@@ -15,5 +15,7 @@
         <file>list.svg</file>
         <file>folder.svg</file>
         <file>file.svg</file>
+        <file>edit.svg</file>
+        <file>new.svg</file>
     </qresource>
 </RCC>

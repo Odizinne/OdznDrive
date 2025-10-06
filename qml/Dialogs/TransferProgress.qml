@@ -1,7 +1,7 @@
 import QtQuick
 import QtQuick.Controls.Material
 import QtQuick.Layouts
-
+import Odizinne.OdznDrive
 Rectangle {
     id: root
     visible: false

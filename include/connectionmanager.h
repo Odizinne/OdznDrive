@@ -69,6 +69,10 @@ public:
     Q_INVOKABLE void cancelDownload();
     Q_INVOKABLE void getServerInfo();
 
+    Q_INVOKABLE void createNewUser(const QString &userName, const QString &userPassword, const int &maxStorage, const bool &isAdmin);
+    Q_INVOKABLE void editExistingUser(const QString &userName, const QString &userPassword, const int &maxStorage, const bool &isAdmin);
+    Q_INVOKABLE void deleteUser(const QString &userName);
+
 signals:
     void connectedChanged();
     void authenticatedChanged();

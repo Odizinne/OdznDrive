@@ -816,3 +816,22 @@ void ConnectionManager::renameItem(const QString &path, const QString &newName)
     params["newName"] = newName;
     sendCommand("rename_item", params);
 }
+
+void ConnectionManager::createNewUser(const QString &userName, const QString &userPassword, const int &maxStorage, const bool &isAdmin)
+{
+    // todo
+    return;
+}
+
+void ConnectionManager::editExistingUser(const QString &userName, const QString &userPassword, const int &maxStorage, const bool &isAdmin)
+{
+    // todo
+    return;
+}
+
+void ConnectionManager::deleteUser(const QString &userName)
+{
+    // todo
+    return;
+}
+

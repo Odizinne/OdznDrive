@@ -12,7 +12,7 @@ QtObject {
     property real storagePercentage: 0.0
     property string storageOccupied: "--"
     property string storageTotal: "--"
-    signal requestSettingsDialog()
+    property bool anyDialogOpen: false
 
     function isItemChecked(path) {
         return checkedItems[path] === true
@@ -129,6 +129,13 @@ QtObject {
         if (bytes < 1024 * 1024) return Math.round(bytes / 1024) + " KB"
         if (bytes < 1024 * 1024 * 1024) return Math.round(bytes / 1024 / 1024) + " MB"
         return Math.round(bytes / 1024 / 1024 / 1024) + " GB"
+    }
+
+    function formatSizeFromMB(megabytes) {
+        if (megabytes < 1024) return megabytes + " MB"
+        if (megabytes < 1024 * 1024) return Math.round(megabytes / 1024) + " GB"
+        if (megabytes < 1024 * 1024 * 1024) return Math.round(megabytes / 1024 / 1024) + " TB"
+        return Math.round(megabytes / 1024 / 1024 / 1024) + " PB"
     }
 
     function formatDate(dateString) {
