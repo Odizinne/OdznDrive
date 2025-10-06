@@ -609,6 +609,7 @@ void ConnectionManager::handleResponse(const QJsonObject &response)
         if (data["success"].toBool()) {
             setAuthenticated(true);
             setStatusMessage("Authenticated");
+            setIsAdmin(data["isAdmin"].toBool());
         } else {
             m_socket->close();
         }
@@ -766,6 +767,14 @@ void ConnectionManager::setServerName(const QString &name)
     if (m_serverName != name) {
         m_serverName = name;
         emit serverNameChanged();
+    }
+}
+
+void ConnectionManager::setIsAdmin(const bool &isAdmin)
+{
+    if (m_isAdmin != isAdmin) {
+        m_isAdmin = isAdmin;
+        emit isAdminChanged();
     }
 }
 

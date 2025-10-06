@@ -128,11 +128,6 @@ Page {
         onRefreshClicked: ConnectionManager.listDirectory(FileModel.currentPath, UserSettings.foldersFirst)
     }
 
-    SettingsDialog {
-        id: settingsDialog
-        anchors.centerIn: parent
-    }
-
     ColumnLayout {
         anchors.fill: parent
         spacing: 0
@@ -158,7 +153,12 @@ Page {
 
     footer: FooterBar {
         id: footerBar
-        onShowSettings: settingsDialog.open()
+        onShowUserManagmentDialog: userManagmentDialog.open()
+    }
+
+    CustomDialog {
+        id: userManagmentDialog
+        anchors.centerIn: parent
     }
 
     Component {

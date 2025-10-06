@@ -53,7 +53,9 @@ QJsonArray FileManager::listDirectory(const QString &relativePath, bool foldersF
 
     QFileInfoList entries = dir.entryInfoList(QDir::AllEntries | QDir::NoDotAndDotDot, sortFlags);
 
-    for (const QFileInfo &info : entries) {
+    for (int i = 0; i < entries.size(); ++i) {
+        const QFileInfo &info = entries[i];
+
         QJsonObject obj;
         obj["name"] = info.fileName();
         obj["isDir"] = info.isDir();
@@ -69,6 +71,7 @@ QJsonArray FileManager::listDirectory(const QString &relativePath, bool foldersF
 
         result.append(obj);
     }
+
 
     return result;
 }
@@ -157,7 +160,7 @@ qint64 FileManager::calculateDirectorySize(const QString &path) const
 
     QFileInfoList entries = dir.entryInfoList(QDir::AllEntries | QDir::NoDotAndDotDot);
 
-    for (const QFileInfo &info : entries) {
+    for (const QFileInfo &info : std::as_const(entries)) {
         if (info.isDir()) {
             size += calculateDirectorySize(info.absoluteFilePath());
         } else {
@@ -282,7 +285,7 @@ QString FileManager::createZipFromMultiplePaths(const QStringList &paths, const 
 
         // Use the relative path directly, not absolute
         QString absPath = getAbsolutePath(path);
-        if (QFileInfo(absPath).exists()) {
+        if (QFileInfo::exists(absPath)) {
             // Add the relative path, which is what we want in the zip
             args << path;
         }

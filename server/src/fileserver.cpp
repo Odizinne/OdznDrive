@@ -1,7 +1,8 @@
 #include "fileserver.h"
-#include "config.h"
 #include <QWebSocket>
 #include <QDebug>
+#include <QSettings>
+#include <QCoreApplication>
 
 FileServer::FileServer(QObject *parent)
     : QObject(parent)
@@ -18,7 +19,8 @@ FileServer::~FileServer()
 
 bool FileServer::start()
 {
-    int port = Config::instance().port();
+    QSettings settings(QCoreApplication::organizationName(), QCoreApplication::applicationName());
+    int port = settings.value("server/port", 8888).toInt();
 
     if (m_server->listen(QHostAddress::Any, port)) {
         qInfo() << "OdznDrive Server listening on port" << port;
@@ -42,7 +44,6 @@ void FileServer::onNewConnection()
 
     qInfo() << "New client connected:" << socket->peerAddress().toString();
 
-    // FileManager will be created after authentication
     ClientConnection *client = new ClientConnection(socket, nullptr, this);
     connect(client, &ClientConnection::disconnected, this, &FileServer::onClientDisconnected);
 

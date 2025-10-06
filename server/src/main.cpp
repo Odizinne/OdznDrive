@@ -4,6 +4,7 @@
 #include "fileserver.h"
 #include "config.h"
 #include "version.h"
+#include <QStandardPaths>
 
 int main(int argc, char *argv[])
 {
@@ -31,7 +32,7 @@ int main(int argc, char *argv[])
     parser.addOption(portOption);
 
     QCommandLineOption createUserOption(QStringList() << "create-user",
-                                        "Create new user (requires 3-4 args: username password limitMB [path])");
+                                        "Create new user (requires 4-5 args: username password limitMB [path])");
     parser.addOption(createUserOption);
 
     QCommandLineOption deleteUserOption(QStringList() << "delete-user",
@@ -44,15 +45,15 @@ int main(int argc, char *argv[])
 
     parser.process(app);
 
-    Config::instance().load();
+    Config::instance().initSettings();
+    Config::instance().loadUsers();
 
-    // Handle user management commands
     if (parser.isSet(createUserOption)) {
         QStringList args = parser.positionalArguments();
-        if (args.size() < 3) {
-            qCritical() << "Usage: --create-user <username> <password> <limitMB> [path]";
-            qCritical() << "Example: --create-user john password123 5000";
-            qCritical() << "Example: --create-user john password123 5000 /data/john";
+        if (args.size() < 4) {
+            qCritical() << "Usage: --create-user <username> <password> <isAdmin> <limitMB> [path]";
+            qCritical() << "Example: --create-user john password123 true 5000";
+            qCritical() << "Example: --create-user john password123 true 5000 /data/john";
             qCritical() << "";
             qCritical() << "If path is not specified, it will be auto-generated as storage/<username>";
             return 1;
@@ -60,8 +61,9 @@ int main(int argc, char *argv[])
 
         QString username = args[0];
         QString password = args[1];
-        qint64 limitMB = args[2].toLongLong();
-        QString path = args.size() >= 4 ? args[3] : QString();
+        bool isAdmin = (args[2].toLower() == "true");
+        qint64 limitMB = args[3].toLongLong();
+        QString path = args.size() >= 5 ? args[4] : QString();
 
         if (limitMB <= 0) {
             qCritical() << "Invalid storage limit. Must be positive number.";
@@ -70,9 +72,10 @@ int main(int argc, char *argv[])
 
         qint64 limitBytes = limitMB * 1024 * 1024;
 
-        if (Config::instance().createUser(username, password, limitBytes, path)) {
+        if (Config::instance().createUser(username, password, isAdmin, limitBytes, path)) {
             qInfo() << "User created successfully!";
             qInfo() << "Username:      " << username;
+            qInfo() << "Is admin:      " << isAdmin;
 
             User* user = Config::instance().getUser(username);
             if (user) {
@@ -116,9 +119,10 @@ int main(int argc, char *argv[])
         if (users.isEmpty()) {
             qInfo() << "No users found.";
         } else {
-            for (const User &user : users) {
+            for (const User &user : std::as_const(users)) {
                 qInfo() << "";
                 qInfo() << "Username:      " << user.username;
+                qInfo() << "Is admin:      " << user.isAdmin;
                 qInfo() << "Storage path:  " << user.storagePath;
                 qInfo() << "Storage limit: " << (user.storageLimit / (1024*1024)) << "MB";
                 qInfo() << "----------------------------------------";
@@ -126,11 +130,6 @@ int main(int argc, char *argv[])
         }
         qInfo() << "";
         return 0;
-    }
-
-    if (parser.isSet(portOption)) {
-        Config::instance().setPort(parser.value(portOption).toInt());
-        Config::instance().save();
     }
 
     FileServer server;
@@ -144,7 +143,7 @@ int main(int argc, char *argv[])
     qInfo() << "Press Ctrl+C to stop";
     qInfo() << "";
     qInfo() << "User Management Commands:";
-    qInfo() << "  --create-user <username> <password> <limitMB> [path]";
+    qInfo() << "  --create-user <username> <password> <isAdmin> <limitMB> [path]";
     qInfo() << "  --delete-user <username>";
     qInfo() << "  --list-users";
 

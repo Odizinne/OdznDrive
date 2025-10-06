@@ -18,30 +18,12 @@ Config& Config::instance()
     return instance;
 }
 
-void Config::load()
+void Config::initSettings()
 {
-    m_port = m_settings.value("server/port", 8888).toInt();
-
-    QString defaultStorage = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) + "/storage";
-    m_storageRoot = m_settings.value("server/storage_root", defaultStorage).toString();
-
-    m_storageLimit = m_settings.value("server/storage_limit", 10737418240LL).toLongLong(); // 10GB default
-    m_password = m_settings.value("server/password", "admin123").toString();
-    m_serverName = m_settings.value("server/name", "OdznDrive Server").toString();
-
-    QDir().mkpath(m_storageRoot);
-    loadBannedIPs();
-    loadUsers();
-}
-
-void Config::save()
-{
-    m_settings.setValue("server/port", m_port);
-    m_settings.setValue("server/storage_root", m_storageRoot);
-    m_settings.setValue("server/storage_limit", m_storageLimit);
-    m_settings.setValue("server/password", m_password);
-    m_settings.setValue("server/name", m_serverName);
-    m_settings.sync();
+    if (m_settings.allKeys().isEmpty()) {
+        qInfo() << "Creating config file at" << m_settings.fileName();
+        m_settings.setValue("server/port", 8888);
+    }
 }
 
 QString Config::getBannedIPsFilePath() const
@@ -60,9 +42,12 @@ QString Config::getUsersFilePath() const
 
 QString Config::generateUserStoragePath(const QString &username) const
 {
-    // Use lowercase for filesystem to avoid case-sensitivity issues
-    return QDir(m_storageRoot).filePath(username.toLower());
+    QString rootStoragePath = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
+    QString userPath = QDir(rootStoragePath).filePath("storage/" + username.toLower());
+    QDir().mkpath(userPath);
+    return userPath;
 }
+
 
 void Config::loadBannedIPs()
 {
@@ -88,7 +73,7 @@ void Config::loadBannedIPs()
     QJsonArray array = doc.array();
     QDateTime now = QDateTime::currentDateTime();
 
-    for (const QJsonValue &value : array) {
+    for (const QJsonValue &value : std::as_const(array)) {
         QJsonObject obj = value.toObject();
         QString ip = obj["ip"].toString();
         QDateTime bannedUntil = QDateTime::fromString(obj["bannedUntil"].toString(), Qt::ISODate);
@@ -192,12 +177,12 @@ void Config::loadUsers()
     QFile file(filePath);
 
     if (!file.exists()) {
-        // Create default admin user
         User admin;
         admin.username = "admin";
         admin.password = "admin123";
         admin.storagePath = generateUserStoragePath("admin");
         admin.storageLimit = 10737418240LL; // 10GB
+        admin.isAdmin = true;
         m_users.append(admin);
         saveUsers();
         qInfo() << "Created default admin user";
@@ -220,17 +205,18 @@ void Config::loadUsers()
         return;
     }
 
-    QJsonArray usersArray = doc.object()["users"].toArray();
-    for (const QJsonValue &val : usersArray) {
+    QJsonObject obj = doc.object();
+    QJsonArray usersArray = obj["users"].toArray();
+    for (const QJsonValue &val : std::as_const(usersArray)) {
         QJsonObject obj = val.toObject();
         User user;
         user.username = obj["username"].toString();
         user.password = obj["password"].toString();
         user.storagePath = obj["storagePath"].toString();
         user.storageLimit = obj["storageLimit"].toVariant().toLongLong();
+        user.isAdmin = obj["isAdmin"].toBool();
         m_users.append(user);
 
-        // Ensure storage directory exists
         QDir().mkpath(user.storagePath);
     }
 
@@ -248,12 +234,13 @@ void Config::saveUsers()
     }
 
     QJsonArray usersArray;
-    for (const User &user : m_users) {
+    for (const User &user : std::as_const(m_users)) {
         QJsonObject obj;
         obj["username"] = user.username;
         obj["password"] = user.password;
         obj["storagePath"] = user.storagePath;
         obj["storageLimit"] = user.storageLimit;
+        obj["isAdmin"] = user.isAdmin;
         usersArray.append(obj);
     }
 
@@ -266,7 +253,6 @@ void Config::saveUsers()
 
 User* Config::getUser(const QString &username)
 {
-    // Case-insensitive username lookup
     QString lowerUsername = username.toLower();
 
     for (User &user : m_users) {
@@ -277,21 +263,19 @@ User* Config::getUser(const QString &username)
     return nullptr;
 }
 
-bool Config::createUser(const QString &username, const QString &password,
+bool Config::createUser(const QString &username, const QString &password, bool isAsmin,
                         qint64 storageLimit, const QString &storagePath)
 {
-    // Check for existing user (case-insensitive)
     if (getUser(username)) {
         qWarning() << "User already exists:" << username << "(case-insensitive check)";
         return false;
     }
 
     User user;
-    user.username = username; // Store original case for display
+    user.username = username;
     user.password = password;
     user.storageLimit = storageLimit;
 
-    // Use provided path or generate from username (lowercase)
     if (storagePath.isEmpty()) {
         user.storagePath = generateUserStoragePath(username);
     } else {
@@ -307,7 +291,6 @@ bool Config::createUser(const QString &username, const QString &password,
 
 bool Config::deleteUser(const QString &username)
 {
-    // Case-insensitive deletion
     QString lowerUsername = username.toLower();
 
     for (int i = 0; i < m_users.size(); i++) {

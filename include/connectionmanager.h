@@ -30,6 +30,7 @@ class ConnectionManager : public QObject
     Q_PROPERTY(QString currentDownloadFileName READ currentDownloadFileName NOTIFY currentDownloadFileNameChanged)
     Q_PROPERTY(bool isZipping READ isZipping NOTIFY isZippingChanged)
     Q_PROPERTY(QString serverName READ serverName NOTIFY serverNameChanged)
+    Q_PROPERTY(bool isAdmin READ isAdmin NOTIFY isAdminChanged)
 
 public:
     static ConnectionManager* create(QQmlEngine *qmlEngine, QJSEngine *jsEngine);
@@ -43,6 +44,7 @@ public:
     QString currentDownloadFileName() const { return m_currentDownloadFileName; }
     bool isZipping() const { return m_isZipping; }
     QString serverName() const { return m_serverName; }
+    bool isAdmin() const { return m_isAdmin; }
 
     void setImageProvider(ImagePreviewProvider *provider);
 
@@ -88,6 +90,7 @@ signals:
     void storageInfo(qint64 total, qint64 used, qint64 available);
     void errorOccurred(const QString &error);
     void serverNameChanged();
+    void isAdminChanged();
     void multipleDeleted();
     void thumbnailReady(const QString &path);
     void itemRenamed(const QString &path, const QString &newName);
@@ -120,6 +123,7 @@ private:
     void setCurrentDownloadFileName(const QString &fileName);
     void setIsZipping(bool zipping);
     void setServerName(const QString &name);
+    void setIsAdmin(const bool &isAdmin);
     void requestThumbnail(const QString &path);
 
     static ConnectionManager *s_instance;
@@ -150,6 +154,7 @@ private:
     qint64 m_uploadSentSize;
     QString m_currentUploadFileName;
     QString m_serverName;
+    bool m_isAdmin;
 
     // Image preview
     ImagePreviewProvider *m_imageProvider;

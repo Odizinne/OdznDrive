@@ -222,8 +222,8 @@ void ClientConnection::handleDeleteMultiple(const QJsonObject &params)
     QStringList deletedDirs;
     QStringList failed;
 
-    for (const QJsonValue &val : pathsArray) {
-        QString path = val.toString();
+    for (int i = 0; i < pathsArray.size(); ++i) {
+        QString path = pathsArray[i].toString();
 
         if (!m_fileManager->isValidPath(path)) {
             failed.append(path);
@@ -412,6 +412,7 @@ bool ClientConnection::authenticate(const QString &username, const QString &pass
     m_authenticated = true;
 
     qInfo() << "User" << username << "authenticated successfully from" << clientIP;
+    qInfo() << "Is admin:" << user->isAdmin;
     qInfo() << "Storage path:" << user->storagePath;
     qInfo() << "Storage limit:" << (user->storageLimit / (1024*1024)) << "MB";
     Config::instance().clearFailedAttempts(clientIP);
@@ -761,8 +762,8 @@ void ClientConnection::handleDownloadMultiple(const QJsonObject &params)
     }
 
     QStringList paths;
-    for (const QJsonValue &val : pathsArray) {
-        paths.append(val.toString());
+    for (int i = 0; i < pathsArray.size(); ++i) {
+        paths.append(pathsArray[i].toString());
     }
 
     // Notify client that zipping is starting
@@ -832,9 +833,11 @@ void ClientConnection::onAuthDelayTimeout()
     }
 
     if (authenticate(m_pendingAuthUsername, m_pendingAuthPassword, m_pendingAuthClientVersion)) {
+        User* user = Config::instance().getUser(m_pendingAuthUsername);
         QJsonObject data;
         data["success"] = true;
         data["serverVersion"] = APP_VERSION_STRING;
+        data["isAdmin"] = user ? user->isAdmin : false;
         sendResponse("authenticate", data);
     }
 

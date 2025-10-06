@@ -7,7 +7,7 @@ import Odizinne.OdznDrive
 Item {
     id: footer
     height: 50 + 24
-    signal showSettings()
+    signal showUserManagmentDialog()
     Rectangle {
         anchors.fill: parent
         anchors.margins: 12
@@ -41,6 +41,15 @@ Item {
                         MenuItem {
                             text: ConnectionManager.serverName
                             enabled: false
+                        }
+                        MenuItem {
+                            text: "Users managment"
+                            implicitHeight: ConnectionManager.isAdmin ? Math.max(implicitBackgroundHeight + topInset + bottomInset,
+                                                     implicitContentHeight + topPadding + bottomPadding,
+                                                     implicitIndicatorHeight + topPadding + bottomPadding) : 0
+                            enabled: ConnectionManager.isAdmin
+                            visible: ConnectionManager.isAdmin
+                            onClicked: footer.showUserManagmentDialog()
                         }
                         MenuSeparator {}
                         MenuItem {

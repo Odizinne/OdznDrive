@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.21)
 
-project(OdznDrive VERSION 0.7.0 LANGUAGES CXX)
+project(OdznDrive VERSION 0.8.0 LANGUAGES CXX)
 
 set(CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}/install" CACHE PATH "Installation directory" FORCE)
 set(CMAKE_CXX_STANDARD 17)
@@ -59,7 +59,6 @@ set(QML_FILES
     qml/Dialogs/MultiDeleteConfirmDialog.qml
     qml/Dialogs/NewFolderDialog.qml
     qml/Dialogs/RenameDialog.qml
-    qml/Dialogs/SettingsDialog.qml
     qml/Dialogs/TransferProgress.qml
     qml/Dialogs/UploadProgressDialog.qml
 )

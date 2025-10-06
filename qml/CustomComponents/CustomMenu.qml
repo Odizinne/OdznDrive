@@ -3,4 +3,5 @@ import Odizinne.OdznDrive
 
 Menu {
     Material.background: Constants.surfaceColor
+    spacing: 0
 }
