@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.21)
 
-project(OdznDrive VERSION 0.8.6 LANGUAGES CXX)
+project(OdznDrive VERSION 0.9.0 LANGUAGES CXX)
 
 set(CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}/install" CACHE PATH "Installation directory" FORCE)
 set(CMAKE_CXX_STANDARD 17)
@@ -62,7 +62,6 @@ set(QML_FILES
     qml/Dialogs/MultiDeleteConfirmDialog.qml
     qml/Dialogs/NewFolderDialog.qml
     qml/Dialogs/RenameDialog.qml
-    qml/Dialogs/TransferProgress.qml
     qml/Dialogs/UploadProgressDialog.qml
     qml/Dialogs/UserAddDialog.qml
     qml/Dialogs/UserManagmentDialog.qml
@@ -144,6 +143,9 @@ qt_add_qml_module(${PROJECT_NAME}
     VERSION 1.0
     QML_FILES ${QML_FILES} ${QML_SINGLETONS}
     SOURCES include/versionhelper.h src/versionhelper.cpp
+    QML_FILES qml/Components/TransferStatus.qml
+    QML_FILES qml/Dialogs/ConnectionLostDialog.qml
+    QML_FILES qml/Dialogs/AdvancedSettingsDialog.qml
 )
 
 target_link_libraries(${PROJECT_NAME} PRIVATE

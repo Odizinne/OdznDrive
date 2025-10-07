@@ -19,11 +19,19 @@ CustomDialog {
         spacing: 15
         anchors.fill: parent
 
-        Label {
-            text: ConnectionManager.currentDownloadFileName || "Preparing download..."
-            font.bold: true
-            elide: Text.ElideRight
-            Layout.fillWidth: true
+        RowLayout {
+            Label {
+                text: ConnectionManager.currentDownloadFileName || "Preparing download..."
+                font.bold: true
+                elide: Text.ElideRight
+                Layout.fillWidth: true
+            }
+
+            Label {
+                text: ConnectionManager.isZipping ? "Compressing..." : downloadProgressDialog.progress + "%"
+                Layout.alignment: Qt.AlignRight
+                elide: Text.ElideRight
+            }
         }
 
         CustomProgressBar {
@@ -33,11 +41,8 @@ CustomDialog {
             value: ConnectionManager.isZipping ? 0 : (downloadProgressDialog.progress / 100)
         }
 
-        Label {
-            text: ConnectionManager.isZipping ? "Compressing..." : downloadProgressDialog.progress + "%"
-            Layout.alignment: Qt.AlignHCenter
-            elide: Text.ElideRight
-            Layout.fillWidth: true
+        TransferStatus {
+            Layout.alignment: Qt.AlignRight
         }
     }
 }

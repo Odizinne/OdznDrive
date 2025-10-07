@@ -5,6 +5,7 @@
 #include <QJsonObject>
 #include <QDateTime>
 #include <QProcess>
+#include <QCoreApplication>
 
 FileManager::FileManager(const QString &rootPath)
     : m_rootPath(QDir(rootPath).absolutePath())
@@ -46,16 +47,23 @@ QJsonArray FileManager::listDirectory(const QString &relativePath, bool foldersF
         return result;
     }
 
-    QDir::SortFlags sortFlags = QDir::Name;
-    if (foldersFirst) {
-        sortFlags |= QDir::DirsFirst;
-    }
+    QFileInfoList entries = dir.entryInfoList(QDir::AllEntries | QDir::NoDotAndDotDot, QDir::NoSort);
 
-    QFileInfoList entries = dir.entryInfoList(QDir::AllEntries | QDir::NoDotAndDotDot, sortFlags);
+    auto caseInsensitiveCompare = [foldersFirst](const QFileInfo &a, const QFileInfo &b) {
+        if (foldersFirst) {
+            if (a.isDir() && !b.isDir()) {
+                return true;
+            }
+            if (!a.isDir() && b.isDir()) {
+                return false;
+            }
+        }
+        return a.fileName().compare(b.fileName(), Qt::CaseInsensitive) < 0;
+    };
 
-    for (int i = 0; i < entries.size(); ++i) {
-        const QFileInfo &info = entries[i];
+    std::sort(entries.begin(), entries.end(), caseInsensitiveCompare);
 
+    for (const QFileInfo &info : std::as_const(entries)) {
         QJsonObject obj;
         obj["name"] = info.fileName();
         obj["isDir"] = info.isDir();
@@ -71,7 +79,6 @@ QJsonArray FileManager::listDirectory(const QString &relativePath, bool foldersF
 
         result.append(obj);
     }
-
 
     return result;
 }
@@ -263,8 +270,9 @@ QString FileManager::createZipFromMultiplePaths(const QStringList &paths, const 
         return QString();
     }
 
-    // Create temp directory for zip files
-    QString tempDir = QDir(m_rootPath).filePath(".temp");
+    // --- CRITICAL FIX: Use a system temp directory OUTSIDE the user's storage root ---
+    // This prevents the zip command from trying to zip itself.
+    QString tempDir = QDir::temp().filePath("odzndrive-" + QString::number(QCoreApplication::applicationPid()));
     QDir().mkpath(tempDir);
 
     QString zipFileName = zipName + ".zip";
@@ -283,32 +291,38 @@ QString FileManager::createZipFromMultiplePaths(const QStringList &paths, const 
             continue;
         }
 
-        // Use the relative path directly, not absolute
         QString absPath = getAbsolutePath(path);
         if (QFileInfo::exists(absPath)) {
-            // Add the relative path, which is what we want in the zip
             args << path;
         }
     }
 
-    if (args.size() <= 2) {
+    if (args.size() <= 2) { // Only zipPath and -r
+        QDir().rmdir(tempDir); // Clean up empty temp dir
         return QString();
     }
 
-    // Set working directory to storage root so relative paths work
     QProcess process;
     process.setWorkingDirectory(m_rootPath);
     process.start("zip", args);
 
-    if (!process.waitForFinished(300000)) {
+    // Use a shorter timeout to prevent the server from hanging indefinitely
+    if (!process.waitForFinished(60000)) { // 60-second timeout
+        qWarning() << "Zip process timed out or failed:" << process.errorString();
+        QFile::remove(zipPath);
+        QDir().rmdir(tempDir);
         return QString();
     }
 
     if (process.exitCode() != 0) {
+        qWarning() << "Zip process exited with code" << process.exitCode();
+        QFile::remove(zipPath);
+        QDir().rmdir(tempDir);
         return QString();
     }
 
-    return ".temp/" + zipFileName;
+    // Return the absolute path to the file in the system temp directory
+    return zipPath;
 }
 
 bool FileManager::renameItem(const QString &path, const QString &newName)

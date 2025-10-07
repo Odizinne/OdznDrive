@@ -635,10 +635,8 @@ void ClientConnection::sendNextDownloadChunk()
         data["success"] = true;
         sendResponse("download_complete", data);
 
-        // Delete temporary zip file if this was a directory download
         if (m_isZipDownload) {
-            QString absPath = m_fileManager->getAbsolutePath(m_downloadPath);
-            QFile::remove(absPath);
+            QFile::remove(m_downloadPath);
         }
 
         m_downloadPath.clear();
@@ -781,20 +779,17 @@ void ClientConnection::handleDownloadMultiple(const QJsonObject &params)
     zipData["name"] = zipName;
     sendResponse("download_zipping", zipData);
 
-    // Create zip file
-    QString zipPath = m_fileManager->createZipFromMultiplePaths(paths, zipName);
+    // Create zip file (this now returns an absolute path)
+    QString absZipPath = m_fileManager->createZipFromMultiplePaths(paths, zipName);
 
-    if (zipPath.isEmpty()) {
+    if (absZipPath.isEmpty()) {
         sendError("Failed to create zip file");
         return;
     }
 
-    // Now download the zip file
-    QString absZipPath = m_fileManager->getAbsolutePath(zipPath);
     QFileInfo zipInfo(absZipPath);
-
     if (!zipInfo.exists()) {
-        sendError("Zip file not found");
+        sendError("Zip file not found at: " + absZipPath);
         return;
     }
 
@@ -802,19 +797,21 @@ void ClientConnection::handleDownloadMultiple(const QJsonObject &params)
 
     m_downloadFile = new QFile(absZipPath);
     if (!m_downloadFile->open(QIODevice::ReadOnly)) {
-        sendError("Failed to open zip file");
+        sendError("Failed to open zip file: " + absZipPath);
         delete m_downloadFile;
         m_downloadFile = nullptr;
+        QFile::remove(absZipPath); // Clean up the temp file
         return;
     }
 
-    m_downloadPath = zipPath;
+    // Store the absolute path for later deletion
+    m_downloadPath = absZipPath;
     m_downloadTotalSize = zipInfo.size();
     m_downloadSentSize = 0;
     m_isZipDownload = true;
 
     QJsonObject metadata;
-    metadata["path"] = zipPath;
+    metadata["path"] = zipName + ".zip"; // Send a clean name to the client
     metadata["name"] = zipName + ".zip";
     metadata["size"] = m_downloadTotalSize;
     metadata["isDirectory"] = false;

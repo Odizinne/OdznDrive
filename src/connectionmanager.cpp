@@ -27,6 +27,11 @@ ConnectionManager::ConnectionManager(QObject *parent)
     , m_serverName("Unknown Server")
     , m_imageProvider(nullptr)
     , m_connectionTimer(new QTimer(this))
+    , m_currentTransferType(TransferType::None)
+    , m_etaTimer(new QTimer(this))
+    , m_totalTransferSize(0)
+    , m_totalBytesTransferred(0)
+    , m_currentSpeed(0)
 {
     connect(m_socket, &QWebSocket::connected, this, &ConnectionManager::onConnected);
     connect(m_socket, &QWebSocket::disconnected, this, &ConnectionManager::onDisconnected);
@@ -36,10 +41,15 @@ ConnectionManager::ConnectionManager(QObject *parent)
     connect(m_socket, &QWebSocket::bytesWritten, this, &ConnectionManager::onBytesWritten);
     connect(this, &ConnectionManager::userListReceived, UserModel::instance(), &UserModel::loadUsers);
 
-
     m_connectionTimer->setSingleShot(true);
     m_connectionTimer->setInterval(10000);
     connect(m_connectionTimer, &QTimer::timeout, this, &ConnectionManager::onConnectionTimeout);
+
+    m_etaTimer->setInterval(1000);
+    connect(m_etaTimer, &QTimer::timeout, this, &ConnectionManager::updateEta);
+
+    setEta("");
+    setSpeed("");
 }
 
 ConnectionManager::~ConnectionManager()
@@ -199,7 +209,9 @@ void ConnectionManager::uploadFile(const QString &localPath, const QString &remo
     emit uploadQueueSizeChanged();
 
     if (queueWasEmpty && !m_uploadFile && m_uploadLocalPath.isEmpty()) {
-        startNextUpload();
+        // Defer the start to the next event loop iteration to allow
+        // uploadFiles() to finish setting up the total size.
+        QTimer::singleShot(0, this, &ConnectionManager::startNextUpload);
     }
 }
 
@@ -210,17 +222,27 @@ void ConnectionManager::uploadFiles(const QStringList &localPaths, const QString
         return;
     }
 
+    // Calculate total size for the new batch of files
+    qint64 newBatchSize = 0;
     for (const QString &localPath : localPaths) {
         QFileInfo fileInfo(localPath);
-        QString fileName = fileInfo.fileName();
+        newBatchSize += fileInfo.size();
 
+        QString fileName = fileInfo.fileName();
         QString remotePath = remoteDir;
         if (!remotePath.isEmpty() && !remotePath.endsWith('/')) {
             remotePath += '/';
         }
         remotePath += fileName;
+        uploadFile(localPath, remotePath); // This adds to the queue
+    }
 
-        uploadFile(localPath, remotePath);
+    // If this is the first batch, start tracking
+    if (m_uploadQueue.size() == localPaths.size() && !m_uploadFile) {
+        startEtaTracking(TransferType::Upload, newBatchSize);
+    } else if (m_currentTransferType == TransferType::Upload) {
+        // If an upload is already in progress, just add to the total size
+        m_totalTransferSize += newBatchSize;
     }
 }
 
@@ -323,6 +345,8 @@ void ConnectionManager::onDisconnected()
     m_uploadQueue.clear();
     emit uploadQueueSizeChanged();
 
+    resetEtaTracking();
+
     if (m_imageProvider) {
         m_imageProvider->clear();
     }
@@ -344,6 +368,11 @@ void ConnectionManager::onBinaryMessageReceived(const QByteArray &message)
 
     m_downloadBuffer.append(message);
     m_downloadReceivedSize += message.size();
+
+    // Update the total bytes transferred for the overall operation
+    if (m_currentTransferType == TransferType::Download) {
+        m_totalBytesTransferred += message.size();
+    }
 
     if (m_downloadExpectedSize > 0) {
         int progress = (m_downloadReceivedSize * 100) / m_downloadExpectedSize;
@@ -388,6 +417,7 @@ void ConnectionManager::onError(QAbstractSocket::SocketError error)
     setAuthenticated(false);
     qDebug() << m_socket->errorString();
     emit errorOccurred(m_socket->errorString());
+    resetEtaTracking();
 }
 
 void ConnectionManager::onConnectionTimeout()
@@ -398,12 +428,25 @@ void ConnectionManager::onConnectionTimeout()
         setAuthenticated(false);
         setStatusMessage("Connection timeout");
         emit errorOccurred("Connection timeout - server did not respond");
+        resetEtaTracking();
     }
 }
 
 void ConnectionManager::onBytesWritten(qint64 bytes)
 {
-    Q_UNUSED(bytes)
+    if (m_currentTransferType == TransferType::Upload) {
+        m_totalBytesTransferred += bytes;
+
+        if (m_totalTransferSize > 0) {
+            int progress = (m_totalBytesTransferred * 100) / m_totalTransferSize;
+
+            if (progress >= 100 && !m_uploadQueue.isEmpty()) {
+                progress = 99;
+            }
+
+            emit uploadProgress(progress);
+        }
+    }
 
     if (m_uploadFile && m_uploadFile->isOpen()) {
         if (m_socket->bytesToWrite() < CHUNK_SIZE * 2) {
@@ -439,13 +482,6 @@ void ConnectionManager::sendNextChunk()
 
     m_socket->sendBinaryMessage(chunk);
     m_uploadSentSize += chunk.size();
-
-    qint64 effectivelyTransferred = m_uploadSentSize - m_socket->bytesToWrite();
-    int progress = (effectivelyTransferred * 100) / m_uploadTotalSize;
-    if (progress > 100) progress = 100;
-    if (progress < 0) progress = 0;
-
-    emit uploadProgress(progress);
 }
 
 void ConnectionManager::sendCommand(const QString &type, const QJsonObject &params)
@@ -460,30 +496,40 @@ void ConnectionManager::sendCommand(const QString &type, const QJsonObject &para
 
 void ConnectionManager::cancelUpload()
 {
-    cleanupCurrentUpload();
-
-    if (!m_uploadRemotePath.isEmpty()) {
-        QJsonObject params;
-        params["path"] = m_uploadRemotePath;
-        sendCommand("cancel_upload", params);
-
-        m_uploadLocalPath.clear();
-        m_uploadRemotePath.clear();
-        m_uploadTotalSize = 0;
-        m_uploadSentSize = 0;
-
-        setStatusMessage("Upload cancelled");
-        emit errorOccurred("Upload cancelled by user");
+    if (m_uploadLocalPath.isEmpty()) {
+        return;
     }
 
-    startNextUpload();
+    cleanupCurrentUpload();
+
+    QJsonObject params;
+    params["path"] = m_uploadRemotePath;
+    sendCommand("cancel_upload", params);
+    m_uploadLocalPath.clear();
+    m_uploadRemotePath.clear();
+    m_uploadTotalSize = 0;
+    m_uploadSentSize = 0;
+    setCurrentUploadFileName("");
+
+    if (m_uploadQueue.isEmpty()) {
+        resetEtaTracking();
+        setStatusMessage("Upload cancelled");
+    } else {
+        startNextUpload();
+    }
 }
 
 void ConnectionManager::cancelAllUploads()
 {
-    cancelUpload();
+    resetEtaTracking();
     m_uploadQueue.clear();
     emit uploadQueueSizeChanged();
+    cleanupCurrentUpload();
+    m_uploadLocalPath.clear();
+    m_uploadRemotePath.clear();
+    m_uploadTotalSize = 0;
+    m_uploadSentSize = 0;
+    setCurrentUploadFileName("");
     setStatusMessage("All uploads cancelled");
 }
 
@@ -498,12 +544,14 @@ void ConnectionManager::cancelDownload()
     setStatusMessage("Download cancelled");
     setIsZipping(false);
     emit errorOccurred("Download cancelled by user");
+    resetEtaTracking();
 }
 
 void ConnectionManager::startNextUpload()
 {
     if (m_uploadQueue.isEmpty()) {
         setCurrentUploadFileName("");
+        resetEtaTracking();
         return;
     }
 
@@ -521,6 +569,7 @@ void ConnectionManager::startNextUpload()
     m_uploadRemotePath = item.remotePath;
     m_uploadTotalSize = file.size();
     m_uploadSentSize = 0;
+
     file.close();
 
     QFileInfo fileInfo(item.localPath);
@@ -690,6 +739,9 @@ void ConnectionManager::handleResponse(const QJsonObject &response)
     } else if (type == "upload_ready") {
         m_uploadFile = new QFile(m_uploadLocalPath);
         if (m_uploadFile->open(QIODevice::ReadOnly)) {
+            if (m_currentTransferType == TransferType::None) {
+                startEtaTracking(TransferType::Upload, m_uploadTotalSize);
+            }
             emit uploadProgress(0);
             for (int i = 0; i < 3 && m_uploadSentSize < m_uploadTotalSize; ++i) {
                 sendNextChunk();
@@ -701,6 +753,7 @@ void ConnectionManager::handleResponse(const QJsonObject &response)
             startNextUpload();
         }
     } else if (type == "upload_complete") {
+        emit uploadProgress(100);
         emit uploadComplete(data["path"].toString());
         m_uploadLocalPath.clear();
         m_uploadRemotePath.clear();
@@ -711,7 +764,11 @@ void ConnectionManager::handleResponse(const QJsonObject &response)
             m_uploadFile = nullptr;
         }
 
-        startNextUpload();
+        if (m_uploadQueue.isEmpty()) {
+            resetEtaTracking();
+        } else {
+            startNextUpload();
+        }
     } else if (type == "upload_cancelled") {
         setStatusMessage("Upload cancelled");
     } else if (type == "download_zipping") {
@@ -723,10 +780,8 @@ void ConnectionManager::handleResponse(const QJsonObject &response)
         m_downloadExpectedSize = data["size"].toVariant().toLongLong();
         m_downloadReceivedSize = 0;
         m_downloadBuffer.clear();
-
         setCurrentDownloadFileName(fileName);
         setIsZipping(false);
-
         m_downloadFile = new QFile(m_downloadLocalPath);
         if (!m_downloadFile->open(QIODevice::WriteOnly)) {
             emit errorOccurred("Failed to create download file");
@@ -735,10 +790,12 @@ void ConnectionManager::handleResponse(const QJsonObject &response)
             cleanupCurrentDownload();
             return;
         }
-
+        startEtaTracking(TransferType::Download, m_downloadExpectedSize);
         emit downloadProgress(0);
     } else if (type == "download_complete") {
-        // Server confirms download is complete
+        emit downloadComplete(m_downloadLocalPath);
+        cleanupCurrentDownload();
+        resetEtaTracking();
     } else if (type == "download_cancelled") {
         setStatusMessage("Download cancelled");
     } else if (type == "storage_info") {
@@ -830,7 +887,13 @@ void ConnectionManager::downloadMultiple(const QStringList &remotePaths, const Q
 
     cleanupCurrentDownload();
 
+    // --- START OF NEW LOGIC ---
     m_downloadLocalPath = localPath;
+    m_downloadRemotePath = zipName + ".zip";
+    setCurrentDownloadFileName(zipName + ".zip");
+    setIsZipping(true);
+    setStatusMessage("Preparing download...");
+    // --- END OF NEW LOGIC ---
 
     QJsonObject params;
     QJsonArray pathsArray;
@@ -854,8 +917,6 @@ void ConnectionManager::renameItem(const QString &path, const QString &newName)
     params["newName"] = newName;
     sendCommand("rename_item", params);
 }
-
-// In connectionmanager.cpp
 
 void ConnectionManager::createNewUser(const QString &userName, const QString &userPassword, const int &maxStorage, const bool &isAdmin)
 {
@@ -929,3 +990,129 @@ void ConnectionManager::getUserList()
     sendCommand("get_user_list", QJsonObject());
 }
 
+void ConnectionManager::updateEta()
+{
+    if (m_currentTransferType == TransferType::None || m_totalTransferSize == 0) {
+        return;
+    }
+
+    QDateTime now = QDateTime::currentDateTime();
+    qint64 bytesSinceLastUpdate = m_totalBytesTransferred - m_etaLastBytesTransferred;
+    double secondsSinceLastUpdate = m_etaLastUpdateTime.msecsTo(now) / 1000.0;
+
+    if (secondsSinceLastUpdate <= 0) {
+        return;
+    }
+
+    m_currentSpeed = bytesSinceLastUpdate / secondsSinceLastUpdate;
+
+    m_speedSamples.append(m_currentSpeed);
+
+    while (m_speedSamples.size() > SPEED_SAMPLE_COUNT) {
+        m_speedSamples.takeFirst();
+    }
+
+    double medianSpeed = calculateMedianSpeed();
+
+    m_etaLastUpdateTime = now;
+    m_etaLastBytesTransferred = m_totalBytesTransferred;
+        setSpeed(formatSpeed(medianSpeed));
+
+    if (medianSpeed > 0) {
+        qint64 remainingBytes = m_totalTransferSize - m_totalBytesTransferred;
+        if (remainingBytes > 0) {
+            double etaSeconds = remainingBytes / medianSpeed;
+            setEta(formatDuration(etaSeconds));
+        } else {
+            setEta("Almost done...");
+        }
+    } else {
+        setEta("Stalled");
+    }
+}
+
+double ConnectionManager::calculateMedianSpeed()
+{
+    if (m_speedSamples.isEmpty()) {
+        return 0.0;
+    }
+
+    QList<double> sortedSamples = m_speedSamples;
+    std::sort(sortedSamples.begin(), sortedSamples.end());
+
+    int count = sortedSamples.size();
+    if (count % 2 == 0) {
+        return (sortedSamples[count / 2 - 1] + sortedSamples[count / 2]) / 2.0;
+    } else {
+        return sortedSamples[count / 2];
+    }
+}
+
+void ConnectionManager::resetEtaTracking()
+{
+    m_etaTimer->stop();
+    m_currentTransferType = TransferType::None;
+    m_totalTransferSize = 0;
+    m_totalBytesTransferred = 0;
+    m_currentSpeed = 0;
+    m_speedSamples.clear();
+    setEta("");
+    setSpeed("");
+}
+
+void ConnectionManager::startEtaTracking(TransferType type, qint64 totalSize)
+{
+    resetEtaTracking();
+    m_currentTransferType = type;
+    m_totalTransferSize = totalSize;
+    m_etaLastUpdateTime = QDateTime::currentDateTime();
+    m_etaLastBytesTransferred = 0;
+    setEta("Calculating...");
+    setSpeed("0 B/s");
+    m_etaTimer->start();
+}
+
+void ConnectionManager::setEta(const QString &eta)
+{
+    if (m_etaString != eta) {
+        m_etaString = eta;
+        emit etaChanged();
+    }
+}
+
+void ConnectionManager::setSpeed(const QString &speed)
+{
+    if (m_speedString != speed) {
+        m_speedString = speed;
+        emit speedChanged();
+    }
+}
+
+QString ConnectionManager::formatSpeed(double bytesPerSecond)
+{
+    if (bytesPerSecond < 1024) {
+        return QString::number(bytesPerSecond, 'f', 0) + " B/s";
+    } else if (bytesPerSecond < 1024 * 1024) {
+        return QString::number(bytesPerSecond / 1024, 'f', 1) + " KB/s";
+    } else {
+        return QString::number(bytesPerSecond / (1024.0 * 1024.0), 'f', 2) + " MB/s";
+    }
+}
+
+QString ConnectionManager::formatDuration(double seconds)
+{
+    if (seconds < 0) return "Unknown";
+
+    int totalSeconds = qRound(seconds);
+    int hours = totalSeconds / 3600;
+    int minutes = (totalSeconds % 3600) / 60;
+    int secs = totalSeconds % 60;
+
+    if (hours > 0) {
+        return QString("%1h %2m").arg(hours).arg(minutes);
+    } else if (minutes > 0) {
+        return QString("%1m %2s").arg(minutes).arg(secs);
+    } else {
+        return QString("%1s").arg(secs);
+    }
+}

@@ -7,6 +7,7 @@
 #include <QFile>
 #include <QTimer>
 #include <QQueue>
+#include <QDateTime>
 #include <qqml.h>
 
 class ImagePreviewProvider;
@@ -31,6 +32,8 @@ class ConnectionManager : public QObject
     Q_PROPERTY(bool isZipping READ isZipping NOTIFY isZippingChanged)
     Q_PROPERTY(QString serverName READ serverName NOTIFY serverNameChanged)
     Q_PROPERTY(bool isAdmin READ isAdmin NOTIFY isAdminChanged)
+    Q_PROPERTY(QString eta READ eta NOTIFY etaChanged)
+    Q_PROPERTY(QString speed READ speed NOTIFY speedChanged)
 
 public:
     static ConnectionManager* create(QQmlEngine *qmlEngine, QJSEngine *jsEngine);
@@ -45,6 +48,8 @@ public:
     bool isZipping() const { return m_isZipping; }
     QString serverName() const { return m_serverName; }
     bool isAdmin() const { return m_isAdmin; }
+    QString eta() const { return m_etaString; }
+    QString speed() const { return m_speedString; }
 
     void setImageProvider(ImagePreviewProvider *provider);
 
@@ -82,6 +87,10 @@ signals:
     void currentUploadFileNameChanged();
     void currentDownloadFileNameChanged();
     void isZippingChanged();
+    void serverNameChanged();
+    void isAdminChanged();
+    void etaChanged();
+    void speedChanged();
 
     void directoryListed(const QString &path, const QVariantList &files);
     void directoryCreated(const QString &path);
@@ -94,8 +103,6 @@ signals:
     void itemMoved(const QString &fromPath, const QString &toPath);
     void storageInfo(qint64 total, qint64 used, qint64 available);
     void errorOccurred(const QString &error);
-    void serverNameChanged();
-    void isAdminChanged();
     void multipleDeleted();
     void thumbnailReady(const QString &path);
     void itemRenamed(const QString &path, const QString &newName);
@@ -112,12 +119,15 @@ private slots:
     void onError(QAbstractSocket::SocketError error);
     void onBytesWritten(qint64 bytes);
     void onConnectionTimeout();
+    void updateEta();
 
 private:
     explicit ConnectionManager(QObject *parent = nullptr);
     ~ConnectionManager();
     ConnectionManager(const ConnectionManager&) = delete;
     ConnectionManager& operator=(const ConnectionManager&) = delete;
+
+    enum class TransferType { None, Upload, Download };
 
     void sendCommand(const QString &type, const QJsonObject &params);
     void handleResponse(const QJsonObject &response);
@@ -135,6 +145,13 @@ private:
     void setIsAdmin(const bool &isAdmin);
     void requestThumbnail(const QString &path);
 
+    void resetEtaTracking();
+    void startEtaTracking(TransferType type, qint64 totalSize);
+    void setEta(const QString &eta);
+    void setSpeed(const QString &speed);
+    QString formatSpeed(double bytesPerSecond);
+    QString formatDuration(double seconds);
+
     static ConnectionManager *s_instance;
 
     QWebSocket *m_socket;
@@ -144,7 +161,6 @@ private:
     QString m_username;
     QString m_password;
 
-    // Download state
     QString m_downloadRemotePath;
     QString m_downloadLocalPath;
     QFile *m_downloadFile;
@@ -154,7 +170,6 @@ private:
     QString m_currentDownloadFileName;
     bool m_isZipping;
 
-    // Upload state
     QQueue<UploadQueueItem> m_uploadQueue;
     QString m_uploadLocalPath;
     QString m_uploadRemotePath;
@@ -165,12 +180,25 @@ private:
     QString m_serverName;
     bool m_isAdmin;
 
-    // Image preview
     ImagePreviewProvider *m_imageProvider;
+
+    TransferType m_currentTransferType;
+    QTimer* m_etaTimer;
+    qint64 m_totalTransferSize;
+    qint64 m_totalBytesTransferred;
+    QDateTime m_etaLastUpdateTime;
+    qint64 m_etaLastBytesTransferred;
+    double m_currentSpeed;
+    QString m_etaString;
+    QString m_speedString;
+
+    static const int SPEED_SAMPLE_COUNT = 5; // Use last 5 seconds
+    QList<double> m_speedSamples; // Stores speed samples
+    double calculateMedianSpeed();
 
     static const qint64 CHUNK_SIZE = 1024 * 1024; // 1MB chunks
 
-    QTimer *m_connectionTimer;  // Add this
+    QTimer *m_connectionTimer;
 };
 
 #endif // CONNECTIONMANAGER_H

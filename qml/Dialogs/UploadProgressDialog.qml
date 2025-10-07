@@ -18,11 +18,18 @@ CustomDialog {
         anchors.fill: parent
         spacing: 15
 
-        Label {
-            text: ConnectionManager.currentUploadFileName || "Preparing upload..."
-            font.bold: true
-            elide: Text.ElideRight
-            Layout.fillWidth: true
+        RowLayout {
+            Label {
+                text: ConnectionManager.currentUploadFileName || "Preparing upload..."
+                font.bold: true
+                elide: Text.ElideRight
+                Layout.fillWidth: true
+            }
+
+            Label {
+                text: uploadProgressDialog.progress + "%"
+                Layout.alignment: Qt.AlignHCenter
+            }
         }
 
         Label {
@@ -41,9 +48,8 @@ CustomDialog {
             value: uploadProgressDialog.progress / 100
         }
 
-        Label {
-            text: uploadProgressDialog.progress + "%"
-            Layout.alignment: Qt.AlignHCenter
+        TransferStatus {
+            Layout.alignment: Qt.AlignRight
         }
     }
 }
