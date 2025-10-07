@@ -48,8 +48,6 @@ ApplicationWindow {
         }
 
         function onDownloadZipping(name) {
-            downloadProgressDialog.fileName = name
-            downloadProgressDialog.progress = 0
             downloadProgressDialog.open()
         }
 

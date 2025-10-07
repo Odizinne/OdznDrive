@@ -772,6 +772,7 @@ void ConnectionManager::handleResponse(const QJsonObject &response)
     } else if (type == "upload_cancelled") {
         setStatusMessage("Upload cancelled");
     } else if (type == "download_zipping") {
+        qDebug() << "pass";
         QString name = data["name"].toString();
         setCurrentDownloadFileName(name);
         setIsZipping(true);
@@ -888,13 +889,12 @@ void ConnectionManager::downloadMultiple(const QStringList &remotePaths, const Q
 
     cleanupCurrentDownload();
 
-    // --- START OF NEW LOGIC ---
+    // Store the necessary info for when the download starts
     m_downloadLocalPath = localPath;
-    m_downloadRemotePath = zipName + ".zip";
-    setCurrentDownloadFileName(zipName + ".zip");
-    setIsZipping(true);
+    m_downloadRemotePath = zipName + ".zip"; // This is for internal tracking
+
+    // Set a general status message for the user
     setStatusMessage("Preparing download...");
-    // --- END OF NEW LOGIC ---
 
     QJsonObject params;
     QJsonArray pathsArray;
