@@ -772,7 +772,6 @@ void ConnectionManager::handleResponse(const QJsonObject &response)
     } else if (type == "upload_cancelled") {
         setStatusMessage("Upload cancelled");
     } else if (type == "download_zipping") {
-        qDebug() << "pass";
         QString name = data["name"].toString();
         setCurrentDownloadFileName(name);
         setIsZipping(true);

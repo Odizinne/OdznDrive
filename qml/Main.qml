@@ -1,8 +1,11 @@
+pragma ComponentBehavior: Bound
+
 import QtQuick
 import QtQuick.Controls.Material
 import Odizinne.OdznDrive
 
 ApplicationWindow {
+    id: root
     visible: true
     width: 1280
     height: 720
@@ -14,20 +17,16 @@ ApplicationWindow {
     Material.primary: "#E67E22"
     Material.theme: UserSettings.darkMode ? Material.Dark : Material.Light
 
+    signal requestLoginReset()
+    signal requestLoginAnimationPlay()
+    signal requestLoginAnimationReset()
+    signal requestSetLoginToServer()
+
     Component.onCompleted: {
         WindowsPlatform.setTitlebarColor(UserSettings.darkMode)
-        if (UserSettings.autoconnect &&
-            UserSettings.serverUrl !== "" &&
-            UserSettings.serverUsername !== "" &&
-            UserSettings.serverPassword !== "") {
-            ConnectionManager.connectToServer(
-                UserSettings.serverUrl,
-                UserSettings.serverUsername,
-                UserSettings.serverPassword
-            )
-            if (mainStack.currentItem && mainStack.currentItem.setLoginToServer) {
-                mainStack.currentItem.setLoginToServer()
-            }
+        if (UserSettings.autoconnect && UserSettings.serverUrl !== "" && UserSettings.serverUsername !== "" && UserSettings.serverPassword !== "") {
+            ConnectionManager.connectToServer( UserSettings.serverUrl, UserSettings.serverUsername, UserSettings.serverPassword)
+            root.requestSetLoginToServer()
         }
     }
 
@@ -41,9 +40,9 @@ ApplicationWindow {
                 ConnectionManager.getServerInfo()
             } else {
                 mainStack.pop()
-                mainStack.currentItem.reset()
-                mainStack.currentItem.resetAnimation()
-                mainStack.currentItem.playAnimation()
+                root.requestLoginReset()
+                root.requestLoginAnimationReset()
+                root.requestLoginAnimationPlay()
             }
         }
 
@@ -150,8 +149,25 @@ ApplicationWindow {
     Component {
         id: loginPage
         LoginPage {
+            id: lp
             onLoginComplete: {
                 mainStack.push(fileSystemView)
+            }
+
+            Connections {
+                target: root
+
+                function onRequestLoginReset() {
+                    lp.reset()
+                }
+
+                function onRequestLoginAnimationReset() {
+                    lp.resetAnimation()
+                }
+
+                function onRequestLoginAnimationPlay() {
+                    lp.playAnimation()
+                }
             }
         }
     }

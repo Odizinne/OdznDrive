@@ -3,6 +3,8 @@ import QtQuick
 import Odizinne.OdznDrive
 
 QtObject {
+    id: root
+
     property var checkedItems: ({})
     property int checkedCount: 0
     property string draggedItemPath: ""
@@ -80,6 +82,8 @@ QtObject {
         return items
     }
 
+    // --- PATH & FORMATTING LOGIC ---
+
     function getPathSegments() {
         if (!FileModel.currentPath || FileModel.currentPath === "" || FileModel.currentPath === "/") {
             return []
@@ -131,11 +135,11 @@ QtObject {
         return Math.round(bytes / 1024 / 1024 / 1024) + " GB"
     }
 
-    function formatSizeFromKB(megabytes) {
-        if (megabytes < 1024) return megabytes + " KB"
-        if (megabytes < 1024 * 1024) return Math.round(megabytes / 1024) + " MB"
-        if (megabytes < 1024 * 1024 * 1024) return Math.round(megabytes / 1024 / 1024) + " GB"
-        return Math.round(megabytes / 1024 / 1024 / 1024) + " TB"
+    function formatSizeFromKB(kilobytes) { // Corrected param name
+        if (kilobytes < 1024) return kilobytes + " KB"
+        if (kilobytes < 1024 * 1024) return Math.round(kilobytes / 1024) + " MB"
+        if (kilobytes < 1024 * 1024 * 1024) return Math.round(kilobytes / 1024 / 1024) + " GB"
+        return Math.round(kilobytes / 1024 / 1024 / 1024) + " TB"
     }
 
     function formatSizeFromMB(megabytes) {
@@ -166,36 +170,45 @@ QtObject {
         }
     }
 
-    function openFileDownloadDialog(remotePath, defaultName) {
-        let localPath = FileDialogHelper.saveFile("Save File", defaultName, "")
-        if (localPath !== "") {
-            ConnectionManager.downloadFile(remotePath, localPath)
+    function toNativeFilePath(path) {
+        let pathStr = path.toString();
+        if (pathStr.startsWith("file:")) {
+            pathStr = pathStr.substring(5);
+            while (pathStr.startsWith("/") || pathStr.startsWith("\\")) {
+                pathStr = pathStr.substring(1);
+            }
         }
+        return pathStr;
+    }
+
+
+    function openFileDownloadDialog(remotePath, defaultName) {
+        let cleanedFolderPath = toNativeFilePath(UserSettings.downloadFolderPath)
+        FileDialogHelper.ensureDirectoryExists(cleanedFolderPath)
+        let fullPath = FileDialogHelper.joinPath(cleanedFolderPath, defaultName)
+        let localPath = toNativeFilePath(fullPath)
+        ConnectionManager.downloadFile(remotePath, localPath)
     }
 
     function openFolderDownloadDialog(remotePath, defaultName) {
-        let localPath = FileDialogHelper.saveFile("Save Folder as Zip", defaultName, "Zip files (*.zip)")
-        if (localPath !== "") {
-            if (!localPath.endsWith(".zip")) {
-                localPath += ".zip"
-            }
-            ConnectionManager.downloadDirectory(remotePath, localPath)
-        }
+        let cleanedFolderPath = toNativeFilePath(UserSettings.downloadFolderPath)
+        FileDialogHelper.ensureDirectoryExists(cleanedFolderPath)
+        let fileName = defaultName.endsWith(".zip") ? defaultName : defaultName + ".zip"
+        let fullPath = FileDialogHelper.joinPath(cleanedFolderPath, fileName)
+        let localPath = toNativeFilePath(fullPath)
+        ConnectionManager.downloadDirectory(remotePath, localPath)
     }
 
     function openMultiDownloadDialog(itemPaths) {
-        let localPath = FileDialogHelper.saveFile("Save as Zip", getMultiDownloadDefaultName(), "Zip files (*.zip)")
-        if (localPath !== "") {
-            if (!localPath.endsWith(".zip")) {
-                localPath += ".zip"
-            }
-
-            let fileName = localPath.split('/').pop().split('\\').pop()
-            let zipName = fileName.endsWith('.zip') ? fileName.slice(0, -4) : fileName
-
-            ConnectionManager.downloadMultiple(itemPaths, localPath, zipName)
-            uncheckAll()
-        }
+        let cleanedFolderPath = toNativeFilePath(UserSettings.downloadFolderPath)
+        FileDialogHelper.ensureDirectoryExists(cleanedFolderPath)
+        let defaultZipName = getMultiDownloadDefaultName()
+        let fullPath = FileDialogHelper.joinPath(cleanedFolderPath, defaultZipName)
+        let localPath = toNativeFilePath(fullPath)
+        let fileName = localPath.split('/').pop().split('\\').pop()
+        let zipName = fileName.endsWith('.zip') ? fileName.slice(0, -4) : fileName
+        ConnectionManager.downloadMultiple(itemPaths, localPath, zipName)
+        uncheckAll()
     }
 
     function getMultiDownloadDefaultName() {

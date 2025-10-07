@@ -3,6 +3,7 @@
 
 #include <QObject>
 #include <QStringList>
+#include <QDir>
 #include <qqml.h>
 
 class FileDialogHelper : public QObject
@@ -19,6 +20,9 @@ public:
     Q_INVOKABLE QString saveFile(const QString &title = "Save File",
                                  const QString &defaultName = "",
                                  const QString &filter = "");
+    Q_INVOKABLE QString getExistingDirectory(const QString &title = "Select Directory");
+    Q_INVOKABLE void ensureDirectoryExists(const QString &path);
+    Q_INVOKABLE QString joinPath(const QString &basePath, const QString &fileName);
 
 private:
     explicit FileDialogHelper(QObject *parent = nullptr);

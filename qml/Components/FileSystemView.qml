@@ -9,6 +9,13 @@ Page {
     id: root
     Material.background: "transparent"
 
+    Component.onCompleted: {
+        if (UserSettings.firstRun) {
+            advancedSettingsDialog.open()
+            UserSettings.firstRun = false
+        }
+    }
+
     Binding {
         target: Utils
         property: "anyDialogOpen"
@@ -159,6 +166,12 @@ Page {
     footer: FooterBar {
         id: footerBar
         onShowUserManagmentDialog: userManagmentDialog.open()
+        onShowAdvancedSettingsDialog: advancedSettingsDialog.open()
+    }
+
+    AdvancedSettingsDialog {
+        id: advancedSettingsDialog
+        anchors.centerIn: parent
     }
 
     UserAddDialog {

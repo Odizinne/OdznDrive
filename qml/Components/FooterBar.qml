@@ -8,6 +8,7 @@ Item {
     id: footer
     height: 50 + 24
     signal showUserManagmentDialog()
+    signal showAdvancedSettingsDialog()
     Rectangle {
         anchors.fill: parent
         anchors.margins: 12
@@ -52,6 +53,11 @@ Item {
                             onClicked: footer.showUserManagmentDialog()
                         }
                         MenuSeparator {}
+                        MenuItem {
+                            text: "Advanced settings"
+                            onClicked: footer.showAdvancedSettingsDialog()
+                        }
+
                         MenuItem {
                             text: "Folders first"
                             checked: UserSettings.foldersFirst
