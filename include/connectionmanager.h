@@ -100,6 +100,7 @@ signals:
     void uploadComplete(const QString &path);
     void downloadProgress(int percentage);
     void downloadComplete(const QString &path);
+    void downloadZipping(const QString &name);
     void itemMoved(const QString &fromPath, const QString &toPath);
     void storageInfo(qint64 total, qint64 used, qint64 available);
     void errorOccurred(const QString &error);

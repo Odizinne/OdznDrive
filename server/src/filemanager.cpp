@@ -220,111 +220,6 @@ qint64 FileManager::getFileSize(const QString &relativePath) const
     return info.size();
 }
 
-QString FileManager::createZipFromDirectory(const QString &relativePath, const QString &zipName)
-{
-    if (!isValidPath(relativePath)) {
-        return QString();
-    }
-
-    QString absSourcePath = getAbsolutePath(relativePath);
-    QFileInfo sourceInfo(absSourcePath);
-
-    if (!sourceInfo.exists() || !sourceInfo.isDir()) {
-        return QString();
-    }
-
-    // Create temp directory for zip files
-    QString tempDir = QDir(m_rootPath).filePath(".temp");
-    QDir().mkpath(tempDir);
-
-    QString zipFileName = zipName + ".zip";
-    QString zipPath = QDir(tempDir).filePath(zipFileName);
-
-    // Remove existing zip if any
-    QFile::remove(zipPath);
-
-    // Use system zip command
-    QProcess process;
-    process.setWorkingDirectory(absSourcePath);
-
-    QStringList args;
-    args << "-r" << zipPath << ".";
-
-    process.start("zip", args);
-
-    if (!process.waitForFinished(300000)) { // 5 minutes timeout
-        return QString();
-    }
-
-    if (process.exitCode() != 0) {
-        return QString();
-    }
-
-    // Return relative path to the zip file
-    return ".temp/" + zipFileName;
-}
-
-QString FileManager::createZipFromMultiplePaths(const QStringList &paths, const QString &zipName)
-{
-    if (paths.isEmpty()) {
-        return QString();
-    }
-
-    // --- CRITICAL FIX: Use a system temp directory OUTSIDE the user's storage root ---
-    // This prevents the zip command from trying to zip itself.
-    QString tempDir = QDir::temp().filePath("odzndrive-" + QString::number(QCoreApplication::applicationPid()));
-    QDir().mkpath(tempDir);
-
-    QString zipFileName = zipName + ".zip";
-    QString zipPath = QDir(tempDir).filePath(zipFileName);
-
-    // Remove existing zip if any
-    QFile::remove(zipPath);
-
-    // Prepare arguments for zip command using RELATIVE paths
-    QStringList args;
-    args << "-r" << zipPath;
-
-    // Add all paths as relative paths
-    for (const QString &path : paths) {
-        if (!isValidPath(path)) {
-            continue;
-        }
-
-        QString absPath = getAbsolutePath(path);
-        if (QFileInfo::exists(absPath)) {
-            args << path;
-        }
-    }
-
-    if (args.size() <= 2) { // Only zipPath and -r
-        QDir().rmdir(tempDir); // Clean up empty temp dir
-        return QString();
-    }
-
-    QProcess process;
-    process.setWorkingDirectory(m_rootPath);
-    process.start("zip", args);
-
-    // Use a shorter timeout to prevent the server from hanging indefinitely
-    if (!process.waitForFinished(60000)) { // 60-second timeout
-        qWarning() << "Zip process timed out or failed:" << process.errorString();
-        QFile::remove(zipPath);
-        QDir().rmdir(tempDir);
-        return QString();
-    }
-
-    if (process.exitCode() != 0) {
-        qWarning() << "Zip process exited with code" << process.exitCode();
-        QFile::remove(zipPath);
-        QDir().rmdir(tempDir);
-        return QString();
-    }
-
-    // Return the absolute path to the file in the system temp directory
-    return zipPath;
-}
-
 bool FileManager::renameItem(const QString &path, const QString &newName)
 {
     if (!isValidPath(path)) {
@@ -338,14 +233,117 @@ bool FileManager::renameItem(const QString &path, const QString &newName)
         return false;
     }
 
-    // Get parent directory
     QDir parentDir = info.dir();
     QString newAbsPath = parentDir.filePath(newName);
 
-    // Check if target already exists
     if (QFileInfo::exists(newAbsPath)) {
         return false;
     }
 
     return QFile::rename(absPath, newAbsPath);
+}
+
+QProcess* FileManager::createZipFromDirectory(const QString &path, const QString &dirName, QString& outZipPath)
+{
+    if (!isValidPath(path)) {
+        outZipPath.clear();
+        return nullptr;
+    }
+
+    QString absPath = getAbsolutePath(path);
+    QFileInfo dirInfo(absPath);
+
+    if (!dirInfo.exists() || !dirInfo.isDir()) {
+        outZipPath.clear();
+        return nullptr;
+    }
+
+    QString tempDir = QDir::temp().filePath("odzndrive-" + QString::number(QCoreApplication::applicationPid()));
+    QDir().mkpath(tempDir);
+
+    QString zipFileName = dirName + ".zip";
+    outZipPath = QDir(tempDir).filePath(zipFileName);
+
+    QFile::remove(outZipPath);
+
+    QStringList args;
+    args << "-0" << "-r" << outZipPath << dirName;
+
+    QProcess* process = new QProcess();
+    process->setWorkingDirectory(QFileInfo(absPath).absolutePath());
+    process->start("zip", args);
+    return process;
+}
+
+QProcess* FileManager::createZipFromMultiplePaths(const QStringList &paths, const QString &zipName, QString& outZipPath)
+{
+    if (paths.isEmpty()) {
+        outZipPath.clear();
+        return nullptr;
+    }
+
+    QString tempDir = QDir::temp().filePath("odzndrive-" + QString::number(QCoreApplication::applicationPid()));
+    QDir().mkpath(tempDir);
+
+    QString zipFileName = zipName + ".zip";
+    outZipPath = QDir(tempDir).filePath(zipFileName);
+
+    QFile::remove(outZipPath);
+
+    QStringList args;
+    args << "-0" << "-r" << outZipPath;
+
+    for (const QString &path : paths) {
+        if (!isValidPath(path)) {
+            continue;
+        }
+
+        QString absPath = getAbsolutePath(path);
+        if (QFileInfo::exists(absPath)) {
+            args << path;
+        }
+    }
+
+    if (args.size() <= 3) {
+        QDir().rmdir(tempDir);
+        outZipPath.clear();
+        return nullptr;
+    }
+
+    QProcess* process = new QProcess();
+    process->setWorkingDirectory(m_rootPath);
+    process->start("zip", args);
+    return process;
+}
+
+QString FileManager::createZipFromDirectory(const QString &path, const QString &dirName)
+{
+    QString outZipPath;
+    QProcess* process = createZipFromDirectory(path, dirName, outZipPath);
+    if (!process) return QString();
+
+    process->waitForFinished(300000);
+    if (process->exitCode() != 0) {
+        process->deleteLater();
+        QFile::remove(outZipPath);
+        return QString();
+    }
+    process->deleteLater();
+    return outZipPath;
+}
+
+QString FileManager::createZipFromMultiplePaths(const QStringList &paths, const QString &zipName)
+{
+    QString outZipPath;
+    QProcess* process = createZipFromMultiplePaths(paths, zipName, outZipPath);
+    if (!process) return QString();
+
+    process->waitForFinished(300000);
+    if (process->exitCode() != 0) {
+        process->deleteLater();
+        QFile::remove(outZipPath);
+        return QString();
+    }
+    process->deleteLater();
+    return outZipPath;
 }

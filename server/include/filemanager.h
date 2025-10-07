@@ -4,6 +4,7 @@
 #include <QString>
 #include <QFileInfo>
 #include <QJsonArray>
+#include <QProcess>
 
 class FileManager
 {
@@ -25,10 +26,13 @@ public:
 
     bool saveFile(const QString &relativePath, const QByteArray &data);
     QByteArray readFile(const QString &relativePath);
+    qint64 getFileSize(const QString &relativePath) const;
 
     QString createZipFromDirectory(const QString &relativePath, const QString &zipName);
     QString createZipFromMultiplePaths(const QStringList &paths, const QString &zipName);
-    qint64 getFileSize(const QString &relativePath) const;
+
+    QProcess* createZipFromDirectory(const QString &relativePath, const QString &zipName, QString& outZipPath);
+    QProcess* createZipFromMultiplePaths(const QStringList &paths, const QString &zipName, QString& outZipPath);
 
 private:
     QString m_rootPath;

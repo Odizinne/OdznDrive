@@ -9,6 +9,7 @@
 #include <QImage>
 #include <QRandomGenerator>
 #include <QDirIterator>
+#include <QCoreApplication>
 #include "version.h"
 
 ClientConnection::ClientConnection(QWebSocket *socket, FileManager *fileManager, QObject *parent)
@@ -24,6 +25,7 @@ ClientConnection::ClientConnection(QWebSocket *socket, FileManager *fileManager,
     , m_downloadSentSize(0)
     , m_isZipDownload(false)
     , m_authDelayTimer(new QTimer(this))
+    , m_zipProcess(nullptr)
 {
     Q_UNUSED(fileManager)
     connect(m_socket, &QWebSocket::textMessageReceived, this, &ClientConnection::onTextMessageReceived);
@@ -39,6 +41,17 @@ ClientConnection::~ClientConnection()
     if (m_uploadFile) {
         m_uploadFile->close();
         delete m_uploadFile;
+    }
+
+    if (m_zipProcess) {
+        m_zipProcess->kill();
+        m_zipProcess->waitForFinished(1000);
+        m_zipProcess->deleteLater();
+        m_zipProcess = nullptr;
+    }
+    if (!m_tempZipPath.isEmpty()) {
+        QFile::remove(m_tempZipPath);
+        m_tempZipPath.clear();
     }
 
     cleanupDownload();
@@ -130,12 +143,11 @@ void ClientConnection::handleCommand(const QJsonObject &command)
         QString password = params["password"].toString();
         QString clientVersion = params["version"].toString();
 
-        // Store credentials and start random delay timer (2-3 seconds)
         m_pendingAuthUsername = username;
         m_pendingAuthPassword = password;
         m_pendingAuthClientVersion = clientVersion;
 
-        int delayMs = QRandomGenerator::global()->bounded(2000, 3001); // 2000-3000ms
+        int delayMs = QRandomGenerator::global()->bounded(2000, 3001);
         qInfo() << "Auth request received for user:" << username << ", delaying response by" << delayMs << "ms";
         m_authDelayTimer->start(delayMs);
 
@@ -190,6 +202,220 @@ void ClientConnection::handleCommand(const QJsonObject &command)
     } else {
         sendError("Unknown command type");
     }
+}
+
+void ClientConnection::handleDownloadMultiple(const QJsonObject &params)
+{
+    QJsonArray pathsArray = params["paths"].toArray();
+    QString zipName = params["zipName"].toString();
+
+    if (pathsArray.isEmpty()) {
+        sendError("No paths provided");
+        return;
+    }
+
+    QStringList paths;
+    for (int i = 0; i < pathsArray.size(); ++i) {
+        paths.append(pathsArray[i].toString());
+    }
+
+    QJsonObject zipData;
+    zipData["status"] = "zipping";
+    zipData["name"] = zipName;
+    sendResponse("download_zipping", zipData);
+
+    if (m_zipProcess) {
+        m_zipProcess->kill();
+        m_zipProcess->deleteLater();
+        m_zipProcess = nullptr;
+    }
+    if (!m_tempZipPath.isEmpty()) {
+        QFile::remove(m_tempZipPath);
+        m_tempZipPath.clear();
+    }
+
+    m_zipProcess = m_fileManager->createZipFromMultiplePaths(paths, zipName, m_tempZipPath);
+
+    if (!m_zipProcess || m_tempZipPath.isEmpty()) {
+        sendError("Failed to start zip creation");
+        if (m_zipProcess) {
+            m_zipProcess->deleteLater();
+            m_zipProcess = nullptr;
+        }
+        return;
+    }
+
+    connect(m_zipProcess, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished), this, [this, zipName](int exitCode, QProcess::ExitStatus exitStatus) {
+        Q_UNUSED(exitStatus)
+        m_zipProcess->deleteLater();
+        m_zipProcess = nullptr;
+
+        if (exitCode != 0) {
+            qWarning() << "Zip process failed with exit code" << exitCode;
+            sendError("Zip creation failed on server.");
+            QFile::remove(m_tempZipPath);
+            m_tempZipPath.clear();
+            return;
+        }
+
+        qInfo() << "Zip creation successful for" << m_tempZipPath;
+        QFileInfo zipInfo(m_tempZipPath);
+        if (!zipInfo.exists()) {
+            sendError("Zip file not found after creation.");
+            return;
+        }
+
+        cleanupDownload();
+
+        m_downloadFile = new QFile(m_tempZipPath);
+        if (!m_downloadFile->open(QIODevice::ReadOnly)) {
+            sendError("Failed to open zip file: " + m_tempZipPath);
+            delete m_downloadFile;
+            m_downloadFile = nullptr;
+            QFile::remove(m_tempZipPath);
+            m_tempZipPath.clear();
+            return;
+        }
+
+        m_downloadPath = m_tempZipPath;
+        m_downloadTotalSize = zipInfo.size();
+        m_downloadSentSize = 0;
+        m_isZipDownload = true;
+
+        QJsonObject metadata;
+        metadata["path"] = zipName + ".zip";
+        metadata["name"] = zipName + ".zip";
+        metadata["size"] = m_downloadTotalSize;
+        metadata["isDirectory"] = false;
+        metadata["isMultiple"] = true;
+        sendResponse("download_start", metadata);
+
+        for (int i = 0; i < 3 && m_downloadSentSize < m_downloadTotalSize; ++i) {
+            sendNextDownloadChunk();
+        }
+    });
+}
+
+void ClientConnection::handleDownloadDirectory(const QJsonObject &params)
+{
+    QString path = params["path"].toString();
+
+    if (!m_fileManager->isValidPath(path)) {
+        sendError("Invalid directory path");
+        return;
+    }
+
+    QString absPath = m_fileManager->getAbsolutePath(path);
+    QFileInfo fileInfo(absPath);
+
+    if (!fileInfo.exists() || !fileInfo.isDir()) {
+        sendError("Directory not found");
+        return;
+    }
+
+    QString dirName = fileInfo.fileName();
+    if (dirName.isEmpty()) {
+        dirName = "root";
+    }
+
+    QJsonObject zipData;
+    zipData["status"] = "zipping";
+    zipData["name"] = dirName;
+    sendResponse("download_zipping", zipData);
+
+    if (m_zipProcess) {
+        m_zipProcess->kill();
+        m_zipProcess->deleteLater();
+        m_zipProcess = nullptr;
+    }
+    if (!m_tempZipPath.isEmpty()) {
+        QFile::remove(m_tempZipPath);
+        m_tempZipPath.clear();
+    }
+
+    m_zipProcess = m_fileManager->createZipFromDirectory(path, dirName, m_tempZipPath);
+
+    if (!m_zipProcess || m_tempZipPath.isEmpty()) {
+        sendError("Failed to start zip creation");
+        if (m_zipProcess) {
+            m_zipProcess->deleteLater();
+            m_zipProcess = nullptr;
+        }
+        return;
+    }
+
+    connect(m_zipProcess, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished), this, [this, dirName](int exitCode, QProcess::ExitStatus exitStatus) {
+        Q_UNUSED(exitStatus)
+        m_zipProcess->deleteLater();
+        m_zipProcess = nullptr;
+
+        if (exitCode != 0) {
+            qWarning() << "Zip process failed with exit code" << exitCode;
+            sendError("Zip creation failed on server.");
+            QFile::remove(m_tempZipPath);
+            m_tempZipPath.clear();
+            return;
+        }
+
+        qInfo() << "Zip creation successful for" << m_tempZipPath;
+        QFileInfo zipInfo(m_tempZipPath);
+        if (!zipInfo.exists()) {
+            sendError("Zip file not found after creation.");
+            return;
+        }
+
+        cleanupDownload();
+
+        m_downloadFile = new QFile(m_tempZipPath);
+        if (!m_downloadFile->open(QIODevice::ReadOnly)) {
+            sendError("Failed to open zip file: " + m_tempZipPath);
+            delete m_downloadFile;
+            m_downloadFile = nullptr;
+            QFile::remove(m_tempZipPath);
+            m_tempZipPath.clear();
+            return;
+        }
+
+        m_downloadPath = m_tempZipPath;
+        m_downloadTotalSize = zipInfo.size();
+        m_downloadSentSize = 0;
+        m_isZipDownload = true;
+
+        QJsonObject metadata;
+        metadata["path"] = dirName + ".zip";
+        metadata["name"] = dirName + ".zip";
+        metadata["size"] = m_downloadTotalSize;
+        metadata["isDirectory"] = true;
+        sendResponse("download_start", metadata);
+
+        for (int i = 0; i < 3 && m_downloadSentSize < m_downloadTotalSize; ++i) {
+            sendNextDownloadChunk();
+        }
+    });
+}
+
+void ClientConnection::handleCancelDownload(const QJsonObject &params)
+{
+    Q_UNUSED(params)
+
+    if (m_zipProcess && m_zipProcess->state() == QProcess::Running) {
+        qInfo() << "Canceling zip process for download.";
+        m_zipProcess->kill();
+        m_zipProcess->waitForFinished(1000);
+        m_zipProcess->deleteLater();
+        m_zipProcess = nullptr;
+    }
+
+    if (!m_tempZipPath.isEmpty()) {
+        QFile::remove(m_tempZipPath);
+        m_tempZipPath.clear();
+    }
+
+    cleanupDownload();
+
+    QJsonObject data;
+    data["success"] = true;
+    sendResponse("download_cancelled", data);
 }
 
 void ClientConnection::handleRenameItem(const QJsonObject &params)
@@ -285,15 +511,13 @@ void ClientConnection::handleGetThumbnail(const QJsonObject &params)
     QImage image(absPath);
 
     if (image.isNull()) {
-        return; // Silently fail for non-image files
+        return;
     }
 
-    // Scale image to thumbnail size
     if (image.width() > maxSize || image.height() > maxSize) {
         image = image.scaled(maxSize, maxSize, Qt::KeepAspectRatio, Qt::SmoothTransformation);
     }
 
-    // Convert to JPEG base64
     QByteArray imageData;
     QBuffer buffer(&imageData);
     buffer.open(QIODevice::WriteOnly);
@@ -309,7 +533,7 @@ void ClientConnection::handleGetThumbnail(const QJsonObject &params)
 void ClientConnection::handleGetServerInfo()
 {
     QJsonObject data;
-    data["name"] = m_currentUsername; // Send username as name for compatibility
+    data["name"] = m_currentUsername;
     data["version"] = APP_VERSION_STRING;
 
     sendResponse("server_info", data);
@@ -337,17 +561,6 @@ void ClientConnection::handleCancelUpload(const QJsonObject &params)
     }
 }
 
-void ClientConnection::handleCancelDownload(const QJsonObject &params)
-{
-    Q_UNUSED(params)
-
-    cleanupDownload();
-
-    QJsonObject data;
-    data["success"] = true;
-    sendResponse("download_cancelled", data);
-}
-
 void ClientConnection::sendResponse(const QString &type, const QJsonObject &data)
 {
     QJsonObject response;
@@ -369,7 +582,6 @@ bool ClientConnection::authenticate(const QString &username, const QString &pass
 {
     QString clientIP = m_socket->peerAddress().toString();
 
-    // Look up user
     User* user = Config::instance().getUser(username);
     if (!user) {
         Config::instance().recordFailedAttempt(clientIP);
@@ -379,7 +591,6 @@ bool ClientConnection::authenticate(const QString &username, const QString &pass
         return false;
     }
 
-    // Check password
     if (password != user->password) {
         Config::instance().recordFailedAttempt(clientIP);
         qWarning() << "Failed authentication attempt from:" << clientIP
@@ -388,7 +599,6 @@ bool ClientConnection::authenticate(const QString &username, const QString &pass
         return false;
     }
 
-    // Check version compatibility
     QStringList clientParts = clientVersion.split('.');
     QStringList serverParts = QString(APP_VERSION_STRING).split('.');
 
@@ -415,7 +625,6 @@ bool ClientConnection::authenticate(const QString &username, const QString &pass
         return false;
     }
 
-    // Create FileManager for this user
     m_fileManager = new FileManager(user->storagePath);
     m_currentUsername = username;
     m_authenticated = true;
@@ -435,7 +644,6 @@ void ClientConnection::handleListDirectory(const QJsonObject &params)
     bool foldersFirst = params["foldersFirst"].toBool();
     QJsonArray files = m_fileManager->listDirectory(path, foldersFirst);
 
-    // Add preview URLs for image files
     for (int i = 0; i < files.size(); ++i) {
         QJsonObject fileObj = files[i].toObject();
 
@@ -445,7 +653,6 @@ void ClientConnection::handleListDirectory(const QJsonObject &params)
                 fileName.endsWith(".png") || fileName.endsWith(".gif") ||
                 fileName.endsWith(".bmp") || fileName.endsWith(".webp")) {
 
-                // Generate preview URL (websocket endpoint)
                 QString previewUrl = "preview://" + fileObj["path"].toString();
                 fileObj["previewUrl"] = previewUrl;
                 files[i] = fileObj;
@@ -541,81 +748,6 @@ void ClientConnection::handleDownloadFile(const QJsonObject &params)
     metadata["isDirectory"] = false;
     sendResponse("download_start", metadata);
 
-    // Start sending chunks
-    for (int i = 0; i < 3 && m_downloadSentSize < m_downloadTotalSize; ++i) {
-        sendNextDownloadChunk();
-    }
-}
-
-void ClientConnection::handleDownloadDirectory(const QJsonObject &params)
-{
-    QString path = params["path"].toString();
-
-    if (!m_fileManager->isValidPath(path)) {
-        sendError("Invalid directory path");
-        return;
-    }
-
-    QString absPath = m_fileManager->getAbsolutePath(path);
-    QFileInfo fileInfo(absPath);
-
-    if (!fileInfo.exists() || !fileInfo.isDir()) {
-        sendError("Directory not found");
-        return;
-    }
-
-    // Get directory name for zip file
-    QString dirName = fileInfo.fileName();
-    if (dirName.isEmpty()) {
-        dirName = "root";
-    }
-
-    // Notify client that zipping is starting
-    QJsonObject zipData;
-    zipData["status"] = "zipping";
-    zipData["name"] = dirName;
-    sendResponse("download_zipping", zipData);
-
-    // Create zip file using system zip command
-    QString zipPath = m_fileManager->createZipFromDirectory(path, dirName);
-
-    if (zipPath.isEmpty()) {
-        sendError("Failed to create zip file");
-        return;
-    }
-
-    // Now download the zip file
-    QString absZipPath = m_fileManager->getAbsolutePath(zipPath);
-    QFileInfo zipInfo(absZipPath);
-
-    if (!zipInfo.exists()) {
-        sendError("Zip file not found");
-        return;
-    }
-
-    cleanupDownload();
-
-    m_downloadFile = new QFile(absZipPath);
-    if (!m_downloadFile->open(QIODevice::ReadOnly)) {
-        sendError("Failed to open zip file");
-        delete m_downloadFile;
-        m_downloadFile = nullptr;
-        return;
-    }
-
-    m_downloadPath = zipPath;
-    m_downloadTotalSize = zipInfo.size();
-    m_downloadSentSize = 0;
-    m_isZipDownload = true;
-
-    QJsonObject metadata;
-    metadata["path"] = zipPath;
-    metadata["name"] = dirName + ".zip";
-    metadata["size"] = m_downloadTotalSize;
-    metadata["isDirectory"] = true;
-    sendResponse("download_start", metadata);
-
-    // Start sending chunks
     for (int i = 0; i < 3 && m_downloadSentSize < m_downloadTotalSize; ++i) {
         sendNextDownloadChunk();
     }
@@ -758,72 +890,6 @@ void ClientConnection::handleMoveItem(const QJsonObject &params)
     }
 }
 
-void ClientConnection::handleDownloadMultiple(const QJsonObject &params)
-{
-    QJsonArray pathsArray = params["paths"].toArray();
-    QString zipName = params["zipName"].toString();
-
-    if (pathsArray.isEmpty()) {
-        sendError("No paths provided");
-        return;
-    }
-
-    QStringList paths;
-    for (int i = 0; i < pathsArray.size(); ++i) {
-        paths.append(pathsArray[i].toString());
-    }
-
-    // Notify client that zipping is starting
-    QJsonObject zipData;
-    zipData["status"] = "zipping";
-    zipData["name"] = zipName;
-    sendResponse("download_zipping", zipData);
-
-    // Create zip file (this now returns an absolute path)
-    QString absZipPath = m_fileManager->createZipFromMultiplePaths(paths, zipName);
-
-    if (absZipPath.isEmpty()) {
-        sendError("Failed to create zip file");
-        return;
-    }
-
-    QFileInfo zipInfo(absZipPath);
-    if (!zipInfo.exists()) {
-        sendError("Zip file not found at: " + absZipPath);
-        return;
-    }
-
-    cleanupDownload();
-
-    m_downloadFile = new QFile(absZipPath);
-    if (!m_downloadFile->open(QIODevice::ReadOnly)) {
-        sendError("Failed to open zip file: " + absZipPath);
-        delete m_downloadFile;
-        m_downloadFile = nullptr;
-        QFile::remove(absZipPath); // Clean up the temp file
-        return;
-    }
-
-    // Store the absolute path for later deletion
-    m_downloadPath = absZipPath;
-    m_downloadTotalSize = zipInfo.size();
-    m_downloadSentSize = 0;
-    m_isZipDownload = true;
-
-    QJsonObject metadata;
-    metadata["path"] = zipName + ".zip"; // Send a clean name to the client
-    metadata["name"] = zipName + ".zip";
-    metadata["size"] = m_downloadTotalSize;
-    metadata["isDirectory"] = false;
-    metadata["isMultiple"] = true;
-    sendResponse("download_start", metadata);
-
-    // Start sending chunks
-    for (int i = 0; i < 3 && m_downloadSentSize < m_downloadTotalSize; ++i) {
-        sendNextDownloadChunk();
-    }
-}
-
 void ClientConnection::onAuthDelayTimeout()
 {
     QString clientIP = m_socket->peerAddress().toString();
@@ -852,7 +918,6 @@ void ClientConnection::onAuthDelayTimeout()
     m_pendingAuthClientVersion.clear();
 }
 
-// In clientconnection.cpp
 void ClientConnection::handleCreateUser(const QJsonObject &params)
 {
     if (!m_authenticated || !m_fileManager) {
@@ -860,7 +925,6 @@ void ClientConnection::handleCreateUser(const QJsonObject &params)
         return;
     }
 
-    // Check if current user is admin
     User* currentUser = Config::instance().getUser(m_currentUsername);
     if (!currentUser || !currentUser->isAdmin) {
         sendError("Admin privileges required");
@@ -894,7 +958,6 @@ void ClientConnection::handleEditUser(const QJsonObject &params)
         return;
     }
 
-    // Check if current user is admin
     User* currentUser = Config::instance().getUser(m_currentUsername);
     if (!currentUser || !currentUser->isAdmin) {
         sendError("Admin privileges required");
@@ -917,7 +980,6 @@ void ClientConnection::handleEditUser(const QJsonObject &params)
         return;
     }
 
-    // Update user properties
     if (!password.isEmpty()) {
         user->password = password;
     }
@@ -939,7 +1001,6 @@ void ClientConnection::handleDeleteUser(const QJsonObject &params)
         return;
     }
 
-    // Check if current user is admin
     User* currentUser = Config::instance().getUser(m_currentUsername);
     if (!currentUser || !currentUser->isAdmin) {
         sendError("Admin privileges required");
@@ -953,7 +1014,6 @@ void ClientConnection::handleDeleteUser(const QJsonObject &params)
         return;
     }
 
-    // Don't allow deleting yourself
     if (username.toLower() == m_currentUsername.toLower()) {
         sendError("Cannot delete your own account");
         return;
@@ -978,7 +1038,6 @@ void ClientConnection::handleGetUserList(const QJsonObject &params)
         return;
     }
 
-    // Check if current user is admin
     User* currentUser = Config::instance().getUser(m_currentUsername);
     if (!currentUser || !currentUser->isAdmin) {
         sendError("Admin privileges required");

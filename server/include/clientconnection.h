@@ -5,7 +5,7 @@
 #include <QWebSocket>
 #include <QFile>
 #include <QTimer>
-
+#include <QProcess>
 #include "filemanager.h"
 
 class ClientConnection : public QObject
@@ -79,6 +79,9 @@ private:
     QString m_pendingAuthClientVersion;
 
     static const qint64 CHUNK_SIZE = 1024 * 1024; // 1MB chunks
+
+    QProcess* m_zipProcess = nullptr; // <-- ADD THIS
+    QString m_tempZipPath; // To store the path for cleanup
 };
 
 #endif // CLIENTCONNECTION_H

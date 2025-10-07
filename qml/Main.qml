@@ -47,6 +47,12 @@ ApplicationWindow {
             }
         }
 
+        function onDownloadZipping(name) {
+            downloadProgressDialog.fileName = name
+            downloadProgressDialog.progress = 0
+            downloadProgressDialog.open()
+        }
+
         function onItemRenamed(fromPath, newName) {
             ConnectionManager.listDirectory(FileModel.currentPath, UserSettings.foldersFirst)
         }
