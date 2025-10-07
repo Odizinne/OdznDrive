@@ -75,6 +75,8 @@ void ConnectionManager::setImageProvider(ImagePreviewProvider *provider)
     m_imageProvider = provider;
 }
 
+// In connectionmanager.cpp
+
 void ConnectionManager::connectToServer(const QString &url, const QString &username, const QString &password)
 {
     if (m_socket->state() != QAbstractSocket::UnconnectedState) {
@@ -88,12 +90,32 @@ void ConnectionManager::connectToServer(const QString &url, const QString &usern
     m_password = password;
     setStatusMessage("Connecting...");
 
-    QUrl wsUrl(url);
-    if (wsUrl.scheme().isEmpty()) {
+    QString tempUrl = url.trimmed();
+
+    if (!tempUrl.contains("://")) {
+        tempUrl.prepend("wss://");
+    }
+
+    QUrl wsUrl(tempUrl);
+    if (!wsUrl.isValid()) {
+        setStatusMessage("Error: Invalid URL format");
+        emit errorOccurred("The URL provided is not valid.");
+        return;
+    }
+
+    QString scheme = wsUrl.scheme().toLower();
+    if (scheme == "https") {
+        wsUrl.setScheme("wss");
+    } else if (scheme == "http") {
         wsUrl.setScheme("ws");
     }
+
     if (wsUrl.port() == -1) {
-        wsUrl.setPort(8888);
+        if (wsUrl.scheme() == "wss") {
+            wsUrl.setPort(443);
+        } else { // "ws"
+            wsUrl.setPort(8888);
+        }
     }
 
     m_connectionTimer->start();
@@ -364,7 +386,7 @@ void ConnectionManager::onError(QAbstractSocket::SocketError error)
     Q_UNUSED(error)
     setConnected(false);
     setAuthenticated(false);
-    setStatusMessage("Error: " + m_socket->errorString());
+    qDebug() << m_socket->errorString();
     emit errorOccurred(m_socket->errorString());
 }
 
