@@ -99,6 +99,31 @@ Page {
         }
     }
 
+    ColumnLayout {
+        anchors.right: parent.right
+        anchors.bottom: parent.bottom
+        anchors.margins: 10
+        spacing: 3
+        Label {
+            font.pixelSize: 11
+            opacity: 0.5
+            Layout.alignment: Qt.AlignRight
+            text: "Qt " + VersionHelper.getQtVersion()
+        }
+        Label {
+            font.pixelSize: 11
+            opacity: 0.5
+            Layout.alignment: Qt.AlignRight
+            text: VersionHelper.getBuildTimestamp()
+        }
+        Label {
+            font.pixelSize: 11
+            opacity: 0.5
+            Layout.alignment: Qt.AlignRight
+            text: VersionHelper.getApplicationVersion() + "-" + VersionHelper.getCommitSha()
+        }
+    }
+
     Rectangle {
         visible: true
         id: loginCard
@@ -107,7 +132,6 @@ Page {
         height: loginContent.implicitHeight + 60
         color: Constants.surfaceColor
         radius: 4
-
         layer.enabled: true
         layer.effect: RoundedElevationEffect {
             elevation: 8
