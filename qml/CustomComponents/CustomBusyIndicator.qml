@@ -32,8 +32,9 @@ Item {
             color: Material.accent
             x: control.indeterminate ? (parent.width - width) * position : 0
 
-            property real position: 0
-            property real widthFactor: 0
+            // FIX: Removed the initial binding ": 0"
+            property real position
+            property real widthFactor
 
             SequentialAnimation on position {
                 running: control.indeterminate

@@ -5,7 +5,6 @@ import QtQuick.Controls.Material
 import QtQuick.Controls.Material.impl
 import QtQuick.Layouts
 import Odizinne.OdznDrive
-import Qt5Compat.GraphicalEffects
 
 Page {
     id: loginPage
@@ -53,6 +52,8 @@ Page {
 
         function onErrorOccurred(error) {
             busyIndicator.reset()
+            busyContainer.opacity = 1
+            loginContent.opacity = 1
         }
 
         function onAuthenticatedChanged() {
