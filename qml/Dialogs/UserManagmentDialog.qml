@@ -1,3 +1,5 @@
+pragma ComponentBehavior: Bound
+
 import QtQuick
 import QtQuick.Layouts
 import Odizinne.OdznDrive
@@ -11,6 +13,10 @@ CustomDialog {
     width: 600
     standardButtons: Qt.Close
     onOpened: ConnectionManager.getUserList()
+    signal openUserAddDialog()
+    signal openUserEditDialog(string name, string pass, int storage, bool isAdmin)
+    signal openUserConfirmDeleteDialog(string user)
+
     ColumnLayout {
         id: mainLyt
         anchors.fill: parent
@@ -29,7 +35,7 @@ CustomDialog {
                 icon.width: 16
                 icon.height: 16
                 icon.source: "qrc:/icons/new.svg"
-                onClicked: userAddDialog.open()
+                onClicked: userManagmentDialog.openUserAddDialog()
             }
         }
 
@@ -164,18 +170,17 @@ CustomDialog {
                                 icon.width: 16
                                 icon.height: 16
                                 icon.source: "qrc:/icons/edit.svg"
-                                enabled: ConnectionManager.serverName !== userDel.model.username
-                                onClicked: userAddDialog.openInEditMode(userDel.model.username, userDel.model.password, userDel.model.storageLimit, userDel.model.isAdmin)
+                                enabled: ConnectionManager.serverName.toLowerCase() !== userDel.model.username.toLowerCase()
+                                onClicked: userManagmentDialog.openUserEditDialog(userDel.model.username, userDel.model.password, userDel.model.storageLimit, userDel.model.isAdmin)
                             }
 
                             CustomButton {
                                 icon.width: 16
                                 icon.height: 16
                                 icon.source: "qrc:/icons/delete.svg"
-                                enabled: ConnectionManager.serverName !== userDel.model.username
+                                enabled: ConnectionManager.serverName.toLowerCase() !== userDel.model.username.toLowerCase()
                                 onClicked: {
-                                    confirmDeleteUserDialog.username = userDel.model.username
-                                    confirmDeleteUserDialog.open()
+                                    userManagmentDialog.openUserConfirmDeleteDialog(userDel.model.username)
                                 }
                             }
                         }

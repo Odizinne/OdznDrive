@@ -2,7 +2,6 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import QtQuick.Controls.Material
-import QtQuick.Controls.Material.impl
 import QtQuick.Layouts
 import Odizinne.OdznDrive
 
@@ -170,6 +169,14 @@ Page {
     UserManagmentDialog {
         id: userManagmentDialog
         anchors.centerIn: parent
+        onOpenUserAddDialog: userAddDialog.open()
+        onOpenUserConfirmDeleteDialog: function (name) {
+            confirmDeleteUserDialog.username = name
+            confirmDeleteUserDialog.open()
+        }
+        onOpenUserEditDialog: function (name, pass, storage, isAdmin) {
+            userAddDialog.openInEditMode(name, pass, storage, isAdmin)
+        }
     }
 
     ConfirmDeleteUserDialog {

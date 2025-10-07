@@ -52,7 +52,7 @@ Page {
 
         function onErrorOccurred(error) {
             busyIndicator.reset()
-            busyContainer.opacity = 1
+            busyContainer.opacity = 0
             loginContent.opacity = 1
         }
 
