@@ -17,10 +17,13 @@ CustomDialog {
 
     ColumnLayout {
         spacing: 15
+        anchors.fill: parent
 
         Label {
             text: ConnectionManager.currentDownloadFileName || "Preparing download..."
             font.bold: true
+            elide: Text.ElideRight
+            Layout.fillWidth: true
         }
 
         CustomProgressBar {
@@ -33,6 +36,8 @@ CustomDialog {
         Label {
             text: ConnectionManager.isZipping ? "Compressing..." : downloadProgressDialog.progress + "%"
             Layout.alignment: Qt.AlignHCenter
+            elide: Text.ElideRight
+            Layout.fillWidth: true
         }
     }
 }

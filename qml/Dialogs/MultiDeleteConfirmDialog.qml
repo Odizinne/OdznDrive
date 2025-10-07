@@ -9,6 +9,8 @@ CustomDialog {
     parent: Overlay.overlay
 
     Label {
+        anchors.fill: parent
+        wrapMode: Text.WordWrap
         text: "Are you sure you want to delete " + multiDeleteConfirmDialog.itemCount + " item(s)?"
     }
 

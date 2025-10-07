@@ -33,7 +33,12 @@ CustomDialog {
             newPath += folderNameField.text.trim()
             ConnectionManager.createDirectory(newPath)
             folderNameField.clear()
+            newFolderDialog.close()
         }
+    }
+
+    onOpened: {
+        folderNameField.forceActiveFocus()
     }
 
     onRejected: {

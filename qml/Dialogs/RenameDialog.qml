@@ -31,6 +31,7 @@ CustomDialog {
         if (renameField.text.trim() !== "") {
             ConnectionManager.renameItem(itemPath, renameField.text.trim())
         }
+        renameDialog.close()
     }
 
     onAboutToShow: {

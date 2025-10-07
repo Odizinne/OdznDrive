@@ -15,11 +15,14 @@ CustomDialog {
     }
 
     ColumnLayout {
+        anchors.fill: parent
         spacing: 15
 
         Label {
             text: ConnectionManager.currentUploadFileName || "Preparing upload..."
             font.bold: true
+            elide: Text.ElideRight
+            Layout.fillWidth: true
         }
 
         Label {
@@ -28,6 +31,8 @@ CustomDialog {
                       "Upload in progress..."
             visible: ConnectionManager.uploadQueueSize > 0
             opacity: 0.7
+            elide: Text.ElideRight
+            Layout.fillWidth: true
         }
 
         CustomProgressBar {

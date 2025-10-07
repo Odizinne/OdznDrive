@@ -5,7 +5,7 @@ import Odizinne.OdznDrive
 CustomDialog {
     id: confirmDeleteUserDialog
     width: 300
-    title: "Are you sure you want to delete " + confirmDeleteUserDialog.username + "?"
+    title: "Delete " + confirmDeleteUserDialog.username + "?"
     property string username: ""
     standardButtons: Dialog.Cancel | Dialog.Yes
 
