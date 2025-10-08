@@ -41,6 +41,18 @@ Page {
         loginPage.animEnabled = true
     }
 
+    function focusNextOrConnect() {
+        if (urlField.text.trim() === "") {
+            urlField.forceActiveFocus()
+        } else if (usernameField.text.trim() === "") {
+            usernameField.forceActiveFocus()
+        } else if (passwordField.text.trim() === "") {
+            passwordField.forceActiveFocus()
+        } else {
+            connectButton.clicked()
+        }
+    }
+
     Connections {
         target: ConnectionManager
 
@@ -192,8 +204,8 @@ Page {
                         font.pixelSize: 14
                         Material.roundedScale: Material.ExtraSmallScale
                         onTextChanged: UserSettings.serverUrl = text.trim()
-                        onAccepted: passwordField.forceActiveFocus()
-                        Keys.onReturnPressed: passwordField.forceActiveFocus()
+                        onAccepted: loginPage.focusNextOrConnect()
+                        Keys.onReturnPressed: loginPage.focusNextOrConnect()
                     }
                 }
 
@@ -210,8 +222,8 @@ Page {
                         font.pixelSize: 14
                         Material.roundedScale: Material.ExtraSmallScale
                         onTextChanged: UserSettings.serverUsername = text.trim()
-                        onAccepted: passwordField.forceActiveFocus()
-                        Keys.onReturnPressed: passwordField.forceActiveFocus()
+                        onAccepted: loginPage.focusNextOrConnect()
+                        Keys.onReturnPressed: loginPage.focusNextOrConnect()
                     }
                 }
 
@@ -229,8 +241,8 @@ Page {
                         font.pixelSize: 14
                         Material.roundedScale: Material.ExtraSmallScale
                         onTextChanged: UserSettings.serverPassword = text.trim()
-                        onAccepted: connectButton.clicked()
-                        Keys.onReturnPressed: connectButton.clicked()
+                        onAccepted: loginPage.focusNextOrConnect()
+                        Keys.onReturnPressed: loginPage.focusNextOrConnect()
                     }
                 }
 

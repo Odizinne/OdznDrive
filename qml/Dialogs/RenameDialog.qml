@@ -11,26 +11,56 @@ CustomDialog {
 
     property string itemPath: ""
     property string itemName: ""
+    property bool correctName: {
+        let invalidChars = /[<>:"/\\|?*\x00-\x1F]/
+        return !invalidChars.test(renameField.text) && !renameField.text.includes("/")
+    }
 
     ColumnLayout {
         anchors.fill: parent
-        spacing: 10
+        spacing: 8
 
         TextField {
             id: renameField
             Layout.fillWidth: true
             Layout.preferredHeight: 35
             placeholderText: "Enter new name"
-            onAccepted: renameDialog.accepted()
+            onAccepted: {
+                if (renameDialog.correctName) renameDialog.accepted()
+            }
+        }
+
+        Label {
+            id: errorLabel
+            text: "Invalid characters detected"
+            color: Material.color(Material.Red)
+            font.pixelSize: 12
+            visible: !renameDialog.correctName
+            opacity: 0.7
         }
     }
 
-    standardButtons: Dialog.Ok | Dialog.Cancel
+    footer: DialogButtonBox {
+        Button {
+            flat: true
+            text: "Cancel"
+            onClicked: {
+                renameDialog.reject()
+                renameDialog.close()
+            }
+        }
+
+        Button {
+            flat: true
+            text: "Ok"
+            enabled: renameField.text !== "" && renameDialog.correctName
+            onClicked: renameDialog.accept()
+        }
+    }
 
     onAccepted: {
-        if (renameField.text.trim() !== "") {
-            ConnectionManager.renameItem(itemPath, renameField.text.trim())
-        }
+        ConnectionManager.renameItem(itemPath, renameField.text.trim())
+        renameField.clear()
         renameDialog.close()
     }
 
