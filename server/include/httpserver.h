@@ -35,7 +35,7 @@ signals:
 private:
     QHttpServerResponse handleShareRequest(const QHttpServerRequest &request, const QString &shareToken);
     QHttpServerResponse handleDownloadPage(const QString &shareToken);
-    QHttpServerResponse handleFileDownload(const QString &shareToken);
+    QHttpServerResponse handleFileDownload(const QString &shareToken, const QHttpServerRequest &request);
     QString generateDownloadPage(const QFileInfo &fileInfo, const QString &shareToken);
     QString generateShareToken();
 
@@ -43,6 +43,7 @@ private:
     QTcpServer *m_tcpServer;
     QHash<QString, QString> m_sharedFiles; // token -> file path
     QString m_baseUrl;
+    static const QRegularExpression s_rangeRegex;
 };
 
 #endif // HTTPSERVER_H

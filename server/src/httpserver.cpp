@@ -8,16 +8,28 @@
 #include <QRegularExpression>
 #include <QMimeDatabase>
 #include <QMimeType>
+#include <QHttpServerRequest>
 #include <QHttpServerResponder>
 #include <QSettings>
+#include <QTemporaryFile>
+
+const QRegularExpression HttpServer::s_rangeRegex(R"(bytes=(\d+)-(\d*))");
+
 
 HttpServer::HttpServer(QObject *parent)
     : QObject(parent)
     , m_tcpServer(new QTcpServer(this))
 {
-    // Set up routes
     m_server.route("/share/<arg>", [this](const QString &shareToken, const QHttpServerRequest &request) {
         return handleShareRequest(request, shareToken);
+    });
+
+    m_server.route("/", []() {
+        return QHttpServerResponse("OdznDrive HTTP Server is running!");
+    });
+
+    m_server.route("/test", []() {
+        return QHttpServerResponse("HTTP Server is working!");
     });
 }
 
@@ -43,7 +55,6 @@ bool HttpServer::start(const QString &url, int port)
         return false;
     }
 
-    // Update the base URL to include the actual port
     QUrl qUrl(m_baseUrl);
     if (qUrl.port() == -1) {
         qUrl.setPort(port);
@@ -122,7 +133,7 @@ QHttpServerResponse HttpServer::handleShareRequest(const QHttpServerRequest &req
     QUrlQuery query(url.query());
 
     if (query.hasQueryItem("download") && query.queryItemValue("download") == "1") {
-        return handleFileDownload(shareToken);
+        return handleFileDownload(shareToken, request);
     } else {
         return handleDownloadPage(shareToken);
     }
@@ -153,10 +164,10 @@ QHttpServerResponse HttpServer::handleDownloadPage(const QString &shareToken)
     return response;
 }
 
-QHttpServerResponse HttpServer::handleFileDownload(const QString &shareToken)
+QHttpServerResponse HttpServer::handleFileDownload(const QString &shareToken, const QHttpServerRequest &request)
 {
     if (!m_sharedFiles.contains(shareToken)) {
-        return QHttpServerResponse("File not found or link expired", QHttpServerResponse::StatusCode::NotFound);
+        return QHttpServerResponse("File not found", QHttpServerResponse::StatusCode::NotFound);
     }
 
     QString filePath = m_sharedFiles[shareToken];
@@ -166,26 +177,71 @@ QHttpServerResponse HttpServer::handleFileDownload(const QString &shareToken)
         return QHttpServerResponse("File not found", QHttpServerResponse::StatusCode::NotFound);
     }
 
-    QFile file(filePath);
-    if (!file.open(QIODevice::ReadOnly)) {
-        return QHttpServerResponse("Error opening file", QHttpServerResponse::StatusCode::InternalServerError);
+    qint64 fileSize = fileInfo.size();
+
+    // Check for Range header
+    const QHttpHeaders headers = request.headers();
+    const QByteArrayView rangeHeaderView = headers.value(QHttpHeaders::WellKnownHeader::Range);
+
+    if (!rangeHeaderView.isEmpty()) {
+        QByteArray rangeHeader = QByteArray(rangeHeaderView);
+        QString rangeValue = QString::fromUtf8(rangeHeader);
+        QRegularExpressionMatch match = s_rangeRegex.match(rangeValue);
+
+        if (match.hasMatch()) {
+            qint64 start = match.captured(1).toLongLong();
+            qint64 end = match.captured(2).isEmpty() ? fileSize - 1 : match.captured(2).toLongLong();
+
+            if (start >= 0 && start < fileSize && end >= start && end < fileSize) {
+                qint64 contentLength = end - start + 1;
+
+                QTemporaryFile tempFile;
+                if (tempFile.open()) {
+                    QFile sourceFile(filePath);
+                    if (sourceFile.open(QIODevice::ReadOnly)) {
+                        sourceFile.seek(start);
+
+                        qint64 remaining = contentLength;
+                        while (remaining > 0) {
+                            qint64 chunkSize = qMin(1024 * 1024LL, remaining); // 1MB chunks
+                            QByteArray chunk = sourceFile.read(chunkSize);
+                            if (chunk.isEmpty()) {
+                                break;
+                            }
+                            tempFile.write(chunk);
+                            remaining -= chunk.size();
+                        }
+                        sourceFile.close();
+                        tempFile.close();
+
+                        QHttpServerResponse fileResponse = QHttpServerResponse::fromFile(tempFile.fileName());
+                        QHttpHeaders fileResponseHeaders;
+                        fileResponseHeaders.append(QHttpHeaders::WellKnownHeader::ContentRange,
+                                                   QString("bytes %1-%2/%3").arg(start).arg(end).arg(fileSize).toUtf8());
+                        fileResponseHeaders.append(QHttpHeaders::WellKnownHeader::ContentType,
+                                                   QMimeDatabase().mimeTypeForFile(filePath).name().toUtf8());
+                        fileResponseHeaders.append(QHttpHeaders::WellKnownHeader::AcceptRanges, "bytes");
+                        fileResponseHeaders.append(QHttpHeaders::WellKnownHeader::ContentDisposition,
+                                                   QString("attachment; filename=\"%1\"").arg(fileInfo.fileName()).toUtf8());
+
+                        fileResponse.setHeaders(fileResponseHeaders);
+                        return fileResponse;
+                    }
+                }
+            }
+        }
     }
 
-    QByteArray fileData = file.readAll();
-    file.close();
+    QHttpServerResponse response = QHttpServerResponse::fromFile(filePath);
 
-    // Create headers
-    QHttpHeaders headers;
-    headers.append(QHttpHeaders::WellKnownHeader::ContentDisposition,
-                   QString("attachment; filename=\"%1\"").arg(fileInfo.fileName()));
+    QHttpHeaders responseHeaders;
+    responseHeaders.append(QHttpHeaders::WellKnownHeader::ContentType,
+                           QMimeDatabase().mimeTypeForFile(filePath).name().toUtf8());
+    responseHeaders.append(QHttpHeaders::WellKnownHeader::ContentDisposition,
+                           QString("attachment; filename=\"%1\"").arg(fileInfo.fileName()).toUtf8());
+    responseHeaders.append(QHttpHeaders::WellKnownHeader::AcceptRanges, "bytes");
 
-    QMimeDatabase mimeDb;
-    QMimeType mimeType = mimeDb.mimeTypeForFile(filePath);
-    headers.append(QHttpHeaders::WellKnownHeader::ContentType, mimeType.name());
-
-    // Create response with headers
-    QHttpServerResponse response(fileData);
-    response.setHeaders(headers);
+    response.setHeaders(responseHeaders);
 
     return response;
 }
