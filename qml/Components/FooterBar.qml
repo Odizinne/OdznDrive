@@ -106,7 +106,7 @@ Item {
                 CustomProgressBar {
                     Layout.preferredWidth: 150
                     Layout.preferredHeight: 8
-                    Material.accent: Utils.storagePercentage < 0.5 ? "#66BB6A" : Utils.storagePercentage < 0.85 ? "#FF9800" : "#F44336"
+                    Material.accent: Utils.storagePercentage < 0.5 ? Material.Green : Utils.storagePercentage < 0.85 ? Material.Orange : Material.Red
                     value: Utils.storagePercentage
                 }
 
