@@ -28,7 +28,7 @@ int main(int argc, char *argv[])
     parser.addVersionOption();
 
     QProcess checkZip;
-    checkZip.start("where", QStringList() << "zip");
+    checkZip.start("which", QStringList() << "zip");
     checkZip.waitForFinished();
 
 #ifdef Q_OS_LINUX
