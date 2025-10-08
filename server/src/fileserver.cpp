@@ -32,7 +32,6 @@ bool FileServer::start()
         qInfo() << "WebSocket Server listening on port" << port;
 
         if (m_httpServer->start(httpUrl, httpPort)) {
-            qInfo() << "HTTP Server started for file sharing";
             return true;
         } else {
             qWarning() << "Failed to start HTTP server, but WebSocket server is running";

@@ -73,7 +73,8 @@ bool HttpServer::start(const QString &url, int port)
 
     qInfo() << "HTTP Server listening on port" << port;
     qInfo() << "Share links will use base URL:" << m_baseUrl;
-    qInfo() << "Test URL: " << m_baseUrl << "/share/test";
+    qInfo() << "Test URL:" << (m_baseUrl + "/share/test");
+
     emit started();
     return true;
 }

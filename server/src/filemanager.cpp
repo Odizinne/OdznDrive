@@ -263,17 +263,25 @@ QProcess* FileManager::createZipFromDirectory(const QString &path, const QString
 
     QString zipFileName = dirName + ".zip";
     outZipPath = QDir(tempDir).filePath(zipFileName);
-
     QFile::remove(outZipPath);
 
+    QProcess* process = new QProcess();
+
+#ifdef Q_OS_WIN
+    QString psCommand = QString(
+                            "Compress-Archive -Path '%1\\*' -DestinationPath '%2' -CompressionLevel NoCompression -Force"
+                            ).arg(absPath.replace("'", "''"), outZipPath.replace("'", "''"));
+
+    process->start("powershell", {"-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", psCommand});
+#else
     QStringList args;
     args << "-0" << "-r" << outZipPath << dirName;
-
-    QProcess* process = new QProcess();
     process->setWorkingDirectory(QFileInfo(absPath).absolutePath());
     process->start("zip", args);
+#endif
     return process;
 }
+
 
 QProcess* FileManager::createZipFromMultiplePaths(const QStringList &paths, const QString &zipName, QString& outZipPath)
 {
@@ -287,63 +295,49 @@ QProcess* FileManager::createZipFromMultiplePaths(const QStringList &paths, cons
 
     QString zipFileName = zipName + ".zip";
     outZipPath = QDir(tempDir).filePath(zipFileName);
-
     QFile::remove(outZipPath);
 
-    QStringList args;
-    args << "-0" << "-r" << outZipPath;
-
+    QStringList validPaths;
     for (const QString &path : paths) {
-        if (!isValidPath(path)) {
-            continue;
-        }
-
-        QString absPath = getAbsolutePath(path);
-        if (QFileInfo::exists(absPath)) {
-            args << path;
+        if (isValidPath(path)) {
+            QString absPath = getAbsolutePath(path);
+            if (QFileInfo::exists(absPath))
+                validPaths << absPath;
         }
     }
 
-    if (args.size() <= 3) {
-        QDir().rmdir(tempDir);
+    if (validPaths.isEmpty()) {
         outZipPath.clear();
         return nullptr;
     }
 
     QProcess* process = new QProcess();
+
+#ifdef Q_OS_WIN
+    QStringList quotedPaths;
+    for (int i = 0; i < validPaths.size(); ++i) {
+        QString escapedPath = validPaths.at(i);
+        escapedPath.replace("'", "''");
+        quotedPaths << QString("'%1'").arg(escapedPath);
+    }
+
+    QString escapedOutZip = outZipPath;
+    escapedOutZip.replace("'", "''");
+
+    QString psCommand = QString(
+                            "Compress-Archive -Path %1 -DestinationPath '%2' -CompressionLevel NoCompression -Force"
+                            ).arg(quotedPaths.join(","), escapedOutZip);
+
+    process->start("powershell",
+                   {"-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", psCommand});
+#else
+    QStringList args;
+    args << "-0" << "-r" << outZipPath;
+    args.append(validPaths);
     process->setWorkingDirectory(m_rootPath);
     process->start("zip", args);
+#endif
+
     return process;
 }
 
-QString FileManager::createZipFromDirectory(const QString &path, const QString &dirName)
-{
-    QString outZipPath;
-    QProcess* process = createZipFromDirectory(path, dirName, outZipPath);
-    if (!process) return QString();
-
-    process->waitForFinished(300000);
-    if (process->exitCode() != 0) {
-        process->deleteLater();
-        QFile::remove(outZipPath);
-        return QString();
-    }
-    process->deleteLater();
-    return outZipPath;
-}
-
-QString FileManager::createZipFromMultiplePaths(const QStringList &paths, const QString &zipName)
-{
-    QString outZipPath;
-    QProcess* process = createZipFromMultiplePaths(paths, zipName, outZipPath);
-    if (!process) return QString();
-
-    process->waitForFinished(300000);
-    if (process->exitCode() != 0) {
-        process->deleteLater();
-        QFile::remove(outZipPath);
-        return QString();
-    }
-    process->deleteLater();
-    return outZipPath;
-}

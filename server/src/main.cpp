@@ -14,7 +14,7 @@ int main(int argc, char *argv[])
     QCoreApplication::setApplicationVersion(APP_VERSION_STRING);
 
     qInfo() << "========================================";
-    qInfo() << "          OdznDrive Server";
+    qInfo() << "          OdznDrive Server" ;
     qInfo() << "========================================";
     qInfo() << "Version:        " << APP_VERSION_STRING;
     qInfo() << "Qt Version:     " << QT_VERSION_STRING;
@@ -31,10 +31,12 @@ int main(int argc, char *argv[])
     checkZip.start("where", QStringList() << "zip");
     checkZip.waitForFinished();
 
+#ifdef Q_OS_LINUX
     if (checkZip.exitCode() != 0) {
         qCritical() << "Error: 'zip' command not found. Please install it and make sure it's in PATH.";
         return 1;
     }
+#endif
 
     QCommandLineOption createUserOption(QStringList() << "create-user",
                                         "Create new user (requires 4-5 args: username password limitMB [path])");
@@ -142,13 +144,10 @@ int main(int argc, char *argv[])
         return 1;
     }
 
+    qInfo() << "";
     qInfo() << "Server started successfully";
     qInfo() << "Press Ctrl+C to stop";
     qInfo() << "";
-    qInfo() << "User Management Commands:";
-    qInfo() << "  --create-user <username> <password> <isAdmin> <limitMB> [path]";
-    qInfo() << "  --delete-user <username>";
-    qInfo() << "  --list-users";
 
     return app.exec();
 }
