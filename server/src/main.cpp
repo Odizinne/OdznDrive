@@ -27,9 +27,14 @@ int main(int argc, char *argv[])
     parser.addHelpOption();
     parser.addVersionOption();
 
-    QCommandLineOption portOption(QStringList() << "p" << "port",
-                                  "Server port (default: 8888)", "port");
-    parser.addOption(portOption);
+    QProcess checkZip;
+    checkZip.start("where", QStringList() << "zip");
+    checkZip.waitForFinished();
+
+    if (checkZip.exitCode() != 0) {
+        qCritical() << "Error: 'zip' command not found. Please install it and make sure it's in PATH.";
+        return 1;
+    }
 
     QCommandLineOption createUserOption(QStringList() << "create-user",
                                         "Create new user (requires 4-5 args: username password limitMB [path])");
