@@ -29,14 +29,12 @@ public:
     QString storageRoot() const { return m_storageRoot; }
     void setStorageRoot(const QString &path) { m_storageRoot = path; }
 
-    // Ban management
     bool isIPBanned(const QString &ip);
     void recordFailedAttempt(const QString &ip);
     void clearFailedAttempts(const QString &ip);
     void loadBannedIPs();
     void saveBannedIPs();
 
-    // User management
     QList<User> getUsers() const;
     User* getUser(const QString &username);
     bool createUser(const QString &username, const QString &password, bool isAdmin,

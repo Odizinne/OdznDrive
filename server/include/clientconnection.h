@@ -9,7 +9,7 @@
 #include "filemanager.h"
 #include "httpserver.h"
 
-class HttpServer; // Forward declaration
+class HttpServer;
 
 class ClientConnection : public QObject
 {
@@ -79,13 +79,12 @@ private:
     qint64 m_downloadSentSize;
     bool m_isZipDownload;
 
-    // Auth delay timer
     QTimer *m_authDelayTimer;
     QString m_pendingAuthUsername;
     QString m_pendingAuthPassword;
     QString m_pendingAuthClientVersion;
 
-    static const qint64 CHUNK_SIZE = 1024 * 1024; // 1MB chunks
+    static const qint64 CHUNK_SIZE = 1024 * 1024;
 
     QProcess* m_zipProcess = nullptr;
     QString m_tempZipPath;

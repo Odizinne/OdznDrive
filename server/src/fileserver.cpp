@@ -25,20 +25,18 @@ bool FileServer::start()
     QSettings settings(QCoreApplication::organizationName(), QCoreApplication::applicationName());
     int port = settings.value("server/port", 8888).toInt();
 
-    // Get HTTP server settings
     QString httpUrl = settings.value("server/httpUrl", getDefaultLocalNetworkUrl()).toString();
     int httpPort = settings.value("server/httpPort", 8889).toInt();
 
     if (m_server->listen(QHostAddress::Any, port)) {
         qInfo() << "WebSocket Server listening on port" << port;
 
-        // Start HTTP server
         if (m_httpServer->start(httpUrl, httpPort)) {
             qInfo() << "HTTP Server started for file sharing";
             return true;
         } else {
             qWarning() << "Failed to start HTTP server, but WebSocket server is running";
-            return true; // Still return true since WebSocket server is working
+            return true;
         }
     } else {
         qCritical() << "Failed to start WebSocket server:" << m_server->errorString();
@@ -79,16 +77,15 @@ void FileServer::onClientDisconnected()
 
 QString FileServer::getDefaultLocalNetworkUrl()
 {
-    // Find a suitable local network URL
     QList<QNetworkInterface> interfaces = QNetworkInterface::allInterfaces();
 
-    for (const QNetworkInterface &interface : interfaces) {
+    for (const QNetworkInterface &interface : std::as_const(interfaces)) {
         if (interface.flags().testFlag(QNetworkInterface::IsUp) &&
             interface.flags().testFlag(QNetworkInterface::IsRunning) &&
             !interface.flags().testFlag(QNetworkInterface::IsLoopBack)) {
 
             QList<QNetworkAddressEntry> entries = interface.addressEntries();
-            for (const QNetworkAddressEntry &entry : entries) {
+            for (const QNetworkAddressEntry &entry : std::as_const(entries)) {
                 QHostAddress address = entry.ip();
                 if (address.protocol() == QAbstractSocket::IPv4Protocol) {
                     return QString("http://%1").arg(address.toString());
@@ -97,6 +94,5 @@ QString FileServer::getDefaultLocalNetworkUrl()
         }
     }
 
-    // Fallback to localhost
     return "http://127.0.0.1";
 }

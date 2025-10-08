@@ -44,7 +44,6 @@ bool FilterProxyModel::isWildcardPattern(const QString &text) const
 
 bool FilterProxyModel::matchesWildcard(const QString &fileName, const QString &pattern) const
 {
-    // Convert wildcard pattern to regex
     QString regexPattern = QRegularExpression::escape(pattern);
     regexPattern.replace("\\*", ".*");
     regexPattern.replace("\\?", ".");

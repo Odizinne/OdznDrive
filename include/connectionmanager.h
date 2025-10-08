@@ -196,11 +196,11 @@ private:
     QString m_etaString;
     QString m_speedString;
 
-    static const int SPEED_SAMPLE_COUNT = 5; // Use last 5 seconds
-    QList<double> m_speedSamples; // Stores speed samples
+    static const int SPEED_SAMPLE_COUNT = 5;
+    QList<double> m_speedSamples;
     double calculateMedianSpeed();
 
-    static const qint64 CHUNK_SIZE = 1024 * 1024; // 1MB chunks
+    static const qint64 CHUNK_SIZE = 1024 * 1024;
 
     QTimer *m_connectionTimer;
 };

@@ -12,8 +12,18 @@
 #include <QHttpServerResponder>
 #include <QSettings>
 #include <QTemporaryFile>
+#include <QRandomGenerator>
 
 const QRegularExpression HttpServer::s_rangeRegex(R"(bytes=(\d+)-(\d*))");
+
+QString generateRandomToken(int byteLength)
+{
+    QByteArray randomBytes;
+    randomBytes.resize(byteLength);
+    QRandomGenerator::global()->fillRange(reinterpret_cast<quint32*>(randomBytes.data()), randomBytes.size() / sizeof(quint32));
+    QByteArray base64 = randomBytes.toBase64(QByteArray::Base64UrlEncoding | QByteArray::OmitTrailingEquals);
+    return QString::fromUtf8(base64);
+}
 
 
 HttpServer::HttpServer(QObject *parent)
@@ -81,9 +91,9 @@ bool HttpServer::isRunning() const
     return m_tcpServer->isListening();
 }
 
-QString HttpServer::generateShareLink(const QString &filePath, const QString &baseUrl, const QString &domain)
+QString HttpServer::generateShareLink(const QString &filePath, const QString &baseUrl, const QString &domain, const bool &shortUrl)
 {
-    QString token = registerFileForSharing(filePath);
+    QString token = registerFileForSharing(filePath, shortUrl);
     if (token.isEmpty()) {
         return QString();
     }
@@ -115,20 +125,19 @@ QString HttpServer::generateShareLink(const QString &filePath, const QString &ba
     return url;
 }
 
-QString HttpServer::registerFileForSharing(const QString &filePath)
+QString HttpServer::registerFileForSharing(const QString &filePath, const bool &shortUrl)
 {
     if (filePath.isEmpty()) {
         return QString();
     }
 
-    QString token = generateShareToken();
+    QString token = generateShareToken(shortUrl);
     m_sharedFiles[token] = filePath;
     return token;
 }
 
 QHttpServerResponse HttpServer::handleShareRequest(const QHttpServerRequest &request, const QString &shareToken)
 {
-    // Check if there's a query parameter for direct download
     QUrl url(QString("http://localhost") + request.url().toString());
     QUrlQuery query(url.query());
 
@@ -154,7 +163,6 @@ QHttpServerResponse HttpServer::handleFileDownload(const QString &shareToken, co
 
     qint64 fileSize = fileInfo.size();
 
-    // Check for Range header
     const QHttpHeaders headers = request.headers();
     const QByteArrayView rangeHeaderView = headers.value(QHttpHeaders::WellKnownHeader::Range);
 
@@ -178,7 +186,7 @@ QHttpServerResponse HttpServer::handleFileDownload(const QString &shareToken, co
 
                         qint64 remaining = contentLength;
                         while (remaining > 0) {
-                            qint64 chunkSize = qMin(1024 * 1024LL, remaining); // 1MB chunks
+                            qint64 chunkSize = qMin(1024 * 1024LL, remaining);
                             QByteArray chunk = sourceFile.read(chunkSize);
                             if (chunk.isEmpty()) {
                                 break;
@@ -223,7 +231,6 @@ QHttpServerResponse HttpServer::handleFileDownload(const QString &shareToken, co
 
 QString HttpServer::generateDownloadPage(const QFileInfo &fileInfo, const QString &shareToken)
 {
-    // Load HTML template from resources
     QFile htmlFile(":/html/download.html");
     if (!htmlFile.open(QIODevice::ReadOnly)) {
         return "<html><body><h1>Error: Could not load download page</h1></body></html>";
@@ -232,7 +239,6 @@ QString HttpServer::generateDownloadPage(const QFileInfo &fileInfo, const QStrin
     QString htmlContent = QTextStream(&htmlFile).readAll();
     htmlFile.close();
 
-    // Format file size
     qint64 fileSize = fileInfo.size();
     QString sizeStr;
     if (fileSize < 1024) {
@@ -245,7 +251,6 @@ QString HttpServer::generateDownloadPage(const QFileInfo &fileInfo, const QStrin
         sizeStr = QString("%1 GB").arg(fileSize / (1024.0 * 1024.0 * 1024.0), 0, 'f', 1);
     }
 
-    // Get base64 encoded icons
     QString iconBase64;
     QFile iconFile(":/icons/icon.png");
     if (iconFile.open(QIODevice::ReadOnly)) {
@@ -262,7 +267,6 @@ QString HttpServer::generateDownloadPage(const QFileInfo &fileInfo, const QStrin
         faviconBase64 = QString::fromLatin1(faviconData.toBase64());
     }
 
-    // Replace placeholders in HTML
     htmlContent.replace("{{FILE_NAME}}", fileInfo.fileName());
     htmlContent.replace("{{FILE_SIZE}}", sizeStr);
     htmlContent.replace("{{DOWNLOAD_URL}}", QString("/share/%1?download=1").arg(shareToken));
@@ -275,7 +279,6 @@ QString HttpServer::generateDownloadPage(const QFileInfo &fileInfo, const QStrin
 QHttpServerResponse HttpServer::handleDownloadPage(const QString &shareToken)
 {
     if (!m_sharedFiles.contains(shareToken)) {
-        // Load error HTML template from resources
         QFile htmlFile(":/html/error.html");
         if (!htmlFile.open(QIODevice::ReadOnly)) {
             return QHttpServerResponse("Error page not found", QHttpServerResponse::StatusCode::NotFound);
@@ -284,7 +287,6 @@ QHttpServerResponse HttpServer::handleDownloadPage(const QString &shareToken)
         QString htmlContent = QTextStream(&htmlFile).readAll();
         htmlFile.close();
 
-        // Get base64 encoded icons
         QString iconBase64;
         QFile iconFile(":/icons/icon.png");
         if (iconFile.open(QIODevice::ReadOnly)) {
@@ -301,12 +303,10 @@ QHttpServerResponse HttpServer::handleDownloadPage(const QString &shareToken)
             faviconBase64 = QString::fromLatin1(faviconData.toBase64());
         }
 
-        // Replace placeholders
         htmlContent.replace("{{ERROR_MESSAGE}}", "File not found or link expired");
         htmlContent.replace("{{ICON_URL}}", "data:image/png;base64," + iconBase64);
         htmlContent.replace("{{FAVICON_URL}}", "data:image/x-icon;base64," + faviconBase64);
 
-        // Create headers for the HTML page
         QHttpHeaders headers;
         headers.append(QHttpHeaders::WellKnownHeader::ContentType, "text/html");
 
@@ -320,7 +320,6 @@ QHttpServerResponse HttpServer::handleDownloadPage(const QString &shareToken)
     QFileInfo fileInfo(filePath);
 
     if (!fileInfo.exists() || !fileInfo.isFile()) {
-        // Load error HTML template from resources
         QFile htmlFile(":/html/error.html");
         if (!htmlFile.open(QIODevice::ReadOnly)) {
             return QHttpServerResponse("Error page not found", QHttpServerResponse::StatusCode::NotFound);
@@ -329,7 +328,6 @@ QHttpServerResponse HttpServer::handleDownloadPage(const QString &shareToken)
         QString htmlContent = QTextStream(&htmlFile).readAll();
         htmlFile.close();
 
-        // Get base64 encoded icons
         QString iconBase64;
         QFile iconFile(":/icons/icon.png");
         if (iconFile.open(QIODevice::ReadOnly)) {
@@ -346,12 +344,10 @@ QHttpServerResponse HttpServer::handleDownloadPage(const QString &shareToken)
             faviconBase64 = QString::fromLatin1(faviconData.toBase64());
         }
 
-        // Replace placeholders
         htmlContent.replace("{{ERROR_MESSAGE}}", "File not found");
         htmlContent.replace("{{ICON_URL}}", "data:image/png;base64," + iconBase64);
         htmlContent.replace("{{FAVICON_URL}}", "data:image/x-icon;base64," + faviconBase64);
 
-        // Create headers for the HTML page
         QHttpHeaders headers;
         headers.append(QHttpHeaders::WellKnownHeader::ContentType, "text/html");
 
@@ -363,7 +359,6 @@ QHttpServerResponse HttpServer::handleDownloadPage(const QString &shareToken)
 
     QString htmlPage = generateDownloadPage(fileInfo, shareToken);
 
-    // Create headers for the HTML page
     QHttpHeaders headers;
     headers.append(QHttpHeaders::WellKnownHeader::ContentType, "text/html");
 
@@ -373,7 +368,11 @@ QHttpServerResponse HttpServer::handleDownloadPage(const QString &shareToken)
     return response;
 }
 
-QString HttpServer::generateShareToken()
+QString HttpServer::generateShareToken(const bool &shortUrl)
 {
+    if (shortUrl) {
+        return generateRandomToken(9);
+    }
+
     return QUuid::createUuid().toString(QUuid::WithoutBraces);
 }

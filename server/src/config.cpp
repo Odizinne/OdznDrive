@@ -27,6 +27,7 @@ void Config::initSettings()
         m_settings.setValue("server/httpPort", 8889);
         m_settings.setValue("server/httpUrl", getDefaultLocalNetworkUrl());
         m_settings.setValue("server/domain", "");
+        m_settings.setValue("server/shortUrl", false);
     }
 }
 
@@ -83,7 +84,6 @@ void Config::loadBannedIPs()
         QDateTime bannedUntil = QDateTime::fromString(obj["bannedUntil"].toString(), Qt::ISODate);
         int failedAttempts = obj["failedAttempts"].toInt();
 
-        // Only load if ban is still active
         if (bannedUntil > now) {
             BannedIP banned;
             banned.ip = ip;
@@ -107,7 +107,6 @@ void Config::saveBannedIPs()
     QJsonArray array;
     QDateTime now = QDateTime::currentDateTime();
 
-    // Only save active bans
     for (auto it = m_bannedIPs.begin(); it != m_bannedIPs.end(); ) {
         if (it->bannedUntil > now) {
             QJsonObject obj;
@@ -136,7 +135,6 @@ bool Config::isIPBanned(const QString &ip)
     BannedIP &banned = m_bannedIPs[ip];
 
     if (banned.bannedUntil <= now) {
-        // Ban expired, remove from list
         m_bannedIPs.remove(ip);
         saveBannedIPs();
         return false;
@@ -159,9 +157,8 @@ void Config::recordFailedAttempt(const QString &ip)
         m_bannedIPs[ip].failedAttempts++;
     }
 
-    // Ban for 30 minutes after 5 failed attempts
     if (m_bannedIPs[ip].failedAttempts >= 5) {
-        m_bannedIPs[ip].bannedUntil = now.addSecs(30 * 60); // 30 minutes
+        m_bannedIPs[ip].bannedUntil = now.addSecs(30 * 60);
         qWarning() << "IP banned for 30 minutes:" << ip << "(" << m_bannedIPs[ip].failedAttempts << "failed attempts)";
         saveBannedIPs();
     }
@@ -185,7 +182,7 @@ void Config::loadUsers()
         admin.username = "admin";
         admin.password = "admin123";
         admin.storagePath = generateUserStoragePath("admin");
-        admin.storageLimit = 10737418240LL; // 10GB
+        admin.storageLimit = 10737418240LL;
         admin.isAdmin = true;
         m_users.append(admin);
         saveUsers();
@@ -314,16 +311,15 @@ QList<User> Config::getUsers() const
 
 QString Config::getDefaultLocalNetworkUrl()
 {
-    // Find a suitable local network URL
     QList<QNetworkInterface> interfaces = QNetworkInterface::allInterfaces();
 
-    for (const QNetworkInterface &interface : interfaces) {
+    for (const QNetworkInterface &interface : std::as_const(interfaces)) {
         if (interface.flags().testFlag(QNetworkInterface::IsUp) &&
             interface.flags().testFlag(QNetworkInterface::IsRunning) &&
             !interface.flags().testFlag(QNetworkInterface::IsLoopBack)) {
 
             QList<QNetworkAddressEntry> entries = interface.addressEntries();
-            for (const QNetworkAddressEntry &entry : entries) {
+            for (const QNetworkAddressEntry &entry : std::as_const(entries)) {
                 QHostAddress address = entry.ip();
                 if (address.protocol() == QAbstractSocket::IPv4Protocol) {
                     return QString("http://%1").arg(address.toString());
@@ -332,6 +328,5 @@ QString Config::getDefaultLocalNetworkUrl()
         }
     }
 
-    // Fallback to localhost
     return "http://127.0.0.1";
 }

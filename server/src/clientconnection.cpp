@@ -1093,8 +1093,9 @@ void ClientConnection::handleGenerateShareLink(const QJsonObject &params)
     QSettings settings(QCoreApplication::organizationName(), QCoreApplication::applicationName());
     QString httpUrl = settings.value("server/httpUrl", "http://127.0.0.1").toString();
     QString domain = settings.value("server/domain", "").toString();
+    bool shortUrl = settings.value("server/shortUrl", false).toBool();
 
-    QString shareLink = m_httpServer->generateShareLink(absPath, httpUrl, domain);
+    QString shareLink = m_httpServer->generateShareLink(absPath, httpUrl, domain, shortUrl);
 
     if (shareLink.isEmpty()) {
         sendError("Failed to generate share link");

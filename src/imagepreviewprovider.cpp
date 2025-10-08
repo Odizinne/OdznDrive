@@ -24,7 +24,6 @@ QImage ImagePreviewProvider::requestImage(const QString &id, QSize *size, const 
         return img;
     }
 
-    // Return transparent placeholder if image not in cache yet
     QImage placeholder(64, 64, QImage::Format_ARGB32);
     placeholder.fill(Qt::transparent);
 

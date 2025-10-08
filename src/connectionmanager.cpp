@@ -85,8 +85,6 @@ void ConnectionManager::setImageProvider(ImagePreviewProvider *provider)
     m_imageProvider = provider;
 }
 
-// In connectionmanager.cpp
-
 void ConnectionManager::connectToServer(const QString &url, const QString &username, const QString &password)
 {
     if (m_socket->state() != QAbstractSocket::UnconnectedState) {
@@ -123,7 +121,7 @@ void ConnectionManager::connectToServer(const QString &url, const QString &usern
     if (wsUrl.port() == -1) {
         if (wsUrl.scheme() == "wss") {
             wsUrl.setPort(443);
-        } else { // "ws"
+        } else {
             wsUrl.setPort(8888);
         }
     }
@@ -222,7 +220,6 @@ void ConnectionManager::uploadFiles(const QStringList &localPaths, const QString
         return;
     }
 
-    // Calculate total size for the new batch of files
     qint64 newBatchSize = 0;
     for (const QString &localPath : localPaths) {
         QFileInfo fileInfo(localPath);
@@ -234,14 +231,12 @@ void ConnectionManager::uploadFiles(const QStringList &localPaths, const QString
             remotePath += '/';
         }
         remotePath += fileName;
-        uploadFile(localPath, remotePath); // This adds to the queue
+        uploadFile(localPath, remotePath);
     }
 
-    // If this is the first batch, start tracking
     if (m_uploadQueue.size() == localPaths.size() && !m_uploadFile) {
         startEtaTracking(TransferType::Upload, newBatchSize);
     } else if (m_currentTransferType == TransferType::Upload) {
-        // If an upload is already in progress, just add to the total size
         m_totalTransferSize += newBatchSize;
     }
 }
@@ -309,7 +304,6 @@ void ConnectionManager::requestThumbnail(const QString &path)
         return;
     }
 
-    // Don't request if already cached
     if (m_imageProvider->hasImage(path)) {
         return;
     }
@@ -369,7 +363,6 @@ void ConnectionManager::onBinaryMessageReceived(const QByteArray &message)
     m_downloadBuffer.append(message);
     m_downloadReceivedSize += message.size();
 
-    // Update the total bytes transferred for the overall operation
     if (m_currentTransferType == TransferType::Download) {
         m_totalBytesTransferred += message.size();
     }
@@ -892,11 +885,9 @@ void ConnectionManager::downloadMultiple(const QStringList &remotePaths, const Q
 
     cleanupCurrentDownload();
 
-    // Store the necessary info for when the download starts
     m_downloadLocalPath = localPath;
-    m_downloadRemotePath = zipName + ".zip"; // This is for internal tracking
+    m_downloadRemotePath = zipName + ".zip";
 
-    // Set a general status message for the user
     setStatusMessage("Preparing download...");
 
     QJsonObject params;
