@@ -1,5 +1,6 @@
 pragma Singleton
 import QtCore
+import QtQml
 
 Settings {
     property bool firstRun: true
@@ -10,5 +11,6 @@ Settings {
     property bool listView: true
     property bool foldersFirst: true
     property bool darkMode: true
-    property string downloadFolderPath: StandardPaths.writableLocation(StandardPaths.DocumentsLocation) + "/OdznDrive Downloads"
+    property string downloadFolderPath:
+        (Qt.platform.os === "linux" ? StandardPaths.HomeLocation : StandardPaths.writableLocation(StandardPaths.DocumentsLocation)) + "/OdznDrive Downloads"
 }

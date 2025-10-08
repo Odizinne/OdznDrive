@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.21)
 
-project(OdznDrive VERSION 0.11.0 LANGUAGES CXX)
+project(OdznDrive VERSION 0.11.1 LANGUAGES CXX)
 
 set(CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}/install" CACHE PATH "Installation directory" FORCE)
 set(CMAKE_CXX_STANDARD 17)
@@ -21,6 +21,7 @@ set(SOURCES
     src/filedialoghelper.cpp
     src/windowsplatform.cpp
     src/usermodel.cpp
+    src/versionhelper.cpp
 )
 
 set(HEADERS
@@ -31,6 +32,7 @@ set(HEADERS
     include/filedialoghelper.h
     include/windowsplatform.h
     include/usermodel.h
+    include/versionhelper.h
 )
 
 set(QML_FILES
@@ -40,13 +42,12 @@ set(QML_FILES
     qml/Components/DragIndicator.qml
     qml/Components/EmptySpaceMenu.qml
     qml/Components/FileListView.qml
-    qml/Components/FileSystemView.qml
     qml/Components/FileTileView.qml
     qml/Components/FooterBar.qml
     qml/Components/ItemContextMenu.qml
     qml/Components/Separator.qml
-    qml/Components/LoginPage.qml
     qml/Components/LoginArt.qml
+    qml/Components/TransferStatus.qml
 
     qml/CustomComponents/CustomButton.qml
     qml/CustomComponents/CustomDialog.qml
@@ -66,6 +67,12 @@ set(QML_FILES
     qml/Dialogs/UserAddDialog.qml
     qml/Dialogs/UserManagmentDialog.qml
     qml/Dialogs/ConfirmDeleteUserDialog.qml
+    qml/Dialogs/ConnectionLostDialog.qml
+    qml/Dialogs/AdvancedSettingsDialog.qml
+    qml/Dialogs/ShareableLinkDialog.qml
+
+    qml/Pages/FileSystemView.qml
+    qml/Pages/LoginPage.qml
 )
 
 
@@ -142,11 +149,6 @@ qt_add_qml_module(${PROJECT_NAME}
     URI Odizinne.OdznDrive
     VERSION 1.0
     QML_FILES ${QML_FILES} ${QML_SINGLETONS}
-    SOURCES include/versionhelper.h src/versionhelper.cpp
-    QML_FILES qml/Components/TransferStatus.qml
-    QML_FILES qml/Dialogs/ConnectionLostDialog.qml
-    QML_FILES qml/Dialogs/AdvancedSettingsDialog.qml
-    QML_FILES qml/Dialogs/ShareableLinkDialog.qml
 )
 
 target_link_libraries(${PROJECT_NAME} PRIVATE
