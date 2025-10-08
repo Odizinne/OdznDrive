@@ -18,5 +18,7 @@
         <file>edit.svg</file>
         <file>new.svg</file>
         <file>browse.svg</file>
+        <file>clipboard.svg</file>
+        <file>link.svg</file>
     </qresource>
 </RCC>

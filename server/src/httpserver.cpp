@@ -139,31 +139,6 @@ QHttpServerResponse HttpServer::handleShareRequest(const QHttpServerRequest &req
     }
 }
 
-QHttpServerResponse HttpServer::handleDownloadPage(const QString &shareToken)
-{
-    if (!m_sharedFiles.contains(shareToken)) {
-        return QHttpServerResponse("File not found or link expired", QHttpServerResponse::StatusCode::NotFound);
-    }
-
-    QString filePath = m_sharedFiles[shareToken];
-    QFileInfo fileInfo(filePath);
-
-    if (!fileInfo.exists() || !fileInfo.isFile()) {
-        return QHttpServerResponse("File not found", QHttpServerResponse::StatusCode::NotFound);
-    }
-
-    QString htmlPage = generateDownloadPage(fileInfo, shareToken);
-
-    // Create headers for the HTML page
-    QHttpHeaders headers;
-    headers.append(QHttpHeaders::WellKnownHeader::ContentType, "text/html");
-
-    QHttpServerResponse response(htmlPage.toUtf8());
-    response.setHeaders(headers);
-
-    return response;
-}
-
 QHttpServerResponse HttpServer::handleFileDownload(const QString &shareToken, const QHttpServerRequest &request)
 {
     if (!m_sharedFiles.contains(shareToken)) {
@@ -248,99 +223,154 @@ QHttpServerResponse HttpServer::handleFileDownload(const QString &shareToken, co
 
 QString HttpServer::generateDownloadPage(const QFileInfo &fileInfo, const QString &shareToken)
 {
-    QString fileName = fileInfo.fileName();
-    qint64 fileSize = fileInfo.size();
+    // Load HTML template from resources
+    QFile htmlFile(":/html/download.html");
+    if (!htmlFile.open(QIODevice::ReadOnly)) {
+        return "<html><body><h1>Error: Could not load download page</h1></body></html>";
+    }
+
+    QString htmlContent = QTextStream(&htmlFile).readAll();
+    htmlFile.close();
 
     // Format file size
+    qint64 fileSize = fileInfo.size();
     QString sizeStr;
     if (fileSize < 1024) {
         sizeStr = QString("%1 bytes").arg(fileSize);
     } else if (fileSize < 1024 * 1024) {
-        sizeStr = QString("%1 KB").arg(fileSize / 1024.0, 0, 'f', 2);
+        sizeStr = QString("%1 KB").arg(fileSize / 1024.0, 0, 'f', 1);
     } else if (fileSize < 1024 * 1024 * 1024) {
-        sizeStr = QString("%1 MB").arg(fileSize / (1024.0 * 1024.0), 0, 'f', 2);
+        sizeStr = QString("%1 MB").arg(fileSize / (1024.0 * 1024.0), 0, 'f', 1);
     } else {
-        sizeStr = QString("%1 GB").arg(fileSize / (1024.0 * 1024.0 * 1024.0), 0, 'f', 2);
+        sizeStr = QString("%1 GB").arg(fileSize / (1024.0 * 1024.0 * 1024.0), 0, 'f', 1);
     }
 
-    QString html = QString(
-                       "<!DOCTYPE html>\n"
-                       "<html>\n"
-                       "<head>\n"
-                       "    <meta charset=\"UTF-8\">\n"
-                       "    <title>Download File</title>\n"
-                       "    <style>\n"
-                       "        body {\n"
-                       "            font-family: Arial, sans-serif;\n"
-                       "            max-width: 800px;\n"
-                       "            margin: 0 auto;\n"
-                       "            padding: 20px;\n"
-                       "            background-color: #f5f5f5;\n"
-                       "        }\n"
-                       "        .container {\n"
-                       "            background-color: white;\n"
-                       "            border-radius: 8px;\n"
-                       "            padding: 30px;\n"
-                       "            box-shadow: 0 2px 10px rgba(0,0,0,0.1);\n"
-                       "        }\n"
-                       "        h1 {\n"
-                       "            color: #333;\n"
-                       "            margin-top: 0;\n"
-                       "        }\n"
-                       "        .file-info {\n"
-                       "            margin: 20px 0;\n"
-                       "            padding: 15px;\n"
-                       "            background-color: #f9f9f9;\n"
-                       "            border-radius: 5px;\n"
-                       "        }\n"
-                       "        .file-name {\n"
-                       "            font-weight: bold;\n"
-                       "            font-size: 18px;\n"
-                       "            margin-bottom: 10px;\n"
-                       "            word-break: break-all;\n"
-                       "        }\n"
-                       "        .file-size {\n"
-                       "            color: #666;\n"
-                       "            margin-bottom: 20px;\n"
-                       "        }\n"
-                       "        .download-btn {\n"
-                       "            display: inline-block;\n"
-                       "            background-color: #4CAF50;\n"
-                       "            color: white;\n"
-                       "            padding: 12px 24px;\n"
-                       "            text-decoration: none;\n"
-                       "            border-radius: 4px;\n"
-                       "            font-weight: bold;\n"
-                       "            transition: background-color 0.3s;\n"
-                       "        }\n"
-                       "        .download-btn:hover {\n"
-                       "            background-color: #45a049;\n"
-                       "        }\n"
-                       "        .footer {\n"
-                       "            margin-top: 30px;\n"
-                       "            text-align: center;\n"
-                       "            color: #777;\n"
-                       "            font-size: 14px;\n"
-                       "        }\n"
-                       "    </style>\n"
-                       "</head>\n"
-                       "<body>\n"
-                       "    <div class=\"container\">\n"
-                       "        <h1>File Download</h1>\n"
-                       "        <div class=\"file-info\">\n"
-                       "            <div class=\"file-name\">%1</div>\n"
-                       "            <div class=\"file-size\">Size: %2</div>\n"
-                       "        </div>\n"
-                       "        <a href=\"/share/%3?download=1\" class=\"download-btn\">Download</a>\n"
-                       "        <div class=\"footer\">\n"
-                       "            <p>This file is shared via OdznDrive</p>\n"
-                       "        </div>\n"
-                       "    </div>\n"
-                       "</body>\n"
-                       "</html>"
-                       ).arg(fileName, sizeStr, shareToken);
+    // Get base64 encoded icons
+    QString iconBase64;
+    QFile iconFile(":/icons/icon.png");
+    if (iconFile.open(QIODevice::ReadOnly)) {
+        QByteArray iconData = iconFile.readAll();
+        iconFile.close();
+        iconBase64 = QString::fromLatin1(iconData.toBase64());
+    }
 
-    return html;
+    QString faviconBase64;
+    QFile faviconFile(":/icons/favicon.ico");
+    if (faviconFile.open(QIODevice::ReadOnly)) {
+        QByteArray faviconData = faviconFile.readAll();
+        faviconFile.close();
+        faviconBase64 = QString::fromLatin1(faviconData.toBase64());
+    }
+
+    // Replace placeholders in HTML
+    htmlContent.replace("{{FILE_NAME}}", fileInfo.fileName());
+    htmlContent.replace("{{FILE_SIZE}}", sizeStr);
+    htmlContent.replace("{{DOWNLOAD_URL}}", QString("/share/%1?download=1").arg(shareToken));
+    htmlContent.replace("{{ICON_URL}}", "data:image/png;base64," + iconBase64);
+    htmlContent.replace("{{FAVICON_URL}}", "data:image/x-icon;base64," + faviconBase64);
+
+    return htmlContent;
+}
+
+QHttpServerResponse HttpServer::handleDownloadPage(const QString &shareToken)
+{
+    if (!m_sharedFiles.contains(shareToken)) {
+        // Load error HTML template from resources
+        QFile htmlFile(":/html/error.html");
+        if (!htmlFile.open(QIODevice::ReadOnly)) {
+            return QHttpServerResponse("Error page not found", QHttpServerResponse::StatusCode::NotFound);
+        }
+
+        QString htmlContent = QTextStream(&htmlFile).readAll();
+        htmlFile.close();
+
+        // Get base64 encoded icons
+        QString iconBase64;
+        QFile iconFile(":/icons/icon.png");
+        if (iconFile.open(QIODevice::ReadOnly)) {
+            QByteArray iconData = iconFile.readAll();
+            iconFile.close();
+            iconBase64 = QString::fromLatin1(iconData.toBase64());
+        }
+
+        QString faviconBase64;
+        QFile faviconFile(":/icons/favicon.ico");
+        if (faviconFile.open(QIODevice::ReadOnly)) {
+            QByteArray faviconData = faviconFile.readAll();
+            faviconFile.close();
+            faviconBase64 = QString::fromLatin1(faviconData.toBase64());
+        }
+
+        // Replace placeholders
+        htmlContent.replace("{{ERROR_MESSAGE}}", "File not found or link expired");
+        htmlContent.replace("{{ICON_URL}}", "data:image/png;base64," + iconBase64);
+        htmlContent.replace("{{FAVICON_URL}}", "data:image/x-icon;base64," + faviconBase64);
+
+        // Create headers for the HTML page
+        QHttpHeaders headers;
+        headers.append(QHttpHeaders::WellKnownHeader::ContentType, "text/html");
+
+        QHttpServerResponse response(htmlContent.toUtf8());
+        response.setHeaders(headers);
+
+        return response;
+    }
+
+    QString filePath = m_sharedFiles[shareToken];
+    QFileInfo fileInfo(filePath);
+
+    if (!fileInfo.exists() || !fileInfo.isFile()) {
+        // Load error HTML template from resources
+        QFile htmlFile(":/html/error.html");
+        if (!htmlFile.open(QIODevice::ReadOnly)) {
+            return QHttpServerResponse("Error page not found", QHttpServerResponse::StatusCode::NotFound);
+        }
+
+        QString htmlContent = QTextStream(&htmlFile).readAll();
+        htmlFile.close();
+
+        // Get base64 encoded icons
+        QString iconBase64;
+        QFile iconFile(":/icons/icon.png");
+        if (iconFile.open(QIODevice::ReadOnly)) {
+            QByteArray iconData = iconFile.readAll();
+            iconFile.close();
+            iconBase64 = QString::fromLatin1(iconData.toBase64());
+        }
+
+        QString faviconBase64;
+        QFile faviconFile(":/icons/favicon.ico");
+        if (faviconFile.open(QIODevice::ReadOnly)) {
+            QByteArray faviconData = faviconFile.readAll();
+            faviconFile.close();
+            faviconBase64 = QString::fromLatin1(faviconData.toBase64());
+        }
+
+        // Replace placeholders
+        htmlContent.replace("{{ERROR_MESSAGE}}", "File not found");
+        htmlContent.replace("{{ICON_URL}}", "data:image/png;base64," + iconBase64);
+        htmlContent.replace("{{FAVICON_URL}}", "data:image/x-icon;base64," + faviconBase64);
+
+        // Create headers for the HTML page
+        QHttpHeaders headers;
+        headers.append(QHttpHeaders::WellKnownHeader::ContentType, "text/html");
+
+        QHttpServerResponse response(htmlContent.toUtf8());
+        response.setHeaders(headers);
+
+        return response;
+    }
+
+    QString htmlPage = generateDownloadPage(fileInfo, shareToken);
+
+    // Create headers for the HTML page
+    QHttpHeaders headers;
+    headers.append(QHttpHeaders::WellKnownHeader::ContentType, "text/html");
+
+    QHttpServerResponse response(htmlPage.toUtf8());
+    response.setHeaders(headers);
+
+    return response;
 }
 
 QString HttpServer::generateShareToken()

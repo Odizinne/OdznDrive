@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OdznDrive</title>
+  <link rel="icon" type="image/x-icon" href="{{FAVICON_URL}}">
+  
+  <!-- JetBrains Mono font -->
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+  
+  <style>
+    :root {
+      --backgroundColor: #d5dce8;
+      --surfaceColor: #e3ebf5;
+      --headerGradientStart: #E07830;
+      --headerGradientStop: #F0A060;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --backgroundColor: #2a3239;
+        --surfaceColor: #363f48;
+        --headerGradientStart: #F0A860;
+        --headerGradientStop: #FFB880;
+      }
+    }
+
+    body {
+      margin: 0;
+      background-color: var(--backgroundColor);
+      font-family: 'JetBrains Mono', monospace;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      color: #000;
+      font-size: 16px;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      body {
+        color: #fff;
+      }
+    }
+
+    .card {
+      background-color: var(--surfaceColor);
+      border-radius: 4px;
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.2);
+      width: 400px;
+      padding: 28px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+      margin-bottom: 28px;
+    }
+
+    .card-header h1 {
+      font-size: 26px;
+      font-weight: bold;
+      margin: 0;
+    }
+
+    .card-header img {
+      width: 56px;
+      height: 56px;
+    }
+
+    .card-content {
+      margin-bottom: 28px;
+      width: 100%;
+    }
+
+    .card-content p {
+      margin: 10px 0;
+      font-size: 18px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .card-content p.size {
+      opacity: 0.7;
+    }
+
+    .footer {
+      background: linear-gradient(to right, var(--headerGradientStart), var(--headerGradientStop));
+      border-radius: 6px;
+      text-align: center;
+      padding: 8px;
+      width: 98%;
+      align-self: center;
+    }
+
+    .footer button {
+      background: none;
+      border: none;
+      color: black;
+      font-size: 16px;
+      cursor: pointer;
+      font-weight: bold;
+      width: 100%;
+    }
+
+    .footer button:hover {
+      opacity: 0.85;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="card-header">
+      <h1>OdznDrive</h1>
+      <img src="{{ICON_URL}}" alt="OdznDrive Icon">
+    </div>
+    <div class="card-content">
+      <p>{{FILE_NAME}}</p>
+      <p class="size">{{FILE_SIZE}}</p>
+    </div>
+    <div class="footer">
+      <button onclick="window.location.href='{{DOWNLOAD_URL}}'">Download</button>
+    </div>
+  </div>
+</body>
+</html>

@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.21)
 
-project(OdznDrive VERSION 0.10.2 LANGUAGES CXX)
+project(OdznDrive VERSION 0.10.4 LANGUAGES CXX)
 
 set(CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}/install" CACHE PATH "Installation directory" FORCE)
 set(CMAKE_CXX_STANDARD 17)
@@ -146,6 +146,7 @@ qt_add_qml_module(${PROJECT_NAME}
     QML_FILES qml/Components/TransferStatus.qml
     QML_FILES qml/Dialogs/ConnectionLostDialog.qml
     QML_FILES qml/Dialogs/AdvancedSettingsDialog.qml
+    QML_FILES qml/Dialogs/ShareableLinkDialog.qml
 )
 
 target_link_libraries(${PROJECT_NAME} PRIVATE

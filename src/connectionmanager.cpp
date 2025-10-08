@@ -820,7 +820,6 @@ void ConnectionManager::handleResponse(const QJsonObject &response)
     } else if (type == "share_link_generated") {
         QString path = data["path"].toString();
         QString shareLink = data["shareLink"].toString();
-        qDebug() << path << shareLink;
         emit shareLinkGenerated(path, shareLink);
     } else if (type == "user_list") {
         QJsonArray usersArray = data["users"].toArray();

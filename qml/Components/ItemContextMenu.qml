@@ -1,4 +1,5 @@
 import QtQuick.Controls.Material
+import Odizinne.OdznDrive
 
 CustomMenu {
     id: contextMenu
@@ -13,10 +14,24 @@ CustomMenu {
     signal deleteClicked()
     signal shareClicked()
 
+    property bool shareEnabled: true
+
     MenuItem {
         text: contextMenu.itemName
         enabled: false
+        font.bold: true
     }
+
+    MenuItem {
+        text: "Share"
+        enabled: contextMenu.shareEnabled
+        icon.source: "qrc:/icons/link.svg"
+        icon.width: 16
+        icon.height: 16
+        onClicked: contextMenu.shareClicked()
+    }
+
+    MenuSeparator {}
 
     MenuItem {
         text: "Download"
@@ -40,17 +55,5 @@ CustomMenu {
         icon.width: 16
         icon.height: 16
         onClicked: contextMenu.deleteClicked()
-    }
-
-    MenuSeparator {
-
-    }
-
-    MenuItem {
-        text: "Share"
-        icon.source: "qrc:/icons/delete.svg"
-        icon.width: 16
-        icon.height: 16
-        onClicked: contextMenu.shareClicked()
     }
 }

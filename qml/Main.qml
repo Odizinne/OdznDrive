@@ -46,6 +46,11 @@ ApplicationWindow {
             }
         }
 
+        function onShareLinkGenerated(path, link) {
+            shareableLinkDialog.shareableLink = link
+            shareableLinkDialog.open()
+        }
+
         function onDownloadZipping(name) {
             downloadProgressDialog.open()
         }
@@ -189,6 +194,11 @@ ApplicationWindow {
 
     ErrorDialog {
         id: errorDialog
+        anchors.centerIn: parent
+    }
+
+    ShareableLinkDialog {
+        id: shareableLinkDialog
         anchors.centerIn: parent
     }
 }

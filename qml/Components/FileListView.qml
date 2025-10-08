@@ -217,7 +217,7 @@ ColumnLayout {
                             Utils.openFileDownloadDialog(contextMenu.itemPath, contextMenu.itemName)
                         }
                     }
-
+                    shareEnabled: !delegateRoot.itemIsDir
                     onRenameClicked: fileListView.requestRename(contextMenu.itemPath, contextMenu.itemName)
                     onDeleteClicked: fileListView.requestDelete(contextMenu.itemPath, contextMenu.itemIsDir)
                     onShareClicked: ConnectionManager.generateShareLink(contextMenu.itemPath)

@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OdznDrive</title>
+  <link rel="icon" type="image/x-icon" href="{{FAVICON_URL}}">
+  
+  <!-- JetBrains Mono font -->
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+  
+  <style>
+    :root {
+      --backgroundColor: #d5dce8;
+      --surfaceColor: #e3ebf5;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --backgroundColor: #2a3239;
+        --surfaceColor: #363f48;
+      }
+    }
+
+    body {
+      margin: 0;
+      background-color: var(--backgroundColor);
+      font-family: 'JetBrains Mono', monospace;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      font-size: 16px;
+      color: #000;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      body {
+        color: #fff;
+      }
+    }
+
+    .card {
+      background-color: var(--surfaceColor);
+      border-radius: 4px;
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.2);
+      width: 330px;
+      height: 140px;
+      padding: 28px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+      margin-bottom: 28px;
+    }
+
+    .card-header h1 {
+      font-size: 26px;
+      font-weight: bold;
+      margin: 0;
+    }
+
+    .card-header img {
+      width: 56px;
+      height: 56px;
+    }
+
+    .card-content {
+      width: 100%;
+      text-align: center;
+      font-size: 16px;
+      flex-grow: 1; /* This makes the content area expand to fill available space */
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="card-header">
+      <h1>OdznDrive</h1>
+      <img src="{{ICON_URL}}" alt="OdznDrive Icon">
+    </div>
+    <div class="card-content">
+      {{ERROR_MESSAGE}}
+    </div>
+  </div>
+</body>
+</html>

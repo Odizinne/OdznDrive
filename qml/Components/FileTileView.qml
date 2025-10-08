@@ -418,9 +418,10 @@ CustomScrollView {
                                 Utils.openFileDownloadDialog(tileContextMenu.itemPath, tileContextMenu.itemName)
                             }
                         }
-
+                        shareEnabled: !tileDelegateRoot.itemIsDir
                         onRenameClicked: tileScrollView.requestRename(tileContextMenu.itemPath, tileContextMenu.itemName)
                         onDeleteClicked: tileScrollView.requestDelete(tileContextMenu.itemPath, tileContextMenu.itemIsDir)
+                        onShareClicked: ConnectionManager.generateShareLink(tileContextMenu.itemPath)
                     }
 
                     CustomMenu {

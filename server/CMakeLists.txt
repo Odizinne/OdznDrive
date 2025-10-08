@@ -1,9 +1,10 @@
 cmake_minimum_required(VERSION 3.21)
 
-project(OdznDriveServer VERSION 0.10.1 LANGUAGES CXX)
+project(OdznDriveServer VERSION 0.10.4 LANGUAGES CXX)
 
 set(CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}/install" CACHE PATH "Installation directory" FORCE)
 set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_AUTORCC ON)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 find_package(Qt6 REQUIRED COMPONENTS Core Gui Network WebSockets HttpServer)
@@ -16,6 +17,7 @@ set(SOURCES
     src/clientconnection.cpp
     src/filemanager.cpp
     src/config.cpp
+    src/httpserver.cpp
 )
 
 set(HEADERS
@@ -23,6 +25,7 @@ set(HEADERS
     include/clientconnection.h
     include/filemanager.h
     include/config.h
+    include/httpserver.h
 )
 
 find_package(Git QUIET)
@@ -48,7 +51,7 @@ configure_file(
 qt_add_executable(${PROJECT_NAME}
     ${SOURCES}
     ${HEADERS}
-    include/httpserver.h src/httpserver.cpp
+    resources/resources.qrc
 )
 
 target_include_directories(${PROJECT_NAME} PRIVATE
