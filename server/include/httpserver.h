@@ -35,7 +35,7 @@ signals:
 private:
     QHttpServerResponse handleShareRequest(const QHttpServerRequest &request, const QString &shareToken);
     QHttpServerResponse handleDownloadPage(const QString &shareToken);
-    QHttpServerResponse handleFileDownload(const QString &shareToken);
+    QHttpServerResponse handleFileDownload(const QString &shareToken, const QHttpServerRequest &request);
     QString generateDownloadPage(const QFileInfo &fileInfo, const QString &shareToken);
     QString generateShareToken();
 
