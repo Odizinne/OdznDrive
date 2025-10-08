@@ -672,6 +672,10 @@ void ConnectionManager::handleResponse(const QJsonObject &response)
         return;
     }
 
+    if (type == "ping") {
+        sendCommand("pong", QJsonObject());
+    }
+
     if (type == "authenticate") {
         if (data["success"].toBool()) {
             setAuthenticated(true);

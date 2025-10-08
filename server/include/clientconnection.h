@@ -38,6 +38,8 @@ private slots:
     void onDisconnected();
     void onBytesWritten(qint64 bytes);
     void onAuthDelayTimeout();
+    void sendPing();
+    void onPongTimeout();
 
 private:
     void handleCommand(const QJsonObject &command);
@@ -67,6 +69,7 @@ private:
     void handleDeleteUser(const QJsonObject &params);
     void handleGetUserList(const QJsonObject &params);
     void handleGenerateShareLink(const QJsonObject &params);
+    void handlePong(const QJsonObject &params);
 
     void sendNextDownloadChunk();
     void cleanupDownload();
@@ -97,6 +100,10 @@ private:
 
     QProcess* m_zipProcess = nullptr;
     QString m_tempZipPath;
+
+    QTimer *m_pingTimer;
+    QTimer *m_pongTimeoutTimer;
+    bool m_waitingForPong;
 };
 
 #endif // CLIENTCONNECTION_H

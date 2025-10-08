@@ -10,6 +10,7 @@
 #include <QRandomGenerator>
 #include <QDirIterator>
 #include <QCoreApplication>
+#include <QDateTime>
 #include "version.h"
 
 ClientConnection::ClientConnection(QWebSocket *socket, FileManager *fileManager, QObject *parent)
@@ -26,6 +27,8 @@ ClientConnection::ClientConnection(QWebSocket *socket, FileManager *fileManager,
     , m_isZipDownload(false)
     , m_authDelayTimer(new QTimer(this))
     , m_zipProcess(nullptr)
+    , m_pingTimer(new QTimer(this))
+    , m_pongTimeoutTimer(new QTimer(this))
 {
     Q_UNUSED(fileManager)
     connect(m_socket, &QWebSocket::textMessageReceived, this, &ClientConnection::onTextMessageReceived);
@@ -34,6 +37,12 @@ ClientConnection::ClientConnection(QWebSocket *socket, FileManager *fileManager,
     connect(m_socket, &QWebSocket::bytesWritten, this, &ClientConnection::onBytesWritten);
     connect(m_authDelayTimer, &QTimer::timeout, this, &ClientConnection::onAuthDelayTimeout);
     m_authDelayTimer->setSingleShot(true);
+
+    connect(m_pingTimer, &QTimer::timeout, this, &ClientConnection::sendPing);
+    connect(m_pongTimeoutTimer, &QTimer::timeout, this, &ClientConnection::onPongTimeout);
+    m_pingTimer->setInterval(30000);
+    m_pongTimeoutTimer->setInterval(10000);
+    m_pongTimeoutTimer->setSingleShot(true);
 }
 
 ClientConnection::~ClientConnection()
@@ -67,6 +76,11 @@ ClientConnection::~ClientConnection()
 
 void ClientConnection::onTextMessageReceived(const QString &message)
 {
+    if (m_waitingForPong) {
+        m_pongTimeoutTimer->stop();
+        m_waitingForPong = false;
+    }
+
     QJsonDocument doc = QJsonDocument::fromJson(message.toUtf8());
     if (!doc.isObject()) {
         sendError("Invalid JSON format");
@@ -119,6 +133,8 @@ void ClientConnection::onBinaryMessageReceived(const QByteArray &message)
 
 void ClientConnection::onDisconnected()
 {
+    m_pingTimer->stop();
+    m_pongTimeoutTimer->stop();
     emit disconnected();
 }
 
@@ -140,6 +156,10 @@ void ClientConnection::handleCommand(const QJsonObject &command)
 
     if (type == "authenticate") {
         handleAuthenticate(params);
+        return;
+    }
+    else if (type == "pong") {
+        handlePong(params);
         return;
     }
     if (!m_authenticated) {
@@ -214,6 +234,7 @@ void ClientConnection::handleAuthenticate(const QJsonObject &params)
         data["isAdmin"] = user ? user->isAdmin : false;
         sendResponse("authenticate", data);
 
+        m_pingTimer->start();
         m_pendingAuthUsername.clear();
         m_pendingAuthPassword.clear();
         m_pendingAuthClientVersion.clear();
@@ -1098,4 +1119,28 @@ void ClientConnection::handleGenerateShareLink(const QJsonObject &params)
 void ClientConnection::setHttpServer(HttpServer *httpServer)
 {
     m_httpServer = httpServer;
+}
+
+void ClientConnection::sendPing()
+{
+    if (!m_authenticated) {
+        return;
+    }
+    qDebug() << "Sending ping to client" << m_currentUsername;
+    sendResponse("ping", QJsonObject());
+    m_waitingForPong = true;
+    m_pongTimeoutTimer->start();
+}
+
+void ClientConnection::onPongTimeout()
+{
+    if (m_waitingForPong) {
+        qInfo() << "Client" << m_currentUsername << "failed to pong, disconnecting.";
+        m_socket->close(); // This will trigger onDisconnected
+    }
+}
+
+void ClientConnection::handlePong(const QJsonObject &params)
+{
+    Q_UNUSED(params);
 }
