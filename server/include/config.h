@@ -61,6 +61,7 @@ private:
     QString getBannedIPsFilePath() const;
     QString getUsersFilePath() const;
     QString generateUserStoragePath(const QString &username) const;
+    static QString getDefaultLocalNetworkUrl();
 };
 
 #endif // CONFIG_H

@@ -11,6 +11,7 @@ CustomMenu {
     signal downloadCLicked()
     signal renameClicked()
     signal deleteClicked()
+    signal shareClicked()
 
     MenuItem {
         text: contextMenu.itemName
@@ -39,5 +40,17 @@ CustomMenu {
         icon.width: 16
         icon.height: 16
         onClicked: contextMenu.deleteClicked()
+    }
+
+    MenuSeparator {
+
+    }
+
+    MenuItem {
+        text: "Share"
+        icon.source: "qrc:/icons/delete.svg"
+        icon.width: 16
+        icon.height: 16
+        onClicked: contextMenu.shareClicked()
     }
 }

@@ -6,6 +6,7 @@
 #include <QJsonObject>
 #include <QJsonArray>
 #include <QFile>
+#include <QNetworkInterface>
 
 Config::Config()
     : m_settings(QCoreApplication::organizationName(), QCoreApplication::applicationName())
@@ -23,6 +24,9 @@ void Config::initSettings()
     if (m_settings.allKeys().isEmpty()) {
         qInfo() << "Creating config file at" << m_settings.fileName();
         m_settings.setValue("server/port", 8888);
+        m_settings.setValue("server/httpPort", 8889);
+        m_settings.setValue("server/httpUrl", getDefaultLocalNetworkUrl());
+        m_settings.setValue("server/domain", "");
     }
 }
 
@@ -306,4 +310,28 @@ bool Config::deleteUser(const QString &username)
 QList<User> Config::getUsers() const
 {
     return m_users;
+}
+
+QString Config::getDefaultLocalNetworkUrl()
+{
+    // Find a suitable local network URL
+    QList<QNetworkInterface> interfaces = QNetworkInterface::allInterfaces();
+
+    for (const QNetworkInterface &interface : interfaces) {
+        if (interface.flags().testFlag(QNetworkInterface::IsUp) &&
+            interface.flags().testFlag(QNetworkInterface::IsRunning) &&
+            !interface.flags().testFlag(QNetworkInterface::IsLoopBack)) {
+
+            QList<QNetworkAddressEntry> entries = interface.addressEntries();
+            for (const QNetworkAddressEntry &entry : entries) {
+                QHostAddress address = entry.ip();
+                if (address.protocol() == QAbstractSocket::IPv4Protocol) {
+                    return QString("http://%1").arg(address.toString());
+                }
+            }
+        }
+    }
+
+    // Fallback to localhost
+    return "http://127.0.0.1";
 }

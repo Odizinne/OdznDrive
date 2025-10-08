@@ -7,6 +7,9 @@
 #include <QTimer>
 #include <QProcess>
 #include "filemanager.h"
+#include "httpserver.h"
+
+class HttpServer; // Forward declaration
 
 class ClientConnection : public QObject
 {
@@ -15,6 +18,8 @@ class ClientConnection : public QObject
 public:
     explicit ClientConnection(QWebSocket *socket, FileManager *fileManager, QObject *parent = nullptr);
     ~ClientConnection();
+
+    void setHttpServer(HttpServer *httpServer);
 
 signals:
     void disconnected();
@@ -52,6 +57,7 @@ private:
     void handleEditUser(const QJsonObject &params);
     void handleDeleteUser(const QJsonObject &params);
     void handleGetUserList(const QJsonObject &params);
+    void handleGenerateShareLink(const QJsonObject &params);
 
     void sendNextDownloadChunk();
     void cleanupDownload();
@@ -60,6 +66,7 @@ private:
     FileManager *m_fileManager;
     bool m_authenticated;
     QString m_currentUsername;
+    HttpServer *m_httpServer;
 
     QString m_uploadPath;
     QFile *m_uploadFile;
@@ -80,8 +87,8 @@ private:
 
     static const qint64 CHUNK_SIZE = 1024 * 1024; // 1MB chunks
 
-    QProcess* m_zipProcess = nullptr; // <-- ADD THIS
-    QString m_tempZipPath; // To store the path for cleanup
+    QProcess* m_zipProcess = nullptr;
+    QString m_tempZipPath;
 };
 
 #endif // CLIENTCONNECTION_H

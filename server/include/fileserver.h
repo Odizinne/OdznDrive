@@ -5,6 +5,7 @@
 #include <QWebSocketServer>
 #include <QList>
 #include "clientconnection.h"
+#include "httpserver.h"
 
 class FileServer : public QObject
 {
@@ -17,6 +18,8 @@ public:
     bool start();
     void stop();
 
+    HttpServer* httpServer() const { return m_httpServer; }
+
 private slots:
     void onNewConnection();
     void onClientDisconnected();
@@ -24,6 +27,8 @@ private slots:
 private:
     QWebSocketServer *m_server;
     QList<ClientConnection*> m_clients;
+    HttpServer *m_httpServer;
+    QString getDefaultLocalNetworkUrl();
 };
 
 #endif // FILESERVER_H

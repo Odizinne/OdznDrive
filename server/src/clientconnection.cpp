@@ -199,6 +199,8 @@ void ClientConnection::handleCommand(const QJsonObject &command)
         handleDeleteUser(params);
     } else if (type == "get_user_list") {
         handleGetUserList(params);
+    } else if (type == "generate_share_link") {
+        handleGenerateShareLink(params);
     } else {
         sendError("Unknown command type");
     }
@@ -1059,4 +1061,53 @@ void ClientConnection::handleGetUserList(const QJsonObject &params)
     QJsonObject data;
     data["users"] = usersArray;
     sendResponse("user_list", data);
+}
+
+void ClientConnection::handleGenerateShareLink(const QJsonObject &params)
+{
+    if (!m_authenticated || !m_fileManager) {
+        sendError("Not authenticated");
+        return;
+    }
+
+    if (!m_httpServer) {
+        sendError("HTTP server not available");
+        return;
+    }
+
+    QString path = params["path"].toString();
+
+    if (!m_fileManager->isValidPath(path)) {
+        sendError("Invalid file path");
+        return;
+    }
+
+    QString absPath = m_fileManager->getAbsolutePath(path);
+    QFileInfo fileInfo(absPath);
+
+    if (!fileInfo.exists() || !fileInfo.isFile()) {
+        sendError("File not found");
+        return;
+    }
+
+    QSettings settings(QCoreApplication::organizationName(), QCoreApplication::applicationName());
+    QString httpUrl = settings.value("server/httpUrl", "http://127.0.0.1").toString();
+    QString domain = settings.value("server/domain", "").toString();
+
+    QString shareLink = m_httpServer->generateShareLink(absPath, httpUrl, domain);
+
+    if (shareLink.isEmpty()) {
+        sendError("Failed to generate share link");
+        return;
+    }
+
+    QJsonObject data;
+    data["path"] = path;
+    data["shareLink"] = shareLink;
+    sendResponse("share_link_generated", data);
+}
+
+void ClientConnection::setHttpServer(HttpServer *httpServer)
+{
+    m_httpServer = httpServer;
 }

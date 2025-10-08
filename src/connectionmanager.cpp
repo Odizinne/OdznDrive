@@ -817,6 +817,11 @@ void ConnectionManager::handleResponse(const QJsonObject &response)
     } else if (type == "user_deleted") {
         emit userDeleted(data["username"].toString());
         getUserList();
+    } else if (type == "share_link_generated") {
+        QString path = data["path"].toString();
+        QString shareLink = data["shareLink"].toString();
+        qDebug() << path << shareLink;
+        emit shareLinkGenerated(path, shareLink);
     } else if (type == "user_list") {
         QJsonArray usersArray = data["users"].toArray();
         QVariantList users = usersArray.toVariantList();
@@ -1115,4 +1120,16 @@ QString ConnectionManager::formatDuration(double seconds)
     } else {
         return QString("%1s").arg(secs);
     }
+}
+
+void ConnectionManager::generateShareLink(const QString &path)
+{
+    if (!m_authenticated) {
+        emit errorOccurred("Not authenticated");
+        return;
+    }
+
+    QJsonObject params;
+    params["path"] = path;
+    sendCommand("generate_share_link", params);
 }

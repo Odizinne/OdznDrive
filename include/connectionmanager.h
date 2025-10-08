@@ -79,6 +79,8 @@ public:
     Q_INVOKABLE void deleteUser(const QString &userName);
     Q_INVOKABLE void getUserList();
 
+    Q_INVOKABLE void generateShareLink(const QString &path);
+
 signals:
     void connectedChanged();
     void authenticatedChanged();
@@ -111,6 +113,7 @@ signals:
     void userEdited(const QString &username);
     void userDeleted(const QString &username);
     void userListReceived(const QVariantList &users);
+    void shareLinkGenerated(const QString &path, const QString &shareLink);
 
 private slots:
     void onConnected();
