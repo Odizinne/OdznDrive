@@ -38,11 +38,14 @@ ApplicationWindow {
                 ConnectionManager.listDirectory("", UserSettings.foldersFirst)
                 ConnectionManager.getStorageInfo()
                 ConnectionManager.getServerInfo()
+                Utils.clearNavigationHistory() // Clear history on new connection
+                Utils.pushToHistory("") // Add root as first entry
             } else {
                 mainStack.pop()
                 root.requestLoginReset()
                 root.requestLoginAnimationReset()
                 root.requestLoginAnimationPlay()
+                Utils.clearNavigationHistory() // Clear on disconnect
             }
         }
 

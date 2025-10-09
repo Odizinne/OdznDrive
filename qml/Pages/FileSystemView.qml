@@ -16,6 +16,30 @@ Page {
         }
     }
 
+    MouseArea {
+        id: mouseArea
+        anchors.fill: parent
+        acceptedButtons: Qt.BackButton | Qt.ForwardButton
+        propagateComposedEvents: true
+
+        onPressed: (mouse) => {
+            if (mouse.button === Qt.BackButton) {
+                Utils.goBack()
+                mouse.accepted = true
+            } else if (mouse.button === Qt.ForwardButton) {
+                Utils.goForward()
+                mouse.accepted = true
+            } else {
+                mouse.accepted = false
+            }
+        }
+
+        // Let other mouse events pass through
+        onClicked: (mouse) => { mouse.accepted = false }
+        onDoubleClicked: (mouse) => { mouse.accepted = false }
+        onReleased: (mouse) => { mouse.accepted = false }
+    }
+
     Binding {
         target: Utils
         property: "anyDialogOpen"
@@ -30,8 +54,15 @@ Page {
 
     Connections {
         target: FileModel
+
         function onCurrentPathChanged() {
             Utils.uncheckAll()
+            // Track navigation history
+            if (!Utils.isNavigating) {
+                Utils.pushToHistory(FileModel.currentPath)
+            } else {
+                Utils.isNavigating = false
+            }
         }
     }
 

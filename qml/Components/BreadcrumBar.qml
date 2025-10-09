@@ -146,6 +146,57 @@ Item {
                 opacity: 0.3
             }
 
+            CustomButton {
+                icon.source: "qrc:/icons/home.svg"
+                icon.color: enabled ? "black" : "#60000000"
+                icon.width: 16
+                icon.height: 16
+                onClicked: ConnectionManager.listDirectory("", UserSettings.foldersFirst)
+                ToolTip.visible: hovered
+                rippleHoverColor: Constants.contrastedRippleHoverColor
+            }
+
+            CustomButton {
+                icon.source: "qrc:/icons/up.svg"
+                icon.color: enabled ? "black" : "#60000000"
+                icon.width: 16
+                icon.height: 16
+                enabled: FileModel.canGoUp
+                onClicked: ConnectionManager.listDirectory(FileModel.getParentPath(), UserSettings.foldersFirst)
+                ToolTip.visible: hovered
+                rippleHoverColor: Constants.contrastedRippleHoverColor
+            }
+
+            CustomButton {
+                icon.source: "qrc:/icons/right.svg"
+                rotation: 180
+                icon.color: enabled ? "black" : "#60000000"
+                icon.width: 16
+                icon.height: 16
+                enabled: Utils.canGoBack()
+                onClicked: Utils.goBack()
+                ToolTip.visible: hovered
+                rippleHoverColor: Constants.contrastedRippleHoverColor
+            }
+
+            CustomButton {
+                icon.source: "qrc:/icons/right.svg"
+                icon.color: enabled ? "black" : "#60000000"
+                icon.width: 16
+                icon.height: 16
+                enabled: Utils.canGoForward()
+                onClicked: Utils.goForward()
+                ToolTip.visible: hovered
+                rippleHoverColor: Constants.contrastedRippleHoverColor
+            }
+
+            Rectangle {
+                Layout.preferredWidth: 1
+                Layout.preferredHeight: 24
+                color: "black"
+                opacity: 0.3
+            }
+
             Item {
                 id: pathItem
                 Layout.fillWidth: true

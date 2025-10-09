@@ -16,6 +16,10 @@ QtObject {
     property string storageTotal: "--"
     property bool anyDialogOpen: false
 
+    property var navigationHistory: []
+    property int navigationIndex: -1
+    property bool isNavigating: false
+
     function getFileIcon(fileName) {
         if (!fileName || fileName === "")
             return "qrc:/icons/types/unknow.svg"
@@ -246,5 +250,58 @@ QtObject {
         let now = new Date()
         let dateStr = Qt.formatDateTime(now, "yyyy-MM-dd_HH-mm-ss")
         return "OdznDrive_Download_" + dateStr + ".zip"
+    }
+
+    function pushToHistory(path) {
+        if (isNavigating) {
+            return
+        }
+
+        // If we're not at the end of history, remove everything after current position
+        if (navigationIndex < navigationHistory.length - 1) {
+            navigationHistory = navigationHistory.slice(0, navigationIndex + 1)
+        }
+
+        // Add new path if it's different from current
+        if (navigationHistory.length === 0 || navigationHistory[navigationHistory.length - 1] !== path) {
+            navigationHistory.push(path)
+            navigationIndex = navigationHistory.length - 1
+
+            // Limit history size to 50 entries
+            if (navigationHistory.length > 50) {
+                navigationHistory.shift()
+                navigationIndex--
+            }
+        }
+    }
+
+    function canGoBack() {
+        return navigationIndex > 0
+    }
+
+    function canGoForward() {
+        return navigationIndex < navigationHistory.length - 1
+    }
+
+    function goBack() {
+        if (canGoBack()) {
+            navigationIndex--
+            isNavigating = true
+            ConnectionManager.listDirectory(navigationHistory[navigationIndex], UserSettings.foldersFirst)
+        }
+    }
+
+    function goForward() {
+        if (canGoForward()) {
+            navigationIndex++
+            isNavigating = true
+            ConnectionManager.listDirectory(navigationHistory[navigationIndex], UserSettings.foldersFirst)
+        }
+    }
+
+    function clearNavigationHistory() {
+        navigationHistory = []
+        navigationIndex = -1
+        isNavigating = false
     }
 }
