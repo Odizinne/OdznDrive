@@ -4,5 +4,17 @@
         <file>html/error.html</file>
         <file>icons/icon.png</file>
         <file>icons/favicon.ico</file>
+        <file>icons/types/audio.svg</file>
+        <file>icons/types/code.svg</file>
+        <file>icons/types/pdf.svg</file>
+        <file>icons/types/folder.svg</file>
+        <file>icons/types/picture.svg</file>
+        <file>icons/types/text.svg</file>
+        <file>icons/types/unknow.svg</file>
+        <file>icons/types/video.svg</file>
+        <file>icons/types/zip.svg</file>
+        <file>icons/types/word.svg</file>
+        <file>icons/types/excel.svg</file>
+        <file>icons/types/powerpoint.svg</file>
     </qresource>
 </RCC>

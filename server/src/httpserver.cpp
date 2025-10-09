@@ -268,13 +268,55 @@ QString HttpServer::generateDownloadPage(const QFileInfo &fileInfo, const QStrin
         faviconBase64 = QString::fromLatin1(faviconData.toBase64());
     }
 
+    QString fileTypeIconPath = getFileTypeIcon(fileInfo.fileName());
+    QString fileTypeIconBase64;
+    QFile fileTypeIconFile(fileTypeIconPath);
+    if (fileTypeIconFile.open(QIODevice::ReadOnly)) {
+        QByteArray iconData = fileTypeIconFile.readAll();
+        fileTypeIconFile.close();
+        fileTypeIconBase64 = QString::fromLatin1(iconData.toBase64());
+    }
+
     htmlContent.replace("{{FILE_NAME}}", fileInfo.fileName());
     htmlContent.replace("{{FILE_SIZE}}", sizeStr);
     htmlContent.replace("{{DOWNLOAD_URL}}", QString("/share/%1?download=1").arg(shareToken));
     htmlContent.replace("{{ICON_URL}}", "data:image/png;base64," + iconBase64);
     htmlContent.replace("{{FAVICON_URL}}", "data:image/x-icon;base64," + faviconBase64);
+    htmlContent.replace("{{FILE_TYPE_IMAGE_URL}}", "data:image/svg+xml;base64," + fileTypeIconBase64);
 
     return htmlContent;
+}
+
+QString HttpServer::getFileTypeIcon(const QString &fileName)
+{
+    if (fileName.isEmpty())
+        return ":/icons/types/unknow.svg";
+
+    QString ext = fileName.section('.', -1).toLower();
+
+    QStringList codeExt = {"c", "cpp", "cxx", "h", "hpp", "hxx", "cs", "java", "js", "ts", "py", "rb", "php", "go", "rs", "swift", "kt", "sh", "bat", "ps1", "html", "css", "scss"};
+    QStringList wordExt = {"doc", "docx", "odt", "rtf"};
+    QStringList excelExt = {"xls", "xlsx", "ods", "csv"};
+    QStringList pptExt = {"ppt", "pptx", "odp"};
+    QStringList pdfExt = {"pdf"};
+    QStringList textExt = {"txt", "md", "ini", "cfg", "json", "xml", "yml", "yaml", "log"};
+    QStringList picExt = {"png", "jpg", "jpeg", "gif", "bmp", "svg", "webp", "tif", "tiff"};
+    QStringList audioExt = {"mp3", "wav", "flac", "aac", "ogg", "m4a", "wma"};
+    QStringList videoExt = {"mp4", "avi", "mkv", "mov", "wmv", "flv", "webm"};
+    QStringList zipExt = {"zip", "rar", "7z", "tar", "gz", "bz2"};
+
+    if (codeExt.contains(ext)) return ":/icons/types/code.svg";
+    if (wordExt.contains(ext)) return ":/icons/types/word.svg";
+    if (excelExt.contains(ext)) return ":/icons/types/excel.svg";
+    if (pptExt.contains(ext)) return ":/icons/types/powerpoint.svg";
+    if (pdfExt.contains(ext)) return ":/icons/types/pdf.svg";
+    if (textExt.contains(ext)) return ":/icons/types/text.svg";
+    if (picExt.contains(ext)) return ":/icons/types/picture.svg";
+    if (audioExt.contains(ext)) return ":/icons/types/audio.svg";
+    if (videoExt.contains(ext)) return ":/icons/types/video.svg";
+    if (zipExt.contains(ext)) return ":/icons/types/zip.svg";
+
+    return ":/icons/types/unknow.svg";
 }
 
 QHttpServerResponse HttpServer::handleDownloadPage(const QString &shareToken)

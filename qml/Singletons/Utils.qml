@@ -47,8 +47,6 @@ QtObject {
         return "qrc:/icons/types/unknow.svg"
     }
 
-
-
     function isItemChecked(path) {
         return checkedItems[path] === true
     }

@@ -20,11 +20,12 @@ CustomDialog {
             text: dialog.shareableLink
         }
 
-        CustomButton {
+        ToolButton {
             Layout.topMargin: 20
             icon.width: 24
             icon.height: 24
-            icon.source: "qrc:/icons/clipboard.svg"
+            icon.source: "qrc:/icons/link.svg"
+            highlighted: true
             onClicked: {
                 textField.selectAll()
                 textField.copy()

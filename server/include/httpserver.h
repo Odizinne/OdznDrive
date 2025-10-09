@@ -35,6 +35,7 @@ private:
     QHttpServerResponse handleFileDownload(const QString &shareToken, const QHttpServerRequest &request);
     QString generateDownloadPage(const QFileInfo &fileInfo, const QString &shareToken);
     QString generateShareToken(const bool &shortUrl);
+    QString getFileTypeIcon(const QString &fileName);
 
     QHttpServer m_server;
     QTcpServer *m_tcpServer;

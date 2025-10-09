@@ -5,10 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>OdznDrive</title>
   <link rel="icon" type="image/x-icon" href="{{FAVICON_URL}}">
-  
+ 
   <!-- JetBrains Mono font -->
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
-  
+ 
   <style>
     :root {
       --backgroundColor: #d5dce8;
@@ -16,7 +16,6 @@
       --headerGradientStart: #E07830;
       --headerGradientStop: #F0A060;
     }
-
     @media (prefers-color-scheme: dark) {
       :root {
         --backgroundColor: #2a3239;
@@ -25,7 +24,6 @@
         --headerGradientStop: #FFB880;
       }
     }
-
     body {
       margin: 0;
       background-color: var(--backgroundColor);
@@ -33,29 +31,29 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      height: 100vh;
+      min-height: 100vh;
       color: #000;
       font-size: 16px;
+      padding: 20px;
+      box-sizing: border-box;
     }
-
     @media (prefers-color-scheme: dark) {
       body {
         color: #fff;
       }
     }
-
     .card {
       background-color: var(--surfaceColor);
       border-radius: 4px;
       box-shadow: 0 6px 18px rgba(0, 0, 0, 0.2);
       width: 400px;
+      max-width: 100%;
       padding: 28px;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
       align-items: center;
     }
-
     .card-header {
       display: flex;
       justify-content: space-between;
@@ -63,35 +61,47 @@
       width: 100%;
       margin-bottom: 28px;
     }
-
     .card-header h1 {
       font-size: 26px;
       font-weight: bold;
       margin: 0;
     }
-
     .card-header img {
       width: 56px;
       height: 56px;
     }
-
     .card-content {
       margin-bottom: 28px;
       width: 100%;
     }
-
-    .card-content p {
+    .file-info {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+    }
+    .file-text {
+      flex: 1;
+      overflow: hidden;
+    }
+    .file-text p {
       margin: 10px 0;
       font-size: 18px;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
     }
-
-    .card-content p.size {
+    .file-text p.size {
       opacity: 0.7;
     }
-
+    .file-type-img {
+      width: 64px;
+      height: 64px;
+      margin-left: 0px;
+      margin-right: 12px;
+      object-fit: contain;
+      flex-shrink: 0;
+    }
     .footer {
       background: linear-gradient(to right, var(--headerGradientStart), var(--headerGradientStop));
       border-radius: 6px;
@@ -100,7 +110,6 @@
       width: 98%;
       align-self: center;
     }
-
     .footer button {
       background: none;
       border: none;
@@ -110,9 +119,38 @@
       font-weight: bold;
       width: 100%;
     }
-
     .footer button:hover {
       opacity: 0.85;
+    }
+
+    /* Mobile styles */
+    @media (max-width: 600px) {
+      .card {
+        width: 90%;
+        max-width: 350px;
+      }
+      
+      .file-info {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+      }
+      
+      .file-type-img {
+        width: 80px;
+        height: 80px;
+        margin-left: 0;
+        margin-bottom: 16px;
+        order: -1;
+      }
+      
+      .file-text {
+        width: 100%;
+      }
+      
+      .file-text p {
+        text-align: center;
+      }
     }
   </style>
 </head>
@@ -123,8 +161,13 @@
       <img src="{{ICON_URL}}" alt="OdznDrive Icon">
     </div>
     <div class="card-content">
-      <p>{{FILE_NAME}}</p>
-      <p class="size">{{FILE_SIZE}}</p>
+      <div class="file-info">
+        <img src="{{FILE_TYPE_IMAGE_URL}}" alt="File type image" class="file-type-img">
+        <div class="file-text">
+          <p>{{FILE_NAME}}</p>
+          <p class="size">{{FILE_SIZE}}</p>
+        </div>
+      </div>
     </div>
     <div class="footer">
       <button onclick="window.location.href='{{DOWNLOAD_URL}}'">Download</button>
