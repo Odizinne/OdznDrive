@@ -13,12 +13,23 @@
         <file>icon.png</file>
         <file>grid.svg</file>
         <file>list.svg</file>
-        <file>folder.svg</file>
-        <file>file.svg</file>
         <file>edit.svg</file>
         <file>new.svg</file>
         <file>browse.svg</file>
         <file>clipboard.svg</file>
         <file>link.svg</file>
+
+        <file>types/audio.svg</file>
+        <file>types/code.svg</file>
+        <file>types/pdf.svg</file>
+        <file>types/folder.svg</file>
+        <file>types/picture.svg</file>
+        <file>types/text.svg</file>
+        <file>types/unknow.svg</file>
+        <file>types/video.svg</file>
+        <file>types/zip.svg</file>
+        <file>types/word.svg</file>
+        <file>types/excel.svg</file>
+        <file>types/powerpoint.svg</file>
     </qresource>
 </RCC>

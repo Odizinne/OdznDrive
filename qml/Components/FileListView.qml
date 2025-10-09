@@ -103,19 +103,7 @@ ColumnLayout {
             property string itemPath: FileModel.canGoUp ? FileModel.getParentPath() : ""
             property string itemName: ".."
 
-            ContextMenu.menu: CustomMenu {
-                width: 200
-
-                MenuItem {
-                    text: "Navigate Up"
-                    icon.source: "qrc:/icons/folder.svg"
-                    icon.width: 16
-                    icon.height: 16
-                    onClicked: {
-                        ConnectionManager.listDirectory(FileModel.getParentPath(), UserSettings.foldersFirst)
-                    }
-                }
-            }
+            ContextMenu.menu: ParentItemMenu {}
 
             RowLayout {
                 anchors.fill: parent
@@ -132,9 +120,9 @@ ColumnLayout {
                     spacing: 8
 
                     Image {
-                        Layout.preferredWidth: 24
-                        Layout.preferredHeight: 24
-                        source: "qrc:/icons/folder.svg"
+                        Layout.preferredWidth: 32
+                        Layout.preferredHeight: 32
+                        source: "qrc:/icons/types/folder.svg"
                         fillMode: Image.PreserveAspectFit
                     }
 
@@ -274,25 +262,24 @@ ColumnLayout {
                             spacing: 8
 
                             Image {
-                                Layout.preferredWidth: 24
-                                Layout.preferredHeight: 24
+                                Layout.preferredWidth: 32
+                                Layout.preferredHeight: 32
                                 fillMode: Image.PreserveAspectFit
                                 cache: false
                                 asynchronous: true
                                 source: {
                                     if (delegateRoot.model.isDir) {
-                                        return "qrc:/icons/folder.svg"
+                                        return "qrc:/icons/types/folder.svg"
                                     }
                                     if (delegateRoot.model.previewPath) {
                                         return delegateRoot.model.previewPath
                                     }
-                                    return "qrc:/icons/file.svg"
+                                    return Utils.getFileIcon(delegateRoot.itemName)
                                 }
 
-                                // Fallback for failed preview loads
                                 onStatusChanged: {
                                     if (status === Image.Error && !delegateRoot.model.isDir) {
-                                        source = "qrc:/icons/file.svg"
+                                        source = Utils.getFileIcon(delegateRoot.itemName)
                                     }
                                 }
                             }

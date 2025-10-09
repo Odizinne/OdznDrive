@@ -16,6 +16,39 @@ QtObject {
     property string storageTotal: "--"
     property bool anyDialogOpen: false
 
+    function getFileIcon(fileName) {
+        if (!fileName || fileName === "")
+            return "qrc:/icons/types/unknow.svg"
+
+        const ext = fileName.split('.').pop().toLowerCase()
+
+        const codeExt = ["c", "cpp", "cxx", "h", "hpp", "hxx", "cs", "java", "js", "ts", "py", "rb", "php", "go", "rs", "swift", "kt", "sh", "bat", "ps1", "html", "css", "scss"]
+        const wordExt = ["doc", "docx", "odt", "rtf"]
+        const excelExt = ["xls", "xlsx", "ods", "csv"]
+        const pptExt = ["ppt", "pptx", "odp"]
+        const pdfExt = ["pdf"]
+        const textExt = ["txt", "md", "ini", "cfg", "json", "xml", "yml", "yaml", "log"]
+        const picExt = ["png", "jpg", "jpeg", "gif", "bmp", "svg", "webp", "tif", "tiff"]
+        const audioExt = ["mp3", "wav", "flac", "aac", "ogg", "m4a", "wma"]
+        const videoExt = ["mp4", "avi", "mkv", "mov", "wmv", "flv", "webm"]
+        const zipExt = ["zip", "rar", "7z", "tar", "gz", "bz2"]
+
+        if (codeExt.indexOf(ext) !== -1) return "qrc:/icons/types/code.svg"
+        if (wordExt.indexOf(ext) !== -1) return "qrc:/icons/types/word.svg"
+        if (excelExt.indexOf(ext) !== -1) return "qrc:/icons/types/excel.svg"
+        if (pptExt.indexOf(ext) !== -1) return "qrc:/icons/types/powerpoint.svg"
+        if (pdfExt.indexOf(ext) !== -1) return "qrc:/icons/types/pdf.svg"
+        if (textExt.indexOf(ext) !== -1) return "qrc:/icons/types/text.svg"
+        if (picExt.indexOf(ext) !== -1) return "qrc:/icons/types/picture.svg"
+        if (audioExt.indexOf(ext) !== -1) return "qrc:/icons/types/audio.svg"
+        if (videoExt.indexOf(ext) !== -1) return "qrc:/icons/types/video.svg"
+        if (zipExt.indexOf(ext) !== -1) return "qrc:/icons/types/zip.svg"
+
+        return "qrc:/icons/types/unknow.svg"
+    }
+
+
+
     function isItemChecked(path) {
         return checkedItems[path] === true
     }

@@ -234,9 +234,9 @@ CustomScrollView {
                                 visible: !previewImage.visible
                                 source: {
                                     if (tileDelegateRoot.isParentItem || tileDelegateRoot.itemIsDir) {
-                                        return "qrc:/icons/folder.svg"
+                                        return "qrc:/icons/types/folder.svg"
                                     }
-                                    return "qrc:/icons/file.svg"
+                                    return Utils.getFileIcon(tileDelegateRoot.itemName)
                                 }
                                 smooth: true
                             }
@@ -424,19 +424,8 @@ CustomScrollView {
                         onShareClicked: ConnectionManager.generateShareLink(tileContextMenu.itemPath)
                     }
 
-                    CustomMenu {
+                    ParentItemMenu {
                         id: parentItemMenu
-                        width: 200
-
-                        MenuItem {
-                            text: "Navigate Up"
-                            icon.source: "qrc:/icons/folder.svg"
-                            icon.width: 16
-                            icon.height: 16
-                            onClicked: {
-                                ConnectionManager.listDirectory(FileModel.getParentPath(), UserSettings.foldersFirst)
-                            }
-                        }
                     }
                 }
             }
