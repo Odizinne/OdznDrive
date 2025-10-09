@@ -152,6 +152,7 @@ qt_add_qml_module(${PROJECT_NAME}
     QML_FILES ${QML_FILES} ${QML_SINGLETONS}
     SOURCES include/treemodel.h src/treemodel.cpp
     QML_FILES qml/Components/FolderTreeView.qml
+    QML_FILES qml/CustomComponents/CustomSplitView.qml
 )
 
 target_link_libraries(${PROJECT_NAME} PRIVATE

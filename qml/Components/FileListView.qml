@@ -20,7 +20,7 @@ ColumnLayout {
     }
 
     Item {
-        Layout.preferredWidth: listView.width
+        Layout.fillWidth: true
         Layout.preferredHeight: 55 + (FileModel.canGoUp ? 60 : 0)
         z: 2
 
@@ -87,12 +87,13 @@ ColumnLayout {
             height: 50
             anchors.top: columnHeader.bottom
             color: "transparent"
+            radius: 4
 
             Rectangle {
                 anchors.fill: parent
                 color: parentHoverHandler.hovered ? Constants.alternateRowColor : "transparent"
                 opacity: parentHoverHandler.hovered ? 1 : 0
-                radius: 4
+                radius: parent.radius
                 Behavior on opacity {
                     NumberAnimation { duration: 200; easing.type: Easing.OutQuad }
                 }
@@ -218,8 +219,10 @@ ColumnLayout {
                     anchors.top: parent.top
                     height: 50
                     color: "transparent"
+                    radius: 4
 
                     Rectangle {
+                        radius: parent.radius
                         anchors.fill: parent
                         color: {
                             if (Utils.currentDropTarget === delegateRoot && delegateRoot.model.isDir && Utils.draggedItemPath !== delegateRoot.model.path) {

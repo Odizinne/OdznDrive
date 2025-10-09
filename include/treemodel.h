@@ -46,6 +46,9 @@ public:
     Q_INVOKABLE void loadTree(const QVariantMap &treeData);
     Q_INVOKABLE void toggleExpanded(const QString &path);
     Q_INVOKABLE void clear();
+    Q_INVOKABLE int getMaxDepth() const;
+    Q_INVOKABLE QStringList getExpandedPaths() const;
+    Q_INVOKABLE void restoreExpandedPaths(const QStringList &paths);
 
 private:
     explicit TreeModel(QObject *parent = nullptr);
@@ -59,6 +62,8 @@ private:
     void rebuildVisibleNodes();
     int countVisibleDescendants(TreeNode* node) const;
     void collectVisibleNodes(TreeNode* node, QList<TreeNode*>& result);
+    int calculateMaxDepth(const TreeNode* node) const;
+    void collectExpandedPaths(TreeNode* node, QStringList& paths) const;
 
     static TreeModel *s_instance;
     TreeNode *m_rootNode;

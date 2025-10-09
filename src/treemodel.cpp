@@ -96,8 +96,6 @@ QHash<int, QByteArray> TreeModel::roleNames() const
 
 void TreeModel::loadTree(const QVariantMap &treeData)
 {
-    qDebug() << "Loading tree with data:" << treeData;
-
     beginResetModel();
 
     if (m_rootNode) {
@@ -111,20 +109,13 @@ void TreeModel::loadTree(const QVariantMap &treeData)
     m_rootNode->path = treeData["path"].toString();
     m_rootNode->hasChildren = treeData["hasChildren"].toBool();
 
-    qDebug() << "Root node:" << m_rootNode->name << "path:" << m_rootNode->path;
-
     QVariantList childrenList = treeData["children"].toList();
-    qDebug() << "Children count:" << childrenList.size();
 
-    for (const QVariant &childData : childrenList) {
+    for (const QVariant &childData : std::as_const(childrenList)) {
         buildTree(m_rootNode, childData.toMap());
     }
 
-    // Build visible nodes list
     rebuildVisibleNodes();
-
-    qDebug() << "Total visible nodes:" << m_visibleNodes.count();
-
     endResetModel();
 }
 
@@ -138,44 +129,33 @@ void TreeModel::buildTree(TreeNode *parent, const QVariantMap &data)
 
     parent->children.append(node);
 
-    qDebug() << "Built node:" << node->name << "under parent:" << parent->name;
-
     QVariantList childrenList = data["children"].toList();
-    for (const QVariant &childData : childrenList) {
+    for (const QVariant &childData : std::as_const(childrenList)) {
         buildTree(node, childData.toMap());
     }
 }
 
 void TreeModel::toggleExpanded(const QString &path)
 {
-    qDebug() << "Toggling expansion for path:" << path;
-
     TreeNode *node = findNode(m_rootNode, path);
     if (!node) {
-        qDebug() << "Node not found for path:" << path;
         return;
     }
 
-    // Find the index of this node in visible nodes
     int nodeIndex = m_visibleNodes.indexOf(node);
     if (nodeIndex < 0) {
-        qDebug() << "Node not in visible list";
         return;
     }
 
     node->isExpanded = !node->isExpanded;
 
-    qDebug() << "Node" << node->name << "expanded:" << node->isExpanded;
-
     if (node->isExpanded) {
-        // Expanding - insert children
         if (!node->children.isEmpty()) {
             int insertCount = countVisibleDescendants(node);
 
             if (insertCount > 0) {
                 beginInsertRows(QModelIndex(), nodeIndex + 1, nodeIndex + insertCount);
 
-                // Insert children into visible nodes list
                 QList<TreeNode*> childNodes;
                 collectVisibleNodes(node, childNodes);
 
@@ -187,13 +167,11 @@ void TreeModel::toggleExpanded(const QString &path)
             }
         }
     } else {
-        // Collapsing - remove all descendants
         int removeCount = countVisibleDescendants(node);
 
         if (removeCount > 0) {
             beginRemoveRows(QModelIndex(), nodeIndex + 1, nodeIndex + removeCount);
 
-            // Remove descendants from visible nodes
             for (int i = 0; i < removeCount; ++i) {
                 m_visibleNodes.removeAt(nodeIndex + 1);
             }
@@ -202,11 +180,8 @@ void TreeModel::toggleExpanded(const QString &path)
         }
     }
 
-    // Notify that this node's data changed (for the expand/collapse icon)
     QModelIndex nodeModelIndex = index(nodeIndex, 0);
     emit dataChanged(nodeModelIndex, nodeModelIndex, {IsExpandedRole});
-
-    qDebug() << "Visible nodes after toggle:" << m_visibleNodes.count();
 }
 
 void TreeModel::clear()
@@ -238,7 +213,7 @@ TreeNode* TreeModel::findNode(TreeNode *node, const QString &path) const
         return node;
     }
 
-    for (TreeNode *child : node->children) {
+    for (TreeNode *child : std::as_const(node->children)) {
         TreeNode *found = findNode(child, path);
         if (found) {
             return found;
@@ -256,7 +231,6 @@ void TreeModel::rebuildVisibleNodes()
         return;
     }
 
-    // Helper lambda to recursively add visible nodes
     std::function<void(TreeNode*)> addVisibleNodes = [&](TreeNode* node) {
         if (!node) {
             return;
@@ -265,7 +239,7 @@ void TreeModel::rebuildVisibleNodes()
         m_visibleNodes.append(node);
 
         if (node->isExpanded) {
-            for (TreeNode* child : node->children) {
+            for (TreeNode* child : std::as_const(node->children)) {
                 addVisibleNodes(child);
             }
         }
@@ -278,8 +252,8 @@ int TreeModel::countVisibleDescendants(TreeNode* node) const
 {
     int count = 0;
 
-    for (TreeNode* child : node->children) {
-        count++; // Count the child itself
+    for (TreeNode* child : std::as_const(node->children)) {
+        count++;
 
         if (child->isExpanded && child->hasChildren) {
             count += countVisibleDescendants(child);
@@ -291,7 +265,7 @@ int TreeModel::countVisibleDescendants(TreeNode* node) const
 
 void TreeModel::collectVisibleNodes(TreeNode* node, QList<TreeNode*>& result)
 {
-    for (TreeNode* child : node->children) {
+    for (TreeNode* child : std::as_const(node->children)) {
         result.append(child);
 
         if (child->isExpanded && child->hasChildren) {
@@ -309,4 +283,60 @@ int TreeModel::calculateDepth(const TreeNode *node) const
         current = current->parent;
     }
     return depth;
+}
+
+int TreeModel::getMaxDepth() const
+{
+    if (!m_rootNode) {
+        return 0;
+    }
+    return calculateMaxDepth(m_rootNode);
+}
+
+int TreeModel::calculateMaxDepth(const TreeNode* node) const
+{
+    if (!node || !node->isExpanded || node->children.isEmpty()) {
+        return 0;
+    }
+
+    int maxChildDepth = 0;
+    for (const TreeNode* child : node->children) {
+        int childDepth = calculateMaxDepth(child);
+        maxChildDepth = qMax(maxChildDepth, childDepth);
+    }
+
+    return maxChildDepth + 1;
+}
+
+QStringList TreeModel::getExpandedPaths() const
+{
+    QStringList paths;
+    if (m_rootNode) {
+        collectExpandedPaths(m_rootNode, paths);
+    }
+    return paths;
+}
+
+void TreeModel::collectExpandedPaths(TreeNode* node, QStringList& paths) const
+{
+    if (!node) {
+        return;
+    }
+
+    if (node->isExpanded) {
+        paths.append(node->path);
+        for (TreeNode* child : std::as_const(node->children)) {
+            collectExpandedPaths(child, paths);
+        }
+    }
+}
+
+void TreeModel::restoreExpandedPaths(const QStringList &paths)
+{
+    for (const QString &path : paths) {
+        TreeNode* node = findNode(m_rootNode, path);
+        if (node && !node->isExpanded) {
+            toggleExpanded(path);
+        }
+    }
 }

@@ -30,6 +30,16 @@ ApplicationWindow {
         }
     }
 
+    function refreshTreeView() {
+        var expandedPaths = TreeModel.getExpandedPaths()
+        var maxDepth = Math.max(TreeModel.getMaxDepth() + 1, 2)
+
+        ConnectionManager.getFolderTree("", maxDepth)
+        root.pendingExpandedPaths = expandedPaths
+    }
+
+    property var pendingExpandedPaths: []
+
     Connections {
         target: ConnectionManager
 
@@ -52,6 +62,11 @@ ApplicationWindow {
 
         function onFolderTreeReceived(tree) {
             TreeModel.loadTree(tree)
+
+            if (root.pendingExpandedPaths.length > 0) {
+                TreeModel.restoreExpandedPaths(root.pendingExpandedPaths)
+                root.pendingExpandedPaths = []
+            }
         }
 
         function onShareLinkGenerated(path, link) {
@@ -65,6 +80,7 @@ ApplicationWindow {
 
         function onItemRenamed(fromPath, newName) {
             ConnectionManager.listDirectory(FileModel.currentPath, UserSettings.foldersFirst)
+            root.refreshTreeView()
         }
 
         function onDirectoryListed(path, files) {
@@ -109,6 +125,7 @@ ApplicationWindow {
 
         function onDirectoryCreated(path) {
             ConnectionManager.listDirectory(FileModel.currentPath, UserSettings.foldersFirst)
+            root.refreshTreeView()
         }
 
         function onFileDeleted(path) {
@@ -119,16 +136,19 @@ ApplicationWindow {
         function onDirectoryDeleted(path) {
             ConnectionManager.listDirectory(FileModel.currentPath, UserSettings.foldersFirst)
             storageUpdateTimer.restart()
+            root.refreshTreeView()
         }
 
         function onMultipleDeleted() {
             ConnectionManager.listDirectory(FileModel.currentPath, UserSettings.foldersFirst)
             storageUpdateTimer.restart()
+            root.refreshTreeView()
         }
 
         function onItemMoved(fromPath, toPath) {
             ConnectionManager.listDirectory(FileModel.currentPath, UserSettings.foldersFirst)
             storageUpdateTimer.restart()
+            root.refreshTreeView()
         }
 
         function onStorageInfo(total, used, available) {

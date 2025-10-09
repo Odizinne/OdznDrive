@@ -34,7 +34,6 @@ Page {
             }
         }
 
-        // Let other mouse events pass through
         onClicked: (mouse) => { mouse.accepted = false }
         onDoubleClicked: (mouse) => { mouse.accepted = false }
         onReleased: (mouse) => { mouse.accepted = false }
@@ -57,7 +56,6 @@ Page {
 
         function onCurrentPathChanged() {
             Utils.uncheckAll()
-            // Track navigation history
             if (!Utils.isNavigating) {
                 Utils.pushToHistory(FileModel.currentPath)
             } else {
@@ -171,51 +169,25 @@ Page {
         onRefreshClicked: ConnectionManager.listDirectory(FileModel.currentPath, UserSettings.foldersFirst)
     }
 
-    //SplitView {
-    //    id: split
-    //    anchors.fill: parent
-    //    orientation: Qt.Horizontal
-//
-    //    // Tree view panel
-    //    FolderTreeView {
-    //        SplitView.minimumWidth: 200
-    //        SplitView.preferredWidth: 250
-    //        SplitView.maximumWidth: 400
-    //        SplitView.preferredHeight: split.height
-    //    }
-//
-    //    // Main content area (existing loader)
-    //    Loader {
-    //        SplitView.fillWidth: true
-    //        sourceComponent: UserSettings.listView ? listViewComponent : tileViewComponent
-    //    }
-    //}
-
-    RowLayout {
+    CustomSplitView {
+        id: split
         anchors.fill: parent
+        anchors.leftMargin: 12
+        anchors.rightMargin: 12
+        handleSpacing: 12
+
         FolderTreeView {
-            Layout.fillHeight: true
-            Layout.preferredWidth: 300
-            Layout.leftMargin: 12
+            SplitView.minimumWidth: 200
+            SplitView.preferredWidth: 250
+            SplitView.maximumWidth: 400
         }
+
         Loader {
-            Layout.fillWidth: true
-            Layout.fillHeight: true
+            SplitView.fillWidth: true
+            SplitView.fillHeight: true
             sourceComponent: UserSettings.listView ? listViewComponent : tileViewComponent
         }
     }
-
-
-
-    //ColumnLayout {
-    //    anchors.fill: parent
-    //    spacing: 0
-//
-    //    FolderTreeView {
-    //        Layout.fillWidth: true
-    //        Layout.fillHeight: true
-    //    }
-    //}
 
     header: BreadcrumBar {
         id: breadcrumbBar

@@ -15,4 +15,6 @@ QtObject {
     property color contrastedRippleHoverColor: "#B1FFFFFF"
     property color headerGradientStart: UserSettings.darkMode ? "#F0A860" : "#E07830"
     property color headerGradientStop: UserSettings.darkMode ? "#FFB880" : "#F0A060"
+
+    property color treeDelegateHoverColor: UserSettings.darkMode ? "#4a5663" : "#c2cfe0"
 }
