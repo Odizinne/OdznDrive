@@ -264,8 +264,8 @@ User* Config::getUser(const QString &username)
     return nullptr;
 }
 
-bool Config::createUser(const QString &username, const QString &password, bool isAsmin,
-                        qint64 storageLimit, const QString &storagePath)
+bool Config::createUser(const QString &username, const QString &password, const bool &isAdmin,
+                        const qint64 &storageLimit, const QString &storagePath)
 {
     if (getUser(username)) {
         qWarning() << "User already exists:" << username << "(case-insensitive check)";
@@ -275,6 +275,7 @@ bool Config::createUser(const QString &username, const QString &password, bool i
     User user;
     user.username = username;
     user.password = password;
+    user.isAdmin = isAdmin;
     user.storageLimit = storageLimit * 1024 * 1024;
 
     if (storagePath.isEmpty()) {

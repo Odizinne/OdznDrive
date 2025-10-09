@@ -37,8 +37,8 @@ public:
 
     QList<User> getUsers() const;
     User* getUser(const QString &username);
-    bool createUser(const QString &username, const QString &password, bool isAdmin,
-                    qint64 storageLimit, const QString &storagePath = QString());
+    bool createUser(const QString &username, const QString &password, const bool &isAdmin,
+                    const qint64 &storageLimit, const QString &storagePath = QString());
     bool deleteUser(const QString &username);
     void loadUsers();
     void saveUsers();
