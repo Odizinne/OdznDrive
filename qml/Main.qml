@@ -39,19 +39,18 @@ ApplicationWindow {
                 ConnectionManager.getStorageInfo()
                 ConnectionManager.getServerInfo()
                 ConnectionManager.getFolderTree("", 2)
-                Utils.clearNavigationHistory() // Clear history on new connection
-                Utils.pushToHistory("") // Add root as first entry
+                Utils.clearNavigationHistory()
+                Utils.pushToHistory("")
             } else {
                 mainStack.pop()
                 root.requestLoginReset()
                 root.requestLoginAnimationReset()
                 root.requestLoginAnimationPlay()
-                Utils.clearNavigationHistory() // Clear on disconnect
+                Utils.clearNavigationHistory()
             }
         }
 
         function onFolderTreeReceived(tree) {
-            console.log("Tree received in Main.qml:", JSON.stringify(tree))
             TreeModel.loadTree(tree)
         }
 
@@ -181,6 +180,10 @@ ApplicationWindow {
 
                 function onRequestLoginAnimationPlay() {
                     lp.playAnimation()
+                }
+
+                function onRequestSetLoginToServer() {
+                    lp.setLoginToServer()
                 }
             }
         }

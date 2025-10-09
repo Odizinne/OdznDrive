@@ -216,7 +216,6 @@ QtObject {
         return pathStr;
     }
 
-
     function openFileDownloadDialog(remotePath, defaultName) {
         let cleanedFolderPath = toNativeFilePath(UserSettings.downloadFolderPath)
         FileDialogHelper.ensureDirectoryExists(cleanedFolderPath)

@@ -56,7 +56,9 @@ private:
     TreeNode* findNode(TreeNode* node, const QString &path) const;
     void buildTree(TreeNode* parent, const QVariantMap &data);
     int calculateDepth(const TreeNode* node) const;
-    void rebuildVisibleNodes(); // Changed from flattenTree
+    void rebuildVisibleNodes();
+    int countVisibleDescendants(TreeNode* node) const;
+    void collectVisibleNodes(TreeNode* node, QList<TreeNode*>& result);
 
     static TreeModel *s_instance;
     TreeNode *m_rootNode;

@@ -156,15 +156,55 @@ void TreeModel::toggleExpanded(const QString &path)
         return;
     }
 
+    // Find the index of this node in visible nodes
+    int nodeIndex = m_visibleNodes.indexOf(node);
+    if (nodeIndex < 0) {
+        qDebug() << "Node not in visible list";
+        return;
+    }
+
     node->isExpanded = !node->isExpanded;
 
     qDebug() << "Node" << node->name << "expanded:" << node->isExpanded;
 
-    // Rebuild visible nodes list
-    beginResetModel();
-    m_visibleNodes.clear();
-    rebuildVisibleNodes();
-    endResetModel();
+    if (node->isExpanded) {
+        // Expanding - insert children
+        if (!node->children.isEmpty()) {
+            int insertCount = countVisibleDescendants(node);
+
+            if (insertCount > 0) {
+                beginInsertRows(QModelIndex(), nodeIndex + 1, nodeIndex + insertCount);
+
+                // Insert children into visible nodes list
+                QList<TreeNode*> childNodes;
+                collectVisibleNodes(node, childNodes);
+
+                for (int i = 0; i < childNodes.count(); ++i) {
+                    m_visibleNodes.insert(nodeIndex + 1 + i, childNodes[i]);
+                }
+
+                endInsertRows();
+            }
+        }
+    } else {
+        // Collapsing - remove all descendants
+        int removeCount = countVisibleDescendants(node);
+
+        if (removeCount > 0) {
+            beginRemoveRows(QModelIndex(), nodeIndex + 1, nodeIndex + removeCount);
+
+            // Remove descendants from visible nodes
+            for (int i = 0; i < removeCount; ++i) {
+                m_visibleNodes.removeAt(nodeIndex + 1);
+            }
+
+            endRemoveRows();
+        }
+    }
+
+    // Notify that this node's data changed (for the expand/collapse icon)
+    QModelIndex nodeModelIndex = index(nodeIndex, 0);
+    emit dataChanged(nodeModelIndex, nodeModelIndex, {IsExpandedRole});
 
     qDebug() << "Visible nodes after toggle:" << m_visibleNodes.count();
 }
@@ -232,6 +272,32 @@ void TreeModel::rebuildVisibleNodes()
     };
 
     addVisibleNodes(m_rootNode);
+}
+
+int TreeModel::countVisibleDescendants(TreeNode* node) const
+{
+    int count = 0;
+
+    for (TreeNode* child : node->children) {
+        count++; // Count the child itself
+
+        if (child->isExpanded && child->hasChildren) {
+            count += countVisibleDescendants(child);
+        }
+    }
+
+    return count;
+}
+
+void TreeModel::collectVisibleNodes(TreeNode* node, QList<TreeNode*>& result)
+{
+    for (TreeNode* child : node->children) {
+        result.append(child);
+
+        if (child->isExpanded && child->hasChildren) {
+            collectVisibleNodes(child, result);
+        }
+    }
 }
 
 int TreeModel::calculateDepth(const TreeNode *node) const

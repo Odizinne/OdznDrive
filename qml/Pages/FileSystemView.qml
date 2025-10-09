@@ -196,10 +196,11 @@ Page {
         FolderTreeView {
             Layout.fillHeight: true
             Layout.preferredWidth: 300
+            Layout.leftMargin: 12
         }
         Loader {
-    Layout.fillWidth: true
-    Layout.fillHeight: true
+            Layout.fillWidth: true
+            Layout.fillHeight: true
             sourceComponent: UserSettings.listView ? listViewComponent : tileViewComponent
         }
     }
