@@ -15,15 +15,40 @@ FileManager::FileManager(const QString &rootPath)
 
 bool FileManager::isValidPath(const QString &relativePath) const
 {
-    QString absPath = getAbsolutePath(relativePath);
-    QDir rootDir(m_rootPath);
-    QString canonical = QFileInfo(absPath).canonicalFilePath();
-
-    if (canonical.isEmpty()) {
-        canonical = QFileInfo(absPath).absoluteFilePath();
+    // Reject suspicious patterns immediately
+    if (relativePath.contains("..") ||
+        relativePath.contains("//") ||
+        relativePath.startsWith("/") ||
+        relativePath.contains('\\')) {
+        qWarning() << "Suspicious path rejected:" << relativePath;
+        return false;
     }
 
-    return canonical.startsWith(rootDir.canonicalPath());
+    QString absPath = getAbsolutePath(relativePath);
+    QDir rootDir(m_rootPath);
+    QString rootCanonical = rootDir.canonicalPath();
+    QString canonical = QFileInfo(absPath).canonicalFilePath();
+
+    // For new files that don't exist yet, validate parent directory
+    if (canonical.isEmpty()) {
+        QFileInfo parentInfo(QFileInfo(absPath).absolutePath());
+        canonical = parentInfo.canonicalFilePath();
+
+        // Still empty? Reject it!
+        if (canonical.isEmpty()) {
+            qWarning() << "Could not resolve canonical path for:" << relativePath;
+            return false;
+        }
+    }
+
+    bool isValid = canonical.startsWith(rootCanonical);
+    if (!isValid) {
+        qWarning() << "Path traversal attempt detected:" << relativePath;
+        qWarning() << "Canonical:" << canonical;
+        qWarning() << "Root:" << rootCanonical;
+    }
+
+    return isValid;
 }
 
 QString FileManager::getAbsolutePath(const QString &relativePath) const
