@@ -68,6 +68,8 @@ public:
     Q_INVOKABLE void downloadMultiple(const QStringList &remotePaths, const QString &localPath, const QString &zipName);
     Q_INVOKABLE void deleteMultiple(const QStringList &paths);
     Q_INVOKABLE void renameItem(const QString &path, const QString &newName);
+    Q_INVOKABLE void getFolderTree(const QString &path = "", int maxDepth = -1);
+    Q_INVOKABLE void generateShareLink(const QString &path);
     Q_INVOKABLE void getStorageInfo();
     Q_INVOKABLE void cancelUpload();
     Q_INVOKABLE void cancelAllUploads();
@@ -79,7 +81,6 @@ public:
     Q_INVOKABLE void deleteUser(const QString &userName);
     Q_INVOKABLE void getUserList();
 
-    Q_INVOKABLE void generateShareLink(const QString &path);
 
 signals:
     void connectedChanged();
@@ -114,6 +115,7 @@ signals:
     void userDeleted(const QString &username);
     void userListReceived(const QVariantList &users);
     void shareLinkGenerated(const QString &path, const QString &shareLink);
+    void folderTreeReceived(const QVariantMap &tree);
 
 private slots:
     void onConnected();

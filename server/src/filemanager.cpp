@@ -366,3 +366,46 @@ QProcess* FileManager::createZipFromMultiplePaths(const QStringList &paths, cons
     return process;
 }
 
+QJsonObject FileManager::getFolderTree(const QString &relativePath, int maxDepth)
+{
+    QJsonObject result;
+
+    if (!isValidPath(relativePath)) {
+        return result;
+    }
+
+    QString absPath = getAbsolutePath(relativePath);
+    QFileInfo dirInfo(absPath);
+
+    if (!dirInfo.exists() || !dirInfo.isDir()) {
+        return result;
+    }
+
+    result["name"] = dirInfo.fileName().isEmpty() ? "Root" : dirInfo.fileName();
+    result["path"] = relativePath;
+    result["isDir"] = true;
+
+    if (maxDepth == 0) {
+        return result;
+    }
+
+    QDir dir(absPath);
+    QFileInfoList entries = dir.entryInfoList(QDir::Dirs | QDir::NoDotAndDotDot, QDir::Name);
+
+    QJsonArray children;
+    for (const QFileInfo &info : std::as_const(entries)) {
+        QString relPath = relativePath;
+        if (!relPath.isEmpty() && !relPath.endsWith('/')) {
+            relPath += '/';
+        }
+        relPath += info.fileName();
+
+        QJsonObject child = getFolderTree(relPath, maxDepth - 1);
+        children.append(child);
+    }
+
+    result["children"] = children;
+    result["hasChildren"] = !children.isEmpty();
+
+    return result;
+}

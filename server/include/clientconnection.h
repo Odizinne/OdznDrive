@@ -69,6 +69,7 @@ private:
     void handleDeleteUser(const QJsonObject &params);
     void handleGetUserList(const QJsonObject &params);
     void handleGenerateShareLink(const QJsonObject &params);
+    void handleGetFolderTree(const QJsonObject &params);
     void handlePong(const QJsonObject &params);
 
     void sendNextDownloadChunk();

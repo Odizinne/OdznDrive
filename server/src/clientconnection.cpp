@@ -208,6 +208,8 @@ void ClientConnection::handleCommand(const QJsonObject &command)
         handleGetUserList(params);
     } else if (type == "generate_share_link") {
         handleGenerateShareLink(params);
+    } else if (type == "get_folder_tree") {
+        handleGetFolderTree(params);
     } else {
         sendError("Unknown command type");
     }
@@ -1138,6 +1140,18 @@ void ClientConnection::onPongTimeout()
         qInfo() << "Client" << m_currentUsername << "failed to pong, disconnecting.";
         m_socket->close(); // This will trigger onDisconnected
     }
+}
+
+void ClientConnection::handleGetFolderTree(const QJsonObject &params)
+{
+    QString path = params["path"].toString();
+    int maxDepth = params["maxDepth"].toInt(-1);
+
+    QJsonObject tree = m_fileManager->getFolderTree(path, maxDepth);
+
+    QJsonObject data;
+    data["tree"] = tree;
+    sendResponse("folder_tree", data);
 }
 
 void ClientConnection::handlePong(const QJsonObject &params)

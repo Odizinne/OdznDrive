@@ -38,6 +38,7 @@ ApplicationWindow {
                 ConnectionManager.listDirectory("", UserSettings.foldersFirst)
                 ConnectionManager.getStorageInfo()
                 ConnectionManager.getServerInfo()
+                ConnectionManager.getFolderTree("", 2)
                 Utils.clearNavigationHistory() // Clear history on new connection
                 Utils.pushToHistory("") // Add root as first entry
             } else {
@@ -47,6 +48,11 @@ ApplicationWindow {
                 root.requestLoginAnimationPlay()
                 Utils.clearNavigationHistory() // Clear on disconnect
             }
+        }
+
+        function onFolderTreeReceived(tree) {
+            console.log("Tree received in Main.qml:", JSON.stringify(tree))
+            TreeModel.loadTree(tree)
         }
 
         function onShareLinkGenerated(path, link) {

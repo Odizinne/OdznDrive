@@ -171,16 +171,50 @@ Page {
         onRefreshClicked: ConnectionManager.listDirectory(FileModel.currentPath, UserSettings.foldersFirst)
     }
 
-    ColumnLayout {
-        anchors.fill: parent
-        spacing: 0
+    //SplitView {
+    //    id: split
+    //    anchors.fill: parent
+    //    orientation: Qt.Horizontal
+//
+    //    // Tree view panel
+    //    FolderTreeView {
+    //        SplitView.minimumWidth: 200
+    //        SplitView.preferredWidth: 250
+    //        SplitView.maximumWidth: 400
+    //        SplitView.preferredHeight: split.height
+    //    }
+//
+    //    // Main content area (existing loader)
+    //    Loader {
+    //        SplitView.fillWidth: true
+    //        sourceComponent: UserSettings.listView ? listViewComponent : tileViewComponent
+    //    }
+    //}
 
-        Loader {
-            Layout.fillWidth: true
+    RowLayout {
+        anchors.fill: parent
+        FolderTreeView {
             Layout.fillHeight: true
+            Layout.preferredWidth: 300
+        }
+        Loader {
+    Layout.fillWidth: true
+    Layout.fillHeight: true
             sourceComponent: UserSettings.listView ? listViewComponent : tileViewComponent
         }
     }
+
+
+
+    //ColumnLayout {
+    //    anchors.fill: parent
+    //    spacing: 0
+//
+    //    FolderTreeView {
+    //        Layout.fillWidth: true
+    //        Layout.fillHeight: true
+    //    }
+    //}
 
     header: BreadcrumBar {
         id: breadcrumbBar

@@ -150,6 +150,8 @@ qt_add_qml_module(${PROJECT_NAME}
     URI Odizinne.OdznDrive
     VERSION 1.0
     QML_FILES ${QML_FILES} ${QML_SINGLETONS}
+    SOURCES include/treemodel.h src/treemodel.cpp
+    QML_FILES qml/Components/FolderTreeView.qml
 )
 
 target_link_libraries(${PROJECT_NAME} PRIVATE

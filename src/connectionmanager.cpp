@@ -822,6 +822,9 @@ void ConnectionManager::handleResponse(const QJsonObject &response)
         QJsonArray usersArray = data["users"].toArray();
         QVariantList users = usersArray.toVariantList();
         emit userListReceived(users);
+    } else if (type == "folder_tree") {
+        QJsonObject tree = data["tree"].toObject();
+        emit folderTreeReceived(tree.toVariantMap());
     }
 }
 
@@ -1126,4 +1129,17 @@ void ConnectionManager::generateShareLink(const QString &path)
     QJsonObject params;
     params["path"] = path;
     sendCommand("generate_share_link", params);
+}
+
+void ConnectionManager::getFolderTree(const QString &path, int maxDepth)
+{
+    if (!m_authenticated) {
+        emit errorOccurred("Not authenticated");
+        return;
+    }
+
+    QJsonObject params;
+    params["path"] = path;
+    params["maxDepth"] = maxDepth;
+    sendCommand("get_folder_tree", params);
 }

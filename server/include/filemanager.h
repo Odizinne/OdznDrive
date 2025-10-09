@@ -31,6 +31,8 @@ public:
     QProcess* createZipFromDirectory(const QString &relativePath, const QString &zipName, QString& outZipPath);
     QProcess* createZipFromMultiplePaths(const QStringList &paths, const QString &zipName, QString& outZipPath);
 
+    QJsonObject getFolderTree(const QString &relativePath, int maxDepth = -1);
+
 private:
     QString m_rootPath;
 

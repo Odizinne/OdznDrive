@@ -8,6 +8,7 @@ Button {
     id: control
     Material.roundedScale: Material.ExtraSmallScale
     flat: true
+
     property color rippleHoverColor: Constants.rippleHoverColor
     background: Rectangle {
         implicitWidth: implicitHeight
