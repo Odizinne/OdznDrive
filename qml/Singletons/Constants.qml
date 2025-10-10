@@ -5,7 +5,7 @@ QtObject {
     property color backgroundColor: UserSettings.darkMode ? "#2a3239" : "#d5dce8"
     property color altBackgroundColor: UserSettings.darkMode ? "#323a42" : "#d5dce8"
     property color surfaceColor: UserSettings.darkMode ? "#363f48" : "#e3ebf5"
-        property color altSurfaceColor: UserSettings.darkMode ? "#363f48" : "#dfe7f2"
+    property color altSurfaceColor: UserSettings.darkMode ? "#363f48" : "#dfe7f2"
     property color listHeaderColor: UserSettings.darkMode ? "#3f4851" : "#c2cfe0"
     property color alternateRowColor: UserSettings.darkMode ? "#3a434c" : "#e0e8f2"
     property color borderColor: UserSettings.darkMode ? "#4f5861" : "#b5c3d6"

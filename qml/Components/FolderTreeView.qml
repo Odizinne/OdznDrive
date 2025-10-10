@@ -64,11 +64,15 @@ Item {
                             itemPos.y >= 0 && itemPos.y <= item.height) {
 
                             let itemPath = getItemPath(item)
-                            // Accept any folder as drop target, including root (empty path)
+                            // Accept any folder as drop target if it's different from source
                             if (itemPath !== Utils.draggedItemPath) {
-                                foundTarget = item
-                                break
+                                let sourceParent = Utils.draggedItemPath.substring(0, Utils.draggedItemPath.lastIndexOf('/'))
+                                // Only set as drop target if it's a different folder
+                                if (sourceParent !== itemPath) {
+                                    foundTarget = item
+                                }
                             }
+                            break
                         }
                     }
                 }
@@ -112,7 +116,6 @@ Item {
                         icon.width: 16
                         icon.height: 16
                         CustomMenu {
-                            //id: menu
                             width: 200
                             y: menuButton.y + 15
                             x: menuButton.x + 8
@@ -167,6 +170,7 @@ Item {
                     }
 
                     CustomButton {
+                        visible: opacity !== 0
                         opacity: Utils.checkedCount > 0 ? 1 : 0
                         icon.source: "qrc:/icons/download.svg"
                         icon.width: 16
@@ -197,6 +201,7 @@ Item {
                     }
 
                     CustomButton {
+                        visible: opacity !== 0
                         opacity: Utils.checkedCount > 0 ? 1 : 0
                         icon.source: "qrc:/icons/delete.svg"
                         icon.width: 16
@@ -215,13 +220,21 @@ Item {
                     }
 
                     Rectangle {
+                        visible: opacity !== 0
                         Layout.preferredWidth: 1
                         Layout.preferredHeight: 24
                         color: Material.foreground
                         opacity: Utils.checkedCount > 0 ? 0.3 : 0
+                        Behavior on opacity {
+                            NumberAnimation {
+                                duration: 200
+                                easing.type: Easing.OutQuad
+                            }
+                        }
                     }
 
                     Label {
+                        visible: opacity !== 0
                         Layout.leftMargin: 8
                         opacity: Utils.checkedCount > 0 ? 0.7 : 0
                         text: Utils.checkedCount + (Utils.checkedCount === 1 ? " item" : " items")
@@ -413,9 +426,7 @@ Item {
                         property bool itemIsDir: true
                         property string itemPath: treeDelegate.path
                         property string itemName: treeDelegate.name
-                        property bool draggingOn: Utils.currentDropTarget === treeDelegate &&
-                                                   Utils.draggedItemPath !== "" &&
-                                                   Utils.draggedItemPath !== treeDelegate.path
+                        property bool draggingOn: Utils.currentDropTarget === treeDelegate && Utils.draggedItemPath !== "" && Utils.draggedItemPath !== treeDelegate.path
 
                         Rectangle {
                             id: delegateBackground
@@ -551,6 +562,7 @@ Item {
                     Layout.preferredHeight: 8
                     Material.accent: Utils.storagePercentage < 0.5 ? Material.Green : Utils.storagePercentage < 0.85 ? Material.Orange : Material.Red
                     value: Utils.storagePercentage
+                    Material.background: Constants.backgroundColor
                 }
 
                 RowLayout {

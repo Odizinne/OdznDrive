@@ -20,6 +20,8 @@ QtObject {
     property int navigationIndex: -1
     property bool isNavigating: false
 
+    signal focusSearch()
+
     function getFileIcon(fileName) {
         if (!fileName || fileName === "")
             return "qrc:/icons/types/unknow.svg"

@@ -1,6 +1,5 @@
 import QtQuick.Controls.Material
 import QtQuick
-import Odizinne.OdznDrive
 
 Item {
     id: control
@@ -20,7 +19,7 @@ Item {
     Rectangle {
         anchors.fill: parent
         radius: 4
-        color: Constants.borderColor
+        color: Material.background
         opacity: 1
 
         Rectangle {

@@ -89,22 +89,39 @@ ColumnLayout {
             color: "transparent"
             radius: 4
 
+            property bool itemIsDir: true
+            property string itemPath: FileModel.canGoUp ? FileModel.getParentPath() : ""
+            property string itemName: ".."
+
+            ContextMenu.menu: ParentItemMenu {}
+
+            // Hover background
             Rectangle {
                 anchors.fill: parent
-                color: parentHoverHandler.hovered ? Constants.alternateRowColor : "transparent"
-                opacity: parentHoverHandler.hovered ? 1 : 0
+                color: Constants.alternateRowColor
+                opacity: parentHoverHandler.hovered && Utils.draggedItemPath === "" ? 1 : 0
                 radius: parent.radius
                 Behavior on opacity {
                     NumberAnimation { duration: 200; easing.type: Easing.OutQuad }
                 }
             }
 
+            // Drop target visual feedback
+            Rectangle {
+                anchors.fill: parent
+                radius: parent.radius
+                opacity: Utils.currentDropTarget === parentDirItem ? 1 : 0
+                color: Constants.listHeaderColor
+                border.width: 1
+                border.color: Material.accent
 
-            property bool itemIsDir: true
-            property string itemPath: FileModel.canGoUp ? FileModel.getParentPath() : ""
-            property string itemName: ".."
-
-            ContextMenu.menu: ParentItemMenu {}
+                Behavior on opacity {
+                    NumberAnimation {
+                        duration: 200
+                        easing.type: Easing.OutQuad
+                    }
+                }
+            }
 
             RowLayout {
                 anchors.fill: parent
@@ -163,11 +180,6 @@ ColumnLayout {
                 }
             }
         }
-
-        Separator {
-            anchors.top: parentDirItem.bottom
-            visible: parentDirItem.visible && listView.count > 0
-        }
     }
 
     CustomScrollView {
@@ -181,7 +193,6 @@ ColumnLayout {
             height: contentHeight
             model: FilterProxyModel
             interactive: false
-
             spacing: 5
             delegate: Item {
                 id: delegateRoot
@@ -221,16 +232,29 @@ ColumnLayout {
                     color: "transparent"
                     radius: 4
 
+                    // Hover background
                     Rectangle {
                         radius: parent.radius
                         anchors.fill: parent
-                        color: {
-                            if (Utils.currentDropTarget === delegateRoot && delegateRoot.model.isDir && Utils.draggedItemPath !== delegateRoot.model.path) {
-                                return Constants.listHeaderColor
+                        color: Constants.alternateRowColor
+                        opacity: hoverHandler.hovered && Utils.draggedItemPath === "" ? 1 : 0
+                        Behavior on opacity {
+                            NumberAnimation {
+                                duration: 200
+                                easing.type: Easing.OutQuad
                             }
-                            return hoverHandler.hovered ? Constants.alternateRowColor : "transparent"
                         }
-                        opacity: hoverHandler.hovered ? 1 : 0
+                    }
+
+                    // Drop target visual feedback
+                    Rectangle {
+                        radius: parent.radius
+                        anchors.fill: parent
+                        opacity: delegateRoot.itemIsDir && Utils.currentDropTarget === delegateRoot ? 1 : 0
+                        color: Constants.listHeaderColor
+                        border.width: 1
+                        border.color: Material.accent
+
                         Behavior on opacity {
                             NumberAnimation {
                                 duration: 200
@@ -337,11 +361,12 @@ ColumnLayout {
                         target: null
                         dragThreshold: 15
                         enabled: !Utils.anyDialogOpen
+
                         onActiveChanged: {
                             if (active) {
-                                Utils.draggedItemPath = delegateRoot.model.path
-                                Utils.draggedItemName = delegateRoot.model.name
-                                fileListView.setDragIndicatorText("Move " + delegateRoot.model.name)
+                                Utils.draggedItemPath = delegateRoot.itemPath
+                                Utils.draggedItemName = delegateRoot.itemName
+                                fileListView.setDragIndicatorText("Move " + delegateRoot.itemName)
                                 fileListView.setDragIndicatorVisible(true)
                             } else {
                                 fileListView.setDragIndicatorVisible(false)
@@ -351,7 +376,12 @@ ColumnLayout {
 
                                     if (Utils.currentDropTarget.itemIsDir &&
                                         targetPath !== Utils.draggedItemPath) {
-                                        ConnectionManager.moveItem(Utils.draggedItemPath, targetPath)
+
+                                        // Check if source is already in the target directory
+                                        let sourceParent = Utils.draggedItemPath.substring(0, Utils.draggedItemPath.lastIndexOf('/'))
+                                        if (sourceParent !== targetPath) {
+                                            ConnectionManager.moveItem(Utils.draggedItemPath, targetPath)
+                                        }
                                     }
                                 }
 
@@ -364,30 +394,43 @@ ColumnLayout {
                         onCentroidChanged: {
                             if (active) {
                                 let globalPos = delegateBackground.mapToItem(null, centroid.position.x, centroid.position.y)
-
                                 fileListView.setDragIndicatorX(globalPos.x + 10)
                                 fileListView.setDragIndicatorY(globalPos.y + 10)
 
+                                let listPos = delegateBackground.mapToItem(listView, centroid.position.x, centroid.position.y)
+
                                 Utils.currentDropTarget = null
 
+                                // Check parent directory item first
                                 if (FileModel.canGoUp && parentDirItem.visible) {
                                     let parentPos = parentDirItem.mapFromItem(null, globalPos.x, globalPos.y)
                                     if (parentPos.x >= 0 && parentPos.x <= parentDirItem.width &&
                                         parentPos.y >= 0 && parentPos.y <= parentDirItem.height) {
-                                        Utils.currentDropTarget = parentDirItem
+
+                                        // Check if it's a valid drop target
+                                        let sourceParent = Utils.draggedItemPath.substring(0, Utils.draggedItemPath.lastIndexOf('/'))
+                                        if (sourceParent !== parentDirItem.itemPath) {
+                                            Utils.currentDropTarget = parentDirItem
+                                        }
                                         return
                                     }
                                 }
 
-                                let listPos = delegateBackground.mapToItem(listView, centroid.position.x, centroid.position.y)
-
+                                // Then check list items
                                 for (let i = 0; i < listView.count; i++) {
                                     let item = listView.itemAtIndex(i)
                                     if (item) {
                                         let itemPos = item.mapFromItem(listView, listPos.x, listPos.y)
                                         if (itemPos.x >= 0 && itemPos.x <= item.width &&
                                             itemPos.y >= 0 && itemPos.y <= item.height) {
-                                            Utils.currentDropTarget = item
+
+                                            // Check if it's a valid drop target
+                                            if (item.itemIsDir && item.itemPath !== Utils.draggedItemPath) {
+                                                let sourceParent = Utils.draggedItemPath.substring(0, Utils.draggedItemPath.lastIndexOf('/'))
+                                                if (sourceParent !== item.itemPath) {
+                                                    Utils.currentDropTarget = item
+                                                }
+                                            }
                                             break
                                         }
                                     }
@@ -415,4 +458,3 @@ ColumnLayout {
         }
     }
 }
-

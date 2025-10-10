@@ -16,6 +16,7 @@ CustomScrollView {
     signal setDragIndicatorY(int y)
     signal setDragIndicatorVisible(bool visible)
     signal setDragIndicatorText(string text)
+
     Connections {
         target: FileModel
 
@@ -192,7 +193,6 @@ CustomScrollView {
                         }
                     }
 
-
                     ColumnLayout {
                         anchors.fill: parent
                         spacing: 0
@@ -347,7 +347,12 @@ CustomScrollView {
 
                                     if (Utils.currentDropTarget.itemIsDir &&
                                         targetPath !== Utils.draggedItemPath) {
-                                        ConnectionManager.moveItem(Utils.draggedItemPath, targetPath)
+
+                                        // Check if source is already in the target directory
+                                        let sourceParent = Utils.draggedItemPath.substring(0, Utils.draggedItemPath.lastIndexOf('/'))
+                                        if (sourceParent !== targetPath) {
+                                            ConnectionManager.moveItem(Utils.draggedItemPath, targetPath)
+                                        }
                                     }
                                 }
 
@@ -373,7 +378,15 @@ CustomScrollView {
                                         let itemPos = item.mapFromItem(tileGrid, gridPos.x, gridPos.y)
                                         if (itemPos.x >= 0 && itemPos.x <= item.width &&
                                             itemPos.y >= 0 && itemPos.y <= item.height) {
-                                            Utils.currentDropTarget = item
+
+                                            // Check if it's a valid drop target
+                                            if (item.itemIsDir && item.itemPath !== Utils.draggedItemPath) {
+                                                let sourceParent = Utils.draggedItemPath.substring(0, Utils.draggedItemPath.lastIndexOf('/'))
+                                                // Only set as drop target if it's a different folder
+                                                if (sourceParent !== item.itemPath) {
+                                                    Utils.currentDropTarget = item
+                                                }
+                                            }
                                             break
                                         }
                                     }

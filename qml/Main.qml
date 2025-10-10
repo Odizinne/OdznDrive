@@ -30,6 +30,11 @@ ApplicationWindow {
         }
     }
 
+    Shortcut {
+        sequence: StandardKey.Find
+        onActivated: Utils.focusSearch()
+    }
+
     function refreshTreeView() {
         var expandedPaths = TreeModel.getExpandedPaths()
         var maxDepth = Math.max(TreeModel.getMaxDepth() + 1, 2)
