@@ -153,6 +153,7 @@ qt_add_qml_module(${PROJECT_NAME}
     QML_FILES qml/Components/FolderTreeView.qml
     QML_FILES qml/CustomComponents/CustomSplitView.qml
     QML_FILES qml/CustomComponents/CustomTextField.qml
+    QML_FILES qml/Components/MainMenu.qml
 )
 
 target_link_libraries(${PROJECT_NAME} PRIVATE

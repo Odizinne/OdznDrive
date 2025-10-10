@@ -64,6 +64,22 @@ Page {
         }
     }
 
+    Connections {
+        target: Utils
+        function onShowUserManagmentDialog() {
+            userManagmentDialog.open()
+        }
+
+        function onShowAdvancedSettingsDialog() {
+            advancedSettingsDialog.open()
+        }
+
+        function onRequestMultiDeleteConfirmDialog() {
+            multiDeleteConfirmDialog.itemCount = Utils.checkedCount
+            multiDeleteConfirmDialog.open()
+        }
+    }
+
     DragIndicator {
         id: dragIndicator
     }
@@ -170,34 +186,54 @@ Page {
     }
 
     CustomSplitView {
-        id: split
         anchors.fill: parent
         anchors.leftMargin: 12
         anchors.bottomMargin: 12
         handleSpacing: 12
 
         FolderTreeView {
-            id: treeView
             SplitView.minimumWidth: 250
             SplitView.preferredWidth: 250
             SplitView.maximumWidth: 400
-            onShowUserManagmentDialog: userManagmentDialog.open()
-            onShowAdvancedSettingsDialog: advancedSettingsDialog.open()
-            onRequestMultiDeleteConfirmDialog: {
-                multiDeleteConfirmDialog.itemCount = Utils.checkedCount
-                multiDeleteConfirmDialog.open()
-            }
         }
 
         Loader {
+            id: loader
             SplitView.fillWidth: true
             SplitView.fillHeight: true
             sourceComponent: UserSettings.listView ? listViewComponent : tileViewComponent
+
+            onSourceComponentChanged: {
+                if (item) {
+                    enterAnimation.running = true
+                }
+            }
+
+            ParallelAnimation {
+                id: enterAnimation
+
+                NumberAnimation {
+                    target: loader.item
+                    property: "opacity"
+                    from: 0
+                    to: 1
+                    duration: 200
+                    easing.type: Easing.InQuint
+                }
+
+                NumberAnimation {
+                    target: loader.item
+                    property: "x"
+                    from: loader.width * 0.3
+                    to: 0
+                    duration: 300
+                    easing.type: Easing.OutCubic
+                }
+            }
         }
     }
 
     header: BreadcrumBar {
-        id: breadcrumbBar
         Layout.margins: 12
         Layout.preferredHeight: 45
         Layout.fillWidth: true
@@ -265,6 +301,7 @@ Page {
             onSetDragIndicatorText: function (text) {
                 dragIndicator.text = text
             }
+
             Component.onCompleted: setScrollViewMenu(emptySpaceMenu)
         }
     }

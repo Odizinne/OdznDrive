@@ -21,6 +21,9 @@ QtObject {
     property bool isNavigating: false
 
     signal focusSearch()
+    signal showAdvancedSettingsDialog()
+    signal showUserManagmentDialog()
+    signal requestMultiDeleteConfirmDialog()
 
     function getFileIcon(fileName) {
         if (!fileName || fileName === "")

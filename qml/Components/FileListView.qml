@@ -416,15 +416,12 @@ ColumnLayout {
                                     }
                                 }
 
-                                // Then check list items
                                 for (let i = 0; i < listView.count; i++) {
                                     let item = listView.itemAtIndex(i)
                                     if (item) {
                                         let itemPos = item.mapFromItem(listView, listPos.x, listPos.y)
                                         if (itemPos.x >= 0 && itemPos.x <= item.width &&
                                             itemPos.y >= 0 && itemPos.y <= item.height) {
-
-                                            // Check if it's a valid drop target
                                             if (item.itemIsDir && item.itemPath !== Utils.draggedItemPath) {
                                                 let sourceParent = Utils.draggedItemPath.substring(0, Utils.draggedItemPath.lastIndexOf('/'))
                                                 if (sourceParent !== item.itemPath) {
