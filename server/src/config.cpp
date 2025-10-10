@@ -7,6 +7,9 @@
 #include <QJsonArray>
 #include <QFile>
 #include <QNetworkInterface>
+#include <QCryptographicHash>
+#include <QRandomGenerator>
+#include <QPasswordDigestor>
 
 Config::Config()
     : m_settings(QCoreApplication::organizationName(), QCoreApplication::applicationName())
@@ -31,6 +34,51 @@ void Config::initSettings()
     }
 }
 
+
+QString Config::hashPassword(const QString &password, const QByteArray &salt)
+{
+    QByteArray hash = QPasswordDigestor::deriveKeyPbkdf2(
+        QCryptographicHash::Sha256,
+        password.toUtf8(),
+        salt,
+        100000,
+        32
+        );
+    return QString::fromLatin1(hash.toHex());
+}
+
+QByteArray Config::generateSalt()
+{
+    QByteArray salt;
+    salt.resize(32);  // 256 bits
+
+    quint32* ptr = reinterpret_cast<quint32*>(salt.data());
+    int count = salt.size() / sizeof(quint32);
+
+    for (int i = 0; i < count; ++i) {
+        ptr[i] = QRandomGenerator::global()->generate();
+    }
+
+    return salt;
+}
+
+bool Config::verifyPassword(const QString &password, const QString &hashedPassword, const QByteArray &salt)
+{
+    QString computedHash = hashPassword(password, salt);
+    return computedHash == hashedPassword;
+}
+
+void Config::migrateUserToHashedPassword(User &user, const QString &plainPassword)
+{
+    qInfo() << "Migrating user" << user.username << "to hashed password";
+
+    // Generate salt
+    user.salt = generateSalt();
+
+    // Hash the password with the new salt
+    user.passwordHash = hashPassword(plainPassword, user.salt);
+}
+
 QString Config::getBannedIPsFilePath() const
 {
     QString configPath = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
@@ -52,7 +100,6 @@ QString Config::generateUserStoragePath(const QString &username) const
     QDir().mkpath(userPath);
     return userPath;
 }
-
 
 void Config::loadBannedIPs()
 {
@@ -178,9 +225,11 @@ void Config::loadUsers()
     QFile file(filePath);
 
     if (!file.exists()) {
+        // Create default admin user with hashed password
         User admin;
         admin.username = "admin";
-        admin.password = "admin123";
+        admin.salt = generateSalt();
+        admin.passwordHash = hashPassword("admin123", admin.salt);
         admin.storagePath = generateUserStoragePath("admin");
         admin.storageLimit = 10737418240LL;
         admin.isAdmin = true;
@@ -208,20 +257,43 @@ void Config::loadUsers()
 
     QJsonObject obj = doc.object();
     QJsonArray usersArray = obj["users"].toArray();
+
+    bool needsSave = false;
+
     for (const QJsonValue &val : std::as_const(usersArray)) {
         QJsonObject obj = val.toObject();
         User user;
         user.username = obj["username"].toString();
-        user.password = obj["password"].toString();
         user.storagePath = obj["storagePath"].toString();
         user.storageLimit = obj["storageLimit"].toVariant().toLongLong();
         user.isAdmin = obj["isAdmin"].toBool();
-        m_users.append(user);
 
+        // Check format and migrate if necessary
+        if (obj.contains("passwordHash") && obj.contains("salt")) {
+            // New format - already hashed
+            user.passwordHash = obj["passwordHash"].toString();
+            QString saltBase64 = obj["salt"].toString();
+            user.salt = QByteArray::fromBase64(saltBase64.toUtf8());
+        } else if (obj.contains("password")) {
+            // Old format - plain text password, needs migration
+            QString plainPassword = obj["password"].toString();
+            migrateUserToHashedPassword(user, plainPassword);
+            needsSave = true;
+        } else {
+            qWarning() << "User" << user.username << "has no password field, skipping";
+            continue;
+        }
+
+        m_users.append(user);
         QDir().mkpath(user.storagePath);
     }
 
     qInfo() << "Loaded" << m_users.size() << "user(s)";
+
+    if (needsSave) {
+        saveUsers();
+        qInfo() << "Password migration completed and saved";
+    }
 }
 
 void Config::saveUsers()
@@ -238,7 +310,8 @@ void Config::saveUsers()
     for (const User &user : std::as_const(m_users)) {
         QJsonObject obj;
         obj["username"] = user.username;
-        obj["password"] = user.password;
+        obj["passwordHash"] = user.passwordHash;
+        obj["salt"] = QString::fromLatin1(user.salt.toBase64());  // Store salt as base64
         obj["storagePath"] = user.storagePath;
         obj["storageLimit"] = user.storageLimit;
         obj["isAdmin"] = user.isAdmin;
@@ -274,7 +347,8 @@ bool Config::createUser(const QString &username, const QString &password, const 
 
     User user;
     user.username = username;
-    user.password = password;
+    user.salt = generateSalt();
+    user.passwordHash = hashPassword(password, user.salt);
     user.isAdmin = isAdmin;
     user.storageLimit = storageLimit * 1024 * 1024;
 

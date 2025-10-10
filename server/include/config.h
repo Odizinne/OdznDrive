@@ -2,6 +2,7 @@
 #define CONFIG_H
 
 #include <QString>
+#include <QByteArray>
 #include <QSettings>
 #include <QMap>
 #include <QDateTime>
@@ -15,7 +16,8 @@ struct BannedIP {
 
 struct User {
     QString username;
-    QString password;
+    QString passwordHash;
+    QByteArray salt;
     QString storagePath;
     qint64 storageLimit;
     bool isAdmin;
@@ -45,6 +47,10 @@ public:
 
     void initSettings();
 
+    static QString hashPassword(const QString &password, const QByteArray &salt);
+    static QByteArray generateSalt();
+    static bool verifyPassword(const QString &password, const QString &hashedPassword, const QByteArray &salt);
+
 private:
     Config();
     Config(const Config&) = delete;
@@ -60,6 +66,8 @@ private:
     QString getUsersFilePath() const;
     QString generateUserStoragePath(const QString &username) const;
     static QString getDefaultLocalNetworkUrl();
+
+    void migrateUserToHashedPassword(User &user, const QString &plainPassword);
 };
 
 #endif // CONFIG_H

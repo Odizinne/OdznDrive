@@ -630,7 +630,7 @@ ClientConnection::AuthResult ClientConnection::authenticate(const QString &usern
         return AuthResult::UnknownUser;
     }
 
-    if (password != user->password) {
+    if (!Config::instance().verifyPassword(password, user->passwordHash, user->salt)) {
         Config::instance().recordFailedAttempt(clientIP);
         errorMessage = "Invalid username or password";
         return AuthResult::InvalidPassword;
@@ -992,9 +992,12 @@ void ClientConnection::handleEditUser(const QJsonObject &params)
         return;
     }
 
+    // Update password if provided
     if (!password.isEmpty()) {
-        user->password = password;
+        user->salt = Config::generateSalt();
+        user->passwordHash = Config::hashPassword(password, user->salt);
     }
+
     user->storageLimit = storageLimit * 1024 * 1024;
     user->isAdmin = isAdmin;
 
@@ -1063,7 +1066,7 @@ void ClientConnection::handleGetUserList(const QJsonObject &params)
         QJsonObject userObj;
         userObj["username"] = user.username;
         userObj["storageLimit"] = user.storageLimit;
-        userObj["password"] = user.password;
+        userObj["password"] = "";
         userObj["isAdmin"] = user.isAdmin;
         usersArray.append(userObj);
     }
