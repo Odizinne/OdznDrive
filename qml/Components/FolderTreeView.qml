@@ -13,16 +13,6 @@ Item {
     signal showAdvancedSettingsDialog()
     signal requestMultiDeleteConfirmDialog()
 
-    property bool mainMenuVisible: menu.visible
-    property int menuX: menu.x
-    property int menuY: menu.y
-    property int menuWidth: menu.width
-    property int menuHeight: menu.height
-
-    function closeMainMenu() {
-        menu.close()
-    }
-
     Rectangle {
         anchors.fill: parent
         color: Constants.altSurfaceColor

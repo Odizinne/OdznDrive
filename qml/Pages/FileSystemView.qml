@@ -196,22 +196,6 @@ Page {
         }
     }
 
-    MouseArea {
-        anchors.fill: parent
-        enabled: treeView.mainMenuVisible
-        propagateComposedEvents: true
-        z: -1
-        onClicked: function(mouse) {
-            let menuPos = mapFromItem(treeView, treeView.menuX, treeView.menuY)
-            let menuRect = Qt.rect(menuPos.x, menuPos.y, treeView.menuWidth, treeView.menuHeight)
-            if (mouse.x >= menuRect.x && mouse.x <= menuRect.x + menuRect.width &&
-                mouse.y >= menuRect.y && mouse.y <= menuRect.y + menuRect.height) {
-            } else {
-                treeView.closeMainMenu()
-            }
-        }
-    }
-
     header: BreadcrumBar {
         id: breadcrumbBar
         Layout.margins: 12

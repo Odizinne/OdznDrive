@@ -9,8 +9,22 @@ CustomDialog {
     standardButtons: Dialog.Close
     ColumnLayout {
         anchors.fill: parent
-        spacing: 10
+        spacing: 15
+
         RowLayout {
+            Label {
+                Layout.fillWidth: true
+                text: "Ask where to download"
+            }
+
+            Switch {
+                checked: UserSettings.askWhereToDownload
+                onClicked: UserSettings.askWhereToDownload = checked
+            }
+        }
+
+        RowLayout {
+            enabled: !UserSettings.askWhereToDownload
             Label {
                 Layout.fillWidth: true
                 text: "Download folder"
