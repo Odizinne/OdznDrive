@@ -10,7 +10,6 @@ Item {
     id: root
     height: 45 + 24
     signal requestNewFolderDialog()
-    signal requestMultiDeleteConfirmDialog()
 
     Rectangle {
         anchors.fill: parent

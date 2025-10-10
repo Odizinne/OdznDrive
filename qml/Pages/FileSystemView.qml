@@ -177,9 +177,16 @@ Page {
         handleSpacing: 12
 
         FolderTreeView {
+            id: treeView
             SplitView.minimumWidth: 250
             SplitView.preferredWidth: 250
             SplitView.maximumWidth: 400
+            onShowUserManagmentDialog: userManagmentDialog.open()
+            onShowAdvancedSettingsDialog: advancedSettingsDialog.open()
+            onRequestMultiDeleteConfirmDialog: {
+                multiDeleteConfirmDialog.itemCount = Utils.checkedCount
+                multiDeleteConfirmDialog.open()
+            }
         }
 
         Loader {
@@ -189,16 +196,28 @@ Page {
         }
     }
 
+    MouseArea {
+        anchors.fill: parent
+        enabled: treeView.mainMenuVisible
+        propagateComposedEvents: true
+        z: -1
+        onClicked: function(mouse) {
+            let menuPos = mapFromItem(treeView, treeView.menuX, treeView.menuY)
+            let menuRect = Qt.rect(menuPos.x, menuPos.y, treeView.menuWidth, treeView.menuHeight)
+            if (mouse.x >= menuRect.x && mouse.x <= menuRect.x + menuRect.width &&
+                mouse.y >= menuRect.y && mouse.y <= menuRect.y + menuRect.height) {
+            } else {
+                treeView.closeMainMenu()
+            }
+        }
+    }
+
     header: BreadcrumBar {
         id: breadcrumbBar
         Layout.margins: 12
         Layout.preferredHeight: 45
         Layout.fillWidth: true
         onRequestNewFolderDialog: newFolderDialog.open()
-        onRequestMultiDeleteConfirmDialog: {
-            multiDeleteConfirmDialog.itemCount = Utils.checkedCount
-            multiDeleteConfirmDialog.open()
-        }
     }
 
     AdvancedSettingsDialog {

@@ -13,6 +13,16 @@ Item {
     signal showAdvancedSettingsDialog()
     signal requestMultiDeleteConfirmDialog()
 
+    property bool mainMenuVisible: menu.visible
+    property int menuX: menu.x
+    property int menuY: menu.y
+    property int menuWidth: menu.width
+    property int menuHeight: menu.height
+
+    function closeMainMenu() {
+        menu.close()
+    }
+
     Rectangle {
         anchors.fill: parent
         color: Constants.altSurfaceColor
@@ -51,11 +61,8 @@ Item {
                 }
 
                 let listPos = mapToItem(treeListView, mouse.x, mouse.y)
-
-                // Clear current target first
                 let foundTarget = null
 
-                // Check all tree items
                 for (let i = 0; i < treeListView.count; i++) {
                     let item = treeListView.itemAtIndex(i)
                     if (item) {
@@ -64,10 +71,8 @@ Item {
                             itemPos.y >= 0 && itemPos.y <= item.height) {
 
                             let itemPath = getItemPath(item)
-                            // Accept any folder as drop target if it's different from source
                             if (itemPath !== Utils.draggedItemPath) {
                                 let sourceParent = Utils.draggedItemPath.substring(0, Utils.draggedItemPath.lastIndexOf('/'))
-                                // Only set as drop target if it's a different folder
                                 if (sourceParent !== itemPath) {
                                     foundTarget = item
                                 }
@@ -115,58 +120,6 @@ Item {
                         icon.source: "qrc:/icons/cog.svg"
                         icon.width: 16
                         icon.height: 16
-                        CustomMenu {
-                            width: 200
-                            y: menuButton.y + 15
-                            x: menuButton.x + 8
-
-                            MenuItem {
-                                text: ConnectionManager.serverName
-                                enabled: false
-                            }
-                            MenuItem {
-                                text: "Users managment"
-                                implicitHeight: ConnectionManager.isAdmin ? Math.max(implicitBackgroundHeight + topInset + bottomInset,
-                                                                                     implicitContentHeight + topPadding + bottomPadding,
-                                                                                     implicitIndicatorHeight + topPadding + bottomPadding) : 0
-                                enabled: ConnectionManager.isAdmin
-                                visible: ConnectionManager.isAdmin
-                                onClicked: treeView.showUserManagmentDialog()
-                            }
-                            MenuSeparator {}
-                            MenuItem {
-                                text: "Advanced settings"
-                                onClicked: treeView.showAdvancedSettingsDialog()
-                            }
-
-                            MenuItem {
-                                text: "Folders first"
-                                checked: UserSettings.foldersFirst
-                                checkable: true
-                                onClicked: UserSettings.foldersFirst = checked
-                            }
-                            MenuItem {
-                                text: "Dark mode"
-                                checkable: true
-                                checked: UserSettings.darkMode
-                                onClicked: {
-                                    UserSettings.darkMode = checked
-                                    WindowsPlatform.setTitlebarColor(checked)
-                                }
-                            }
-                            MenuSeparator {}
-                            MenuItem {
-                                text: "Disconnect"
-                                onClicked: {
-                                    menu.close()
-                                    ConnectionManager.disconnect()
-                                }
-                            }
-                            MenuItem {
-                                text: "Exit"
-                                onClicked: Qt.quit()
-                            }
-                        }
                     }
 
                     CustomButton {
@@ -328,6 +281,7 @@ Item {
                     ItemDelegate {
                         text: "Advanced settings"
                         onClicked: treeView.showAdvancedSettingsDialog()
+                        Layout.fillWidth: true
                     }
 
                     SwitchDelegate {
@@ -395,15 +349,6 @@ Item {
                         }
                     }
 
-                    remove: Transition {
-                        NumberAnimation {
-                            property: "opacity"
-                            from: 1
-                            to: 0
-                            duration: 200
-                        }
-                    }
-
                     displaced: Transition {
                         NumberAnimation {
                             properties: "x,y"
@@ -427,6 +372,21 @@ Item {
                         property string itemPath: treeDelegate.path
                         property string itemName: treeDelegate.name
                         property bool draggingOn: Utils.currentDropTarget === treeDelegate && Utils.draggedItemPath !== "" && Utils.draggedItemPath !== treeDelegate.path
+
+                        SequentialAnimation {
+                            id: removeAnimation
+                            PropertyAction { target: treeDelegate; property: "ListView.delayRemove"; value: true }
+                            NumberAnimation {
+                                target: treeDelegate;
+                                property: "opacity";
+                                to: 0;
+                                duration: 200;
+                                easing.type: Easing.OutQuad
+                            }
+                            PropertyAction { target: treeDelegate; property: "ListView.delayRemove"; value: false }
+                        }
+
+                        ListView.onRemove: removeAnimation.start()
 
                         Rectangle {
                             id: delegateBackground
