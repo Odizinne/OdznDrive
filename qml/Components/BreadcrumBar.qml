@@ -42,7 +42,6 @@ Item {
             spacing: 8
 
             CustomButton {
-                visible: Utils.checkedCount === 0
                 icon.source: "qrc:/icons/plus.svg"
                 icon.color: "black"
                 icon.width: 16
@@ -55,7 +54,6 @@ Item {
             }
 
             CustomButton {
-                visible: Utils.checkedCount === 0
                 icon.source: "qrc:/icons/upload.svg"
                 icon.color: "black"
                 icon.width: 16
@@ -68,7 +66,6 @@ Item {
             }
 
             CustomButton {
-                visible: Utils.checkedCount === 0
                 icon.source: "qrc:/icons/refresh.svg"
                 icon.color: "black"
                 icon.width: 16
@@ -80,63 +77,6 @@ Item {
                 }
                 ToolTip.visible: hovered
                 ToolTip.text: "Refresh"
-            }
-
-            CustomButton {
-                visible: Utils.checkedCount > 0
-                icon.source: "qrc:/icons/download.svg"
-                icon.width: 16
-                icon.height: 16
-                icon.color: "black"
-                enabled: ConnectionManager.authenticated
-                CustomButton {
-                    visible: Utils.checkedCount > 0
-                    icon.source: "qrc:/icons/download.svg"
-                    icon.color: "black"
-                    icon.width: 16
-                    icon.height: 16
-                    enabled: ConnectionManager.authenticated
-                    onClicked: {
-                        let items = Utils.getCheckedItems()
-
-                        if (items.length === 1) {
-                            if (items[0].isDir) {
-                                Utils.openFolderDownloadDialog(items[0].path, items[0].name + ".zip")
-                            } else {
-                                Utils.openFileDownloadDialog(items[0].path, items[0].name)
-                            }
-                        } else {
-                            Utils.openMultiDownloadDialog(Utils.getCheckedPaths())
-                        }
-                    }
-                    ToolTip.visible: hovered
-                    ToolTip.text: Utils.checkedCount === 1 ? "Download" : "Download as zip"
-                    rippleHoverColor: Constants.contrastedRippleHoverColor
-                }
-                ToolTip.visible: hovered
-                ToolTip.text: Utils.checkedCount === 1 ? "Download" : "Download as zip"
-                rippleHoverColor: Constants.contrastedRippleHoverColor
-            }
-
-            CustomButton {
-                visible: Utils.checkedCount > 0
-                icon.source: "qrc:/icons/delete.svg"
-                icon.width: 16
-                icon.height: 16
-                icon.color: "black"
-                enabled: ConnectionManager.authenticated
-                onClicked: root.requestMultiDeleteConfirmDialog()
-                ToolTip.visible: hovered
-                ToolTip.text: "Delete selected"
-                rippleHoverColor: Constants.contrastedRippleHoverColor
-            }
-
-            Label {
-                visible: Utils.checkedCount > 0
-                text: Utils.checkedCount + (Utils.checkedCount === 1 ? " item selected" : " items selected")
-                opacity: 0.7
-                Layout.rightMargin: 4
-                Material.foreground: "black"
             }
 
             Rectangle {
@@ -152,18 +92,16 @@ Item {
                 icon.width: 16
                 icon.height: 16
                 onClicked: ConnectionManager.listDirectory("", UserSettings.foldersFirst)
-                ToolTip.visible: hovered
                 rippleHoverColor: Constants.contrastedRippleHoverColor
             }
 
             CustomButton {
                 icon.source: "qrc:/icons/up.svg"
                 icon.color: enabled ? "black" : "#60000000"
-                icon.width: 16
-                icon.height: 16
+                icon.width: 20
+                icon.height: 20
                 enabled: FileModel.canGoUp
                 onClicked: ConnectionManager.listDirectory(FileModel.getParentPath(), UserSettings.foldersFirst)
-                ToolTip.visible: hovered
                 rippleHoverColor: Constants.contrastedRippleHoverColor
             }
 
@@ -175,7 +113,6 @@ Item {
                 icon.height: 16
                 enabled: Utils.canGoBack()
                 onClicked: Utils.goBack()
-                ToolTip.visible: hovered
                 rippleHoverColor: Constants.contrastedRippleHoverColor
             }
 
@@ -186,7 +123,6 @@ Item {
                 icon.height: 16
                 enabled: Utils.canGoForward()
                 onClicked: Utils.goForward()
-                ToolTip.visible: hovered
                 rippleHoverColor: Constants.contrastedRippleHoverColor
             }
 

@@ -2,6 +2,7 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import QtQuick.Controls.Material
+import Odizinne.OdznDrive
 
 SplitView {
     id: control
@@ -27,10 +28,10 @@ SplitView {
             anchors.rightMargin: control.handleSpacing
 
             property int margins: !cont.SplitHandle.pressed && !cont.SplitHandle.hovered ? cont.height / 24 : 6
-            color: Constants.scrollBarColor
+            color: Constants.scrollBarPressedColor
             opacity: cont.SplitHandle.pressed ? 0.3 :
                      cont.SplitHandle.hovered ? 1 :
-                     0.2
+                     UserSettings.darkMode ? 0.2 : 0.4
 
             Behavior on margins {
                 NumberAnimation {

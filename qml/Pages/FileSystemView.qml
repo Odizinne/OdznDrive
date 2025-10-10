@@ -173,11 +173,11 @@ Page {
         id: split
         anchors.fill: parent
         anchors.leftMargin: 12
-        anchors.rightMargin: 12
+        anchors.bottomMargin: 12
         handleSpacing: 12
 
         FolderTreeView {
-            SplitView.minimumWidth: 200
+            SplitView.minimumWidth: 250
             SplitView.preferredWidth: 250
             SplitView.maximumWidth: 400
         }
@@ -199,12 +199,6 @@ Page {
             multiDeleteConfirmDialog.itemCount = Utils.checkedCount
             multiDeleteConfirmDialog.open()
         }
-    }
-
-    footer: FooterBar {
-        id: footerBar
-        onShowUserManagmentDialog: userManagmentDialog.open()
-        onShowAdvancedSettingsDialog: advancedSettingsDialog.open()
     }
 
     AdvancedSettingsDialog {
@@ -241,7 +235,6 @@ Page {
         id: listViewComponent
 
         FileListView {
-            //ContextMenu.menu: emptySpaceMenu
             onRequestRename: function(path, name) {
                 renameDialog.itemPath = path
                 renameDialog.itemName = name

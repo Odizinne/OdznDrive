@@ -43,7 +43,6 @@ set(QML_FILES
     qml/Components/EmptySpaceMenu.qml
     qml/Components/FileListView.qml
     qml/Components/FileTileView.qml
-    qml/Components/FooterBar.qml
     qml/Components/ItemContextMenu.qml
     qml/Components/Separator.qml
     qml/Components/LoginArt.qml
@@ -153,6 +152,7 @@ qt_add_qml_module(${PROJECT_NAME}
     SOURCES include/treemodel.h src/treemodel.cpp
     QML_FILES qml/Components/FolderTreeView.qml
     QML_FILES qml/CustomComponents/CustomSplitView.qml
+    QML_FILES qml/CustomComponents/CustomTextField.qml
 )
 
 target_link_libraries(${PROJECT_NAME} PRIVATE

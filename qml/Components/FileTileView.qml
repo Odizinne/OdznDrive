@@ -102,9 +102,6 @@ CustomScrollView {
                 left: parent.left
                 right: parent.right
                 top: parent.top
-                leftMargin: 10
-                rightMargin: 10
-                topMargin: 10
             }
 
             height: Math.ceil(count / Math.floor(width / cellWidth)) * cellHeight
