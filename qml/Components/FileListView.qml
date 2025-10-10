@@ -21,8 +21,11 @@ ColumnLayout {
 
     Item {
         Layout.fillWidth: true
-        Layout.preferredHeight: 55 + (FileModel.canGoUp ? 60 : 0)
-        z: 2
+        Layout.preferredHeight: 55// + (FileModel.canGoUp ? 60 : 0)
+        height: 55// + (FileModel.canGoUp ? 60 : 0)
+        //width: parent.width - (scrollView.ScrollBar.vertical.policy === ScrollBar.AlwaysOn ? 12 + 8 : 12)
+
+        //z: 2
 
         Rectangle {
             id: columnHeader
@@ -34,7 +37,7 @@ ColumnLayout {
             RowLayout {
                 anchors.fill: parent
                 anchors.leftMargin: 10
-                anchors.rightMargin: 10
+                anchors.rightMargin: 10 + (scrollView.ScrollBar.vertical.policy === ScrollBar.AlwaysOn ? 12 + 8 : 12)
                 spacing: 10
 
                 CheckBox {
@@ -79,178 +82,75 @@ ColumnLayout {
                 }
             }
         }
-
-        Rectangle {
-            id: parentDirItem
-            visible: FileModel.canGoUp
-            width: parent.width - (scrollView.ScrollBar.vertical.policy === ScrollBar.AlwaysOn ? 12 + 8 : 12)
-            height: 50
-            anchors.top: columnHeader.bottom
-            color: "transparent"
-            radius: 4
-
-            property bool itemIsDir: true
-            property string itemPath: FileModel.canGoUp ? FileModel.getParentPath() : ""
-            property string itemName: ".."
-
-            ContextMenu.menu: ParentItemMenu {}
-
-            // Hover background
-            Rectangle {
-                anchors.fill: parent
-                color: Constants.alternateRowColor
-                opacity: parentHoverHandler.hovered && Utils.draggedItemPath === "" ? 1 : 0
-                radius: parent.radius
-                Behavior on opacity {
-                    NumberAnimation { duration: 200; easing.type: Easing.OutQuad }
-                }
-            }
-
-            // Drop target visual feedback
-            Rectangle {
-                anchors.fill: parent
-                radius: parent.radius
-                opacity: Utils.currentDropTarget === parentDirItem ? 1 : 0
-                color: Constants.listHeaderColor
-                border.width: 1
-                border.color: Material.accent
-
-                Behavior on opacity {
-                    NumberAnimation {
-                        duration: 200
-                        easing.type: Easing.OutQuad
-                    }
-                }
-            }
-
-            RowLayout {
-                anchors.fill: parent
-                anchors.leftMargin: 10
-                anchors.rightMargin: 10
-                spacing: 10
-
-                Item {
-                    Layout.preferredWidth: 30
-                }
-
-                RowLayout {
-                    Layout.fillWidth: true
-                    spacing: 8
-
-                    Image {
-                        Layout.preferredWidth: 32
-                        Layout.preferredHeight: 32
-                        source: "qrc:/icons/types/folder.svg"
-                        fillMode: Image.PreserveAspectFit
-                    }
-
-                    Label {
-                        text: ".."
-                        Layout.fillWidth: true
-                        font.bold: true
-                        opacity: 0.7
-                    }
-                }
-
-                Label {
-                    text: "-"
-                    Layout.preferredWidth: 100
-                    opacity: 0.7
-                }
-
-                Label {
-                    text: ""
-                    Layout.preferredWidth: 180
-                    opacity: 0.7
-                }
-
-                Item {
-                    Layout.preferredWidth: 80
-                }
-            }
-
-            HoverHandler {
-                id: parentHoverHandler
-            }
-
-            TapHandler {
-                acceptedButtons: Qt.LeftButton
-                onDoubleTapped: {
-                    ConnectionManager.listDirectory(FileModel.getParentPath(), UserSettings.foldersFirst)
-                }
-            }
-        }
     }
 
-    CustomScrollView {
-        id: scrollView
+    Item {
         Layout.fillWidth: true
         Layout.fillHeight: true
 
-        ListView {
-            id: listView
-            width: scrollView.width
-            height: contentHeight
-            model: FilterProxyModel
-            interactive: false
-            spacing: 5
-            delegate: Item {
-                id: delegateRoot
-                width: listView.width - (scrollView.ScrollBar.vertical.policy === ScrollBar.AlwaysOn ? 12 + 8 : 12)
-                height: 55
-                required property var model
-                required property int index
+        Label {
+            anchors.centerIn: parent
+            text: ConnectionManager.authenticated ?
+                      (FileModel.count === 0 ? "Empty folder\n\nDrag files here to upload" :
+                                               FilterProxyModel.rowCount() === 0 ? "No items match filter" : "") :
+                      "Not connected"
+            visible: ConnectionManager.authenticated ?
+                         (FileModel.count === 0 || FilterProxyModel.rowCount() === 0) :
+                         true
+            opacity: 0.5
+            font.pixelSize: 16
+            horizontalAlignment: Text.AlignHCenter
+        }
 
-                property string itemPath: model.path
-                property string itemName: model.name
-                property bool itemIsDir: model.isDir
+        DropIndicator {
+            anchors.fill: parent
+            z: 1000
+            anchors.rightMargin: scrollView.ScrollBar.vertical.policy === ScrollBar.AlwaysOn ? 12 + 8 : 12
+        }
 
-                ContextMenu.menu: ItemContextMenu {
-                    id: contextMenu
-                    itemPath: delegateRoot.itemPath
-                    itemName: delegateRoot.itemName
-                    itemIsDir: delegateRoot.itemIsDir
-                    onDownloadCLicked: {
-                        if (contextMenu.itemIsDir) {
-                            Utils.openFolderDownloadDialog(contextMenu.itemPath, contextMenu.itemName + ".zip")
-                        } else {
-                            Utils.openFileDownloadDialog(contextMenu.itemPath, contextMenu.itemName)
-                        }
-                    }
-                    shareEnabled: !delegateRoot.itemIsDir
-                    onRenameClicked: fileListView.requestRename(contextMenu.itemPath, contextMenu.itemName)
-                    onDeleteClicked: fileListView.requestDelete(contextMenu.itemPath, contextMenu.itemIsDir)
-                    onShareClicked: ConnectionManager.generateShareLink(contextMenu.itemPath)
-                }
+        CustomScrollView {
+            id: scrollView
+            anchors.fill: parent
+
+            ListView {
+                id: listView
+                width: scrollView.width - (scrollView.ScrollBar.vertical.policy === ScrollBar.AlwaysOn ? 12 + 8 : 12)
+                height: contentHeight
+                model: FilterProxyModel
+                interactive: false
+                spacing: 5
+                header:
 
                 Rectangle {
-                    id: delegateBackground
-                    anchors.left: parent.left
-                    anchors.right: parent.right
-                    anchors.top: parent.top
-                    height: 50
+                    id: parentDirItem
+                    visible: FileModel.canGoUp
+                    width: parent.width - (scrollView.ScrollBar.vertical.policy === ScrollBar.AlwaysOn ? 12 + 8 : 12)
+                    height: FileModel.canGoUp ? 50 : 0
                     color: "transparent"
                     radius: 4
 
+                    property bool itemIsDir: true
+                    property string itemPath: FileModel.canGoUp ? FileModel.getParentPath() : ""
+                    property string itemName: ".."
+
+                    ContextMenu.menu: ParentItemMenu {}
+
                     // Hover background
                     Rectangle {
-                        radius: parent.radius
                         anchors.fill: parent
                         color: Constants.alternateRowColor
-                        opacity: hoverHandler.hovered && Utils.draggedItemPath === "" ? 1 : 0
+                        opacity: parentHoverHandler.hovered && Utils.draggedItemPath === "" ? 1 : 0
+                        radius: parent.radius
                         Behavior on opacity {
-                            NumberAnimation {
-                                duration: 200
-                                easing.type: Easing.OutQuad
-                            }
+                            NumberAnimation { duration: 200; easing.type: Easing.OutQuad }
                         }
                     }
 
                     // Drop target visual feedback
                     Rectangle {
-                        radius: parent.radius
                         anchors.fill: parent
-                        opacity: delegateRoot.itemIsDir && Utils.currentDropTarget === delegateRoot ? 1 : 0
+                        radius: parent.radius
+                        opacity: Utils.currentDropTarget === parentDirItem ? 1 : 0
                         color: Constants.listHeaderColor
                         border.width: 1
                         border.color: Material.accent
@@ -269,19 +169,8 @@ ColumnLayout {
                         anchors.rightMargin: 10
                         spacing: 10
 
-                        CheckBox {
+                        Item {
                             Layout.preferredWidth: 30
-                            checked: Utils.isItemChecked(delegateRoot.model.path)
-                            onClicked: {
-                                Utils.toggleItemChecked(delegateRoot.model.path)
-                            }
-                            opacity: Utils.checkedCount !== 0 || hoverHandler.hovered ? 1 : 0
-                            Behavior on opacity {
-                                NumberAnimation {
-                                    duration: 200
-                                    easing.type: Easing.OutQuad
-                                }
-                            }
                         }
 
                         RowLayout {
@@ -291,57 +180,130 @@ ColumnLayout {
                             Image {
                                 Layout.preferredWidth: 32
                                 Layout.preferredHeight: 32
+                                source: "qrc:/icons/types/folder.svg"
                                 fillMode: Image.PreserveAspectFit
-                                cache: false
-                                asynchronous: true
-                                source: {
-                                    if (delegateRoot.model.isDir) {
-                                        return "qrc:/icons/types/folder.svg"
-                                    }
-                                    if (delegateRoot.model.previewPath) {
-                                        return delegateRoot.model.previewPath
-                                    }
-                                    return Utils.getFileIcon(delegateRoot.itemName)
-                                }
-
-                                onStatusChanged: {
-                                    if (status === Image.Error && !delegateRoot.model.isDir) {
-                                        source = Utils.getFileIcon(delegateRoot.itemName)
-                                    }
-                                }
                             }
 
                             Label {
-                                text: delegateRoot.model.name
+                                text: ".."
                                 Layout.fillWidth: true
-                                elide: Text.ElideRight
+                                font.bold: true
+                                opacity: 0.7
                             }
                         }
 
                         Label {
-                            text: delegateRoot.model.isDir ? "-" : Utils.formatSize(delegateRoot.model.size)
+                            text: "-"
                             Layout.preferredWidth: 100
                             opacity: 0.7
                         }
 
                         Label {
-                            text: Utils.formatDate(delegateRoot.model.modified)
+                            text: ""
                             Layout.preferredWidth: 180
                             opacity: 0.7
                         }
 
-                        RowLayout {
+                        Item {
                             Layout.preferredWidth: 80
-                            spacing: 2
+                        }
+                    }
 
-                            CustomButton {
-                                icon.source: "qrc:/icons/menu.svg"
-                                icon.width: 16
-                                icon.height: 16
-                                flat: true
-                                onClicked: contextMenu.popup()
-                                Layout.alignment: Qt.AlignRight
-                                opacity: (hoverHandler.hovered && Utils.draggedItemPath === "") ? (hovered ? 1 : 0.5) : 0
+                    HoverHandler {
+                        id: parentHoverHandler
+                    }
+
+                    TapHandler {
+                        acceptedButtons: Qt.LeftButton
+                        onDoubleTapped: {
+                            ConnectionManager.listDirectory(FileModel.getParentPath(), UserSettings.foldersFirst)
+                        }
+                    }
+                }
+
+
+                delegate: Item {
+                    id: delegateRoot
+                    width: listView.width
+                    height: 55
+                    required property var model
+                    required property int index
+
+                    property string itemPath: model.path
+                    property string itemName: model.name
+                    property bool itemIsDir: model.isDir
+
+                    ContextMenu.menu: ItemContextMenu {
+                        id: contextMenu
+                        itemPath: delegateRoot.itemPath
+                        itemName: delegateRoot.itemName
+                        itemIsDir: delegateRoot.itemIsDir
+                        onDownloadCLicked: {
+                            if (contextMenu.itemIsDir) {
+                                Utils.openFolderDownloadDialog(contextMenu.itemPath, contextMenu.itemName + ".zip")
+                            } else {
+                                Utils.openFileDownloadDialog(contextMenu.itemPath, contextMenu.itemName)
+                            }
+                        }
+                        shareEnabled: !delegateRoot.itemIsDir
+                        onRenameClicked: fileListView.requestRename(contextMenu.itemPath, contextMenu.itemName)
+                        onDeleteClicked: fileListView.requestDelete(contextMenu.itemPath, contextMenu.itemIsDir)
+                        onShareClicked: ConnectionManager.generateShareLink(contextMenu.itemPath)
+                    }
+
+                    Rectangle {
+                        id: delegateBackground
+                        anchors.left: parent.left
+                        anchors.right: parent.right
+                        anchors.top: parent.top
+                        height: 50
+                        color: "transparent"
+                        radius: 4
+
+                        // Hover background
+                        Rectangle {
+                            radius: parent.radius
+                            anchors.fill: parent
+                            color: Constants.alternateRowColor
+                            opacity: hoverHandler.hovered && Utils.draggedItemPath === "" ? 1 : 0
+                            Behavior on opacity {
+                                NumberAnimation {
+                                    duration: 200
+                                    easing.type: Easing.OutQuad
+                                }
+                            }
+                        }
+
+                        // Drop target visual feedback
+                        Rectangle {
+                            radius: parent.radius
+                            anchors.fill: parent
+                            opacity: delegateRoot.itemIsDir && Utils.currentDropTarget === delegateRoot ? 1 : 0
+                            color: Constants.listHeaderColor
+                            border.width: 1
+                            border.color: Material.accent
+
+                            Behavior on opacity {
+                                NumberAnimation {
+                                    duration: 200
+                                    easing.type: Easing.OutQuad
+                                }
+                            }
+                        }
+
+                        RowLayout {
+                            anchors.fill: parent
+                            anchors.leftMargin: 10
+                            anchors.rightMargin: 10
+                            spacing: 10
+
+                            CheckBox {
+                                Layout.preferredWidth: 30
+                                checked: Utils.isItemChecked(delegateRoot.model.path)
+                                onClicked: {
+                                    Utils.toggleItemChecked(delegateRoot.model.path)
+                                }
+                                opacity: Utils.checkedCount !== 0 || hoverHandler.hovered ? 1 : 0
                                 Behavior on opacity {
                                     NumberAnimation {
                                         duration: 200
@@ -349,107 +311,174 @@ ColumnLayout {
                                     }
                                 }
                             }
-                        }
-                    }
 
-                    HoverHandler {
-                        id: hoverHandler
-                    }
+                            RowLayout {
+                                Layout.fillWidth: true
+                                spacing: 8
 
-                    DragHandler {
-                        id: dragHandler
-                        target: null
-                        dragThreshold: 15
-                        enabled: !Utils.anyDialogOpen
+                                Image {
+                                    Layout.preferredWidth: 32
+                                    Layout.preferredHeight: 32
+                                    fillMode: Image.PreserveAspectFit
+                                    cache: false
+                                    asynchronous: true
+                                    source: {
+                                        if (delegateRoot.model.isDir) {
+                                            return "qrc:/icons/types/folder.svg"
+                                        }
+                                        if (delegateRoot.model.previewPath) {
+                                            return delegateRoot.model.previewPath
+                                        }
+                                        return Utils.getFileIcon(delegateRoot.itemName)
+                                    }
 
-                        onActiveChanged: {
-                            if (active) {
-                                Utils.draggedItemPath = delegateRoot.itemPath
-                                Utils.draggedItemName = delegateRoot.itemName
-                                fileListView.setDragIndicatorText("Move " + delegateRoot.itemName)
-                                fileListView.setDragIndicatorVisible(true)
-                            } else {
-                                fileListView.setDragIndicatorVisible(false)
-
-                                if (Utils.currentDropTarget) {
-                                    let targetPath = Utils.currentDropTarget.itemPath
-
-                                    if (Utils.currentDropTarget.itemIsDir &&
-                                        targetPath !== Utils.draggedItemPath) {
-
-                                        // Check if source is already in the target directory
-                                        let sourceParent = Utils.draggedItemPath.substring(0, Utils.draggedItemPath.lastIndexOf('/'))
-                                        if (sourceParent !== targetPath) {
-                                            ConnectionManager.moveItem(Utils.draggedItemPath, targetPath)
+                                    onStatusChanged: {
+                                        if (status === Image.Error && !delegateRoot.model.isDir) {
+                                            source = Utils.getFileIcon(delegateRoot.itemName)
                                         }
                                     }
                                 }
 
-                                Utils.draggedItemPath = ""
-                                Utils.draggedItemName = ""
-                                Utils.currentDropTarget = null
+                                Label {
+                                    text: delegateRoot.model.name
+                                    Layout.fillWidth: true
+                                    elide: Text.ElideRight
+                                }
+                            }
+
+                            Label {
+                                text: delegateRoot.model.isDir ? "-" : Utils.formatSize(delegateRoot.model.size)
+                                Layout.preferredWidth: 100
+                                opacity: 0.7
+                            }
+
+                            Label {
+                                text: Utils.formatDate(delegateRoot.model.modified)
+                                Layout.preferredWidth: 180
+                                opacity: 0.7
+                            }
+
+                            RowLayout {
+                                Layout.preferredWidth: 80
+                                spacing: 2
+
+                                CustomButton {
+                                    icon.source: "qrc:/icons/menu.svg"
+                                    icon.width: 16
+                                    icon.height: 16
+                                    flat: true
+                                    onClicked: contextMenu.popup()
+                                    Layout.alignment: Qt.AlignRight
+                                    opacity: (hoverHandler.hovered && Utils.draggedItemPath === "") ? (hovered ? 1 : 0.5) : 0
+                                    Behavior on opacity {
+                                        NumberAnimation {
+                                            duration: 200
+                                            easing.type: Easing.OutQuad
+                                        }
+                                    }
+                                }
                             }
                         }
 
-                        onCentroidChanged: {
-                            if (active) {
-                                let globalPos = delegateBackground.mapToItem(null, centroid.position.x, centroid.position.y)
-                                fileListView.setDragIndicatorX(globalPos.x + 10)
-                                fileListView.setDragIndicatorY(globalPos.y + 10)
+                        HoverHandler {
+                            id: hoverHandler
+                        }
 
-                                let listPos = delegateBackground.mapToItem(listView, centroid.position.x, centroid.position.y)
+                        DragHandler {
+                            id: dragHandler
+                            target: null
+                            dragThreshold: 15
+                            enabled: !Utils.anyDialogOpen
 
-                                Utils.currentDropTarget = null
+                            onActiveChanged: {
+                                if (active) {
+                                    Utils.draggedItemPath = delegateRoot.itemPath
+                                    Utils.draggedItemName = delegateRoot.itemName
+                                    fileListView.setDragIndicatorText("Move " + delegateRoot.itemName)
+                                    fileListView.setDragIndicatorVisible(true)
+                                } else {
+                                    fileListView.setDragIndicatorVisible(false)
 
-                                // Check parent directory item first
-                                if (FileModel.canGoUp && parentDirItem.visible) {
-                                    let parentPos = parentDirItem.mapFromItem(null, globalPos.x, globalPos.y)
-                                    if (parentPos.x >= 0 && parentPos.x <= parentDirItem.width &&
-                                        parentPos.y >= 0 && parentPos.y <= parentDirItem.height) {
+                                    if (Utils.currentDropTarget) {
+                                        let targetPath = Utils.currentDropTarget.itemPath
 
-                                        // Check if it's a valid drop target
-                                        let sourceParent = Utils.draggedItemPath.substring(0, Utils.draggedItemPath.lastIndexOf('/'))
-                                        if (sourceParent !== parentDirItem.itemPath) {
-                                            Utils.currentDropTarget = parentDirItem
-                                        }
-                                        return
-                                    }
-                                }
+                                        if (Utils.currentDropTarget.itemIsDir &&
+                                            targetPath !== Utils.draggedItemPath) {
 
-                                for (let i = 0; i < listView.count; i++) {
-                                    let item = listView.itemAtIndex(i)
-                                    if (item) {
-                                        let itemPos = item.mapFromItem(listView, listPos.x, listPos.y)
-                                        if (itemPos.x >= 0 && itemPos.x <= item.width &&
-                                            itemPos.y >= 0 && itemPos.y <= item.height) {
-                                            if (item.itemIsDir && item.itemPath !== Utils.draggedItemPath) {
-                                                let sourceParent = Utils.draggedItemPath.substring(0, Utils.draggedItemPath.lastIndexOf('/'))
-                                                if (sourceParent !== item.itemPath) {
-                                                    Utils.currentDropTarget = item
-                                                }
+                                            // Check if source is already in the target directory
+                                            let sourceParent = Utils.draggedItemPath.substring(0, Utils.draggedItemPath.lastIndexOf('/'))
+                                            if (sourceParent !== targetPath) {
+                                                ConnectionManager.moveItem(Utils.draggedItemPath, targetPath)
                                             }
-                                            break
+                                        }
+                                    }
+
+                                    Utils.draggedItemPath = ""
+                                    Utils.draggedItemName = ""
+                                    Utils.currentDropTarget = null
+                                }
+                            }
+
+                            onCentroidChanged: {
+                                if (active) {
+                                    let globalPos = delegateBackground.mapToItem(null, centroid.position.x, centroid.position.y)
+                                    fileListView.setDragIndicatorX(globalPos.x + 10)
+                                    fileListView.setDragIndicatorY(globalPos.y + 10)
+
+                                    let listPos = delegateBackground.mapToItem(listView, centroid.position.x, centroid.position.y)
+
+                                    Utils.currentDropTarget = null
+
+                                    // Check parent directory item first
+                                    if (FileModel.canGoUp && parentDirItem.visible) {
+                                        let parentPos = parentDirItem.mapFromItem(null, globalPos.x, globalPos.y)
+                                        if (parentPos.x >= 0 && parentPos.x <= parentDirItem.width &&
+                                            parentPos.y >= 0 && parentPos.y <= parentDirItem.height) {
+
+                                            // Check if it's a valid drop target
+                                            let sourceParent = Utils.draggedItemPath.substring(0, Utils.draggedItemPath.lastIndexOf('/'))
+                                            if (sourceParent !== parentDirItem.itemPath) {
+                                                Utils.currentDropTarget = parentDirItem
+                                            }
+                                            return
+                                        }
+                                    }
+
+                                    for (let i = 0; i < listView.count; i++) {
+                                        let item = listView.itemAtIndex(i)
+                                        if (item) {
+                                            let itemPos = item.mapFromItem(listView, listPos.x, listPos.y)
+                                            if (itemPos.x >= 0 && itemPos.x <= item.width &&
+                                                itemPos.y >= 0 && itemPos.y <= item.height) {
+                                                if (item.itemIsDir && item.itemPath !== Utils.draggedItemPath) {
+                                                    let sourceParent = Utils.draggedItemPath.substring(0, Utils.draggedItemPath.lastIndexOf('/'))
+                                                    if (sourceParent !== item.itemPath) {
+                                                        Utils.currentDropTarget = item
+                                                    }
+                                                }
+                                                break
+                                            }
                                         }
                                     }
                                 }
                             }
                         }
-                    }
 
-                    TapHandler {
-                        acceptedButtons: Qt.LeftButton
-                        onTapped: Utils.toggleItemChecked(delegateRoot.model.path)
-                        onDoubleTapped: {
-                            if (delegateRoot.model.isDir) {
-                                ConnectionManager.listDirectory(delegateRoot.model.path, UserSettings.foldersFirst)
+                        TapHandler {
+                            acceptedButtons: Qt.LeftButton
+                            onTapped: Utils.toggleItemChecked(delegateRoot.model.path)
+                            onDoubleTapped: {
+                                if (delegateRoot.model.isDir) {
+                                    ConnectionManager.listDirectory(delegateRoot.model.path, UserSettings.foldersFirst)
+                                }
                             }
                         }
                     }
-                }
 
-                Separator {
-                    anchors.top: delegateBackground.bottom
-                    visible: delegateRoot.index !== listView.count - 1
+                    Separator {
+                        anchors.top: delegateBackground.bottom
+                        visible: delegateRoot.index !== listView.count - 1
+                    }
                 }
             }
         }

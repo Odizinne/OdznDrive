@@ -104,80 +104,6 @@ Page {
         anchors.centerIn: parent
     }
 
-    DropArea {
-        id: dropArea
-        anchors.fill: parent
-
-        onEntered: (drag) => {
-            if (drag.hasUrls && ConnectionManager.authenticated) {
-                drag.accept(Qt.CopyAction)
-                dropOverlay.visible = true
-            }
-        }
-
-        onExited: {
-            dropOverlay.visible = false
-        }
-
-        onDropped: (drop) => {
-            dropOverlay.visible = false
-
-            if (drop.hasUrls && ConnectionManager.authenticated) {
-                let files = []
-                for (let i = 0; i < drop.urls.length; i++) {
-                    let fileUrl = drop.urls[i].toString()
-
-                    let localPath = fileUrl
-                    if (localPath.startsWith("file://")) {
-                        localPath = localPath.substring(7)
-                    }
-
-                    if (localPath.match(/^\/[A-Za-z]:\//)) {
-                        localPath = localPath.substring(1)
-                    }
-
-                    files.push(localPath)
-                }
-
-                if (files.length > 0) {
-                    ConnectionManager.uploadFiles(files, FileModel.currentPath)
-                }
-
-                drop.accept(Qt.CopyAction)
-            }
-        }
-
-        Rectangle {
-            id: dropOverlay
-            anchors.fill: parent
-            color: Material.primary
-            opacity: 0.2
-            visible: false
-
-            Label {
-                anchors.centerIn: parent
-                text: "Drop files here to upload"
-                font.pixelSize: 24
-                font.bold: true
-                color: Material.primary
-            }
-        }
-    }
-
-    Label {
-        anchors.centerIn: parent
-        text: ConnectionManager.authenticated ?
-                  (FileModel.count === 0 ? "Empty folder\n\nDrag files here to upload" :
-                                           FilterProxyModel.rowCount() === 0 ? "No items match filter" : "") :
-                  "Not connected"
-        visible: ConnectionManager.authenticated ?
-                     (FileModel.count === 0 || FilterProxyModel.rowCount() === 0) :
-                     true
-        opacity: 0.5
-        font.pixelSize: 16
-        horizontalAlignment: Text.AlignHCenter
-    }
-
     EmptySpaceMenu {
         id: emptySpaceMenu
         onNewFolderClicked: newFolderDialog.open()
@@ -206,6 +132,50 @@ Page {
             onSourceComponentChanged: {
                 if (item) {
                     enterAnimation.running = true
+                }
+            }
+
+            DropArea {
+                id: dropArea
+                anchors.fill: parent
+
+                onEntered: (drag) => {
+                    if (drag.hasUrls && ConnectionManager.authenticated) {
+                        drag.accept(Qt.CopyAction)
+                        Utils.dropAreaVisible = true
+                    }
+                }
+
+                onExited: {
+                    Utils.dropAreaVisible = false
+                }
+
+                onDropped: (drop) => {
+                    Utils.dropAreaVisible = false
+
+                    if (drop.hasUrls && ConnectionManager.authenticated) {
+                        let files = []
+                        for (let i = 0; i < drop.urls.length; i++) {
+                            let fileUrl = drop.urls[i].toString()
+
+                            let localPath = fileUrl
+                            if (localPath.startsWith("file://")) {
+                                localPath = localPath.substring(7)
+                            }
+
+                            if (localPath.match(/^\/[A-Za-z]:\//)) {
+                                localPath = localPath.substring(1)
+                            }
+
+                            files.push(localPath)
+                        }
+
+                        if (files.length > 0) {
+                            ConnectionManager.uploadFiles(files, FileModel.currentPath)
+                        }
+
+                        drop.accept(Qt.CopyAction)
+                    }
                 }
             }
 

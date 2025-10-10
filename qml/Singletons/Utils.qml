@@ -25,6 +25,8 @@ QtObject {
     signal showUserManagmentDialog()
     signal requestMultiDeleteConfirmDialog()
 
+    property bool dropAreaVisible: false
+
     function getFileIcon(fileName) {
         if (!fileName || fileName === "")
             return "qrc:/icons/types/unknow.svg"
