@@ -83,7 +83,7 @@ ColumnLayout {
         Rectangle {
             id: parentDirItem
             visible: FileModel.canGoUp
-            width: parent.width
+            width: parent.width - (scrollView.ScrollBar.vertical.policy === ScrollBar.AlwaysOn ? 12 + 8 : 12)
             height: 50
             anchors.top: columnHeader.bottom
             color: "transparent"
@@ -196,7 +196,7 @@ ColumnLayout {
             spacing: 5
             delegate: Item {
                 id: delegateRoot
-                width: listView.width
+                width: listView.width - (scrollView.ScrollBar.vertical.policy === ScrollBar.AlwaysOn ? 12 + 8 : 12)
                 height: 55
                 required property var model
                 required property int index
