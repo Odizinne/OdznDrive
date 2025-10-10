@@ -52,6 +52,10 @@ Item {
 
                 let listPos = mapToItem(treeListView, mouse.x, mouse.y)
 
+                // Clear current target first
+                let foundTarget = null
+
+                // Check all tree items
                 for (let i = 0; i < treeListView.count; i++) {
                     let item = treeListView.itemAtIndex(i)
                     if (item) {
@@ -60,17 +64,16 @@ Item {
                             itemPos.y >= 0 && itemPos.y <= item.height) {
 
                             let itemPath = getItemPath(item)
-                            if (itemPath && itemPath !== Utils.draggedItemPath) {
-                                Utils.currentDropTarget = item
+                            // Accept any folder as drop target, including root (empty path)
+                            if (itemPath !== Utils.draggedItemPath) {
+                                foundTarget = item
+                                break
                             }
-                            return
                         }
                     }
                 }
 
-                if (Utils.currentDropTarget && isTreeViewChild(Utils.currentDropTarget)) {
-                    Utils.currentDropTarget = null
-                }
+                Utils.currentDropTarget = foundTarget
             }
 
             onExited: {
@@ -410,7 +413,9 @@ Item {
                         property bool itemIsDir: true
                         property string itemPath: treeDelegate.path
                         property string itemName: treeDelegate.name
-                        property bool draggingOn: Utils.currentDropTarget === treeDelegate && Utils.draggedItemPath !== "" && Utils.draggedItemPath !== treeDelegate.path
+                        property bool draggingOn: Utils.currentDropTarget === treeDelegate &&
+                                                   Utils.draggedItemPath !== "" &&
+                                                   Utils.draggedItemPath !== treeDelegate.path
 
                         Rectangle {
                             id: delegateBackground

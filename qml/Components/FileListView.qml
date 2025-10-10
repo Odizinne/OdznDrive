@@ -368,24 +368,18 @@ ColumnLayout {
                                 fileListView.setDragIndicatorX(globalPos.x + 10)
                                 fileListView.setDragIndicatorY(globalPos.y + 10)
 
-                                let listPos = delegateBackground.mapToItem(listView, centroid.position.x, centroid.position.y)
-
                                 Utils.currentDropTarget = null
 
-                                if (FileModel.canGoUp) {
-                                    let headerItem = listView.headerItem
-                                    if (headerItem) {
-                                        let parentDirItem = headerItem.children[1]
-                                        if (parentDirItem) {
-                                            let parentPos = parentDirItem.mapFromItem(listView, listPos.x, listPos.y)
-                                            if (parentPos.x >= 0 && parentPos.x <= parentDirItem.width &&
-                                                parentPos.y >= 0 && parentPos.y <= parentDirItem.height) {
-                                                Utils.currentDropTarget = parentDirItem
-                                                return
-                                            }
-                                        }
+                                if (FileModel.canGoUp && parentDirItem.visible) {
+                                    let parentPos = parentDirItem.mapFromItem(null, globalPos.x, globalPos.y)
+                                    if (parentPos.x >= 0 && parentPos.x <= parentDirItem.width &&
+                                        parentPos.y >= 0 && parentPos.y <= parentDirItem.height) {
+                                        Utils.currentDropTarget = parentDirItem
+                                        return
                                     }
                                 }
+
+                                let listPos = delegateBackground.mapToItem(listView, centroid.position.x, centroid.position.y)
 
                                 for (let i = 0; i < listView.count; i++) {
                                     let item = listView.itemAtIndex(i)
