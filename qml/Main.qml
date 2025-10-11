@@ -31,7 +31,7 @@ ApplicationWindow {
     }
 
     Shortcut {
-        sequence: StandardKey.Find
+        sequences: [StandardKey.Find]
         onActivated: Utils.focusSearch()
     }
 

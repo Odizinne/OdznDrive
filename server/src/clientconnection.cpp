@@ -258,7 +258,7 @@ void ClientConnection::handleDownloadMultiple(const QJsonObject &params)
     QString tempDir = QDir::temp().filePath("odzndrive-" + QString::number(QCoreApplication::applicationPid()));
     QDir().mkpath(tempDir);
 
-    QString zipFileName = "download.zip";
+    QString zipFileName = params["zipName"].toString() + ".zip";  // Get zip name from params
     QString zipPath = QDir(tempDir).filePath(zipFileName);
 
     // Remove any existing zip file
@@ -279,14 +279,35 @@ void ClientConnection::handleDownloadMultiple(const QJsonObject &params)
         return;
     }
 
-    // Start download
+    // Clean up any existing download
+    cleanupDownload();
+
+    // Open the zip file for download
+    m_downloadFile = new QFile(zipPath);
+    if (!m_downloadFile->open(QIODevice::ReadOnly)) {
+        sendError("Failed to open zip file");
+        delete m_downloadFile;
+        m_downloadFile = nullptr;
+        QFile::remove(zipPath);
+        return;
+    }
+
+    // Set download state
     m_downloadPath = zipPath;
+    m_downloadTotalSize = zipInfo.size();
+    m_downloadSentSize = 0;
     m_isZipDownload = true;
 
-    QJsonObject response;
-    response["name"] = zipFileName;
-    response["size"] = zipInfo.size();
-    sendResponse("download_ready", response);
+    // Send download start metadata
+    QJsonObject metadata;
+    metadata["name"] = zipFileName;
+    metadata["size"] = m_downloadTotalSize;
+    sendResponse("download_start", metadata);
+
+    // Start sending chunks
+    for (int i = 0; i < 3 && m_downloadSentSize < m_downloadTotalSize; ++i) {
+        sendNextDownloadChunk();
+    }
 }
 
 void ClientConnection::handleDownloadDirectory(const QJsonObject &params)
@@ -342,14 +363,35 @@ void ClientConnection::handleDownloadDirectory(const QJsonObject &params)
         return;
     }
 
-    // Start download
+    // Clean up any existing download
+    cleanupDownload();
+
+    // Open the zip file for download
+    m_downloadFile = new QFile(zipPath);
+    if (!m_downloadFile->open(QIODevice::ReadOnly)) {
+        sendError("Failed to open zip file");
+        delete m_downloadFile;
+        m_downloadFile = nullptr;
+        QFile::remove(zipPath);
+        return;
+    }
+
+    // Set download state
     m_downloadPath = zipPath;
+    m_downloadTotalSize = zipInfo.size();
+    m_downloadSentSize = 0;
     m_isZipDownload = true;
 
-    QJsonObject response;
-    response["name"] = zipFileName;
-    response["size"] = zipInfo.size();
-    sendResponse("download_ready", response);
+    // Send download start metadata
+    QJsonObject metadata;
+    metadata["name"] = zipFileName;
+    metadata["size"] = m_downloadTotalSize;
+    sendResponse("download_start", metadata);
+
+    // Start sending chunks
+    for (int i = 0; i < 3 && m_downloadSentSize < m_downloadTotalSize; ++i) {
+        sendNextDownloadChunk();
+    }
 }
 
 void ClientConnection::handleCancelDownload(const QJsonObject &params)
