@@ -74,26 +74,6 @@ jobs:
           name: OdznDrive_Installer
           path: tools/Output/OdznDrive_Installer.exe
 
-      - name: Configure and Build Server
-        shell: pwsh
-        run: |
-          mkdir -p build-server
-          cd build-server
-          cmake ../server
-          cmake --build . --config Release
-          cmake --install . --config Release
-
-      - name: Zip Server binaries
-        shell: pwsh
-        run: |
-          Compress-Archive -Path build-server/install/* -DestinationPath build-server/OdznDriveServer_win64_msvc2022.zip
-
-      - name: Upload Server Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: OdznDriveServer_win64_msvc2022
-          path: build-server/OdznDriveServer_win64_msvc2022.zip
-
   build-linux:
     runs-on: ubuntu-22.04
     container:
