@@ -103,6 +103,8 @@ private:
     QTimer *m_pingTimer;
     QTimer *m_pongTimeoutTimer;
     bool m_waitingForPong;
+
+    QString m_pendingAuthErrorMessage;
 };
 
 #endif // CLIENTCONNECTION_H

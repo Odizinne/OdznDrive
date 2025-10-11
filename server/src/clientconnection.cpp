@@ -227,6 +227,7 @@ void ClientConnection::handleAuthenticate(const QJsonObject &params)
         m_pendingAuthPassword.clear();
         m_pendingAuthClientVersion.clear();
     } else {
+        m_pendingAuthErrorMessage = errorMessage;
         m_authDelayTimer->start(2000);
     }
 }
@@ -877,11 +878,12 @@ void ClientConnection::onAuthDelayTimeout()
     if (!m_pendingAuthUsername.isEmpty()) {
         qWarning() << "Delayed failed auth for user:" << m_pendingAuthUsername;
 
-        sendError("Invalid username or password");
+        sendError(m_pendingAuthErrorMessage);
 
         m_pendingAuthUsername.clear();
         m_pendingAuthPassword.clear();
         m_pendingAuthClientVersion.clear();
+        m_pendingAuthErrorMessage.clear();
     }
 }
 
