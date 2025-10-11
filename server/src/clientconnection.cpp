@@ -26,7 +26,6 @@ ClientConnection::ClientConnection(QWebSocket *socket, FileManager *fileManager,
     , m_downloadSentSize(0)
     , m_isZipDownload(false)
     , m_authDelayTimer(new QTimer(this))
-    , m_zipProcess(nullptr)
     , m_pingTimer(new QTimer(this))
     , m_pongTimeoutTimer(new QTimer(this))
 {
@@ -47,29 +46,14 @@ ClientConnection::ClientConnection(QWebSocket *socket, FileManager *fileManager,
 
 ClientConnection::~ClientConnection()
 {
-    if (m_uploadFile) {
-        m_uploadFile->close();
-        delete m_uploadFile;
-    }
-
-    if (m_zipProcess) {
-        m_zipProcess->kill();
-        m_zipProcess->waitForFinished(1000);
-        m_zipProcess->deleteLater();
-        m_zipProcess = nullptr;
-    }
-    if (!m_tempZipPath.isEmpty()) {
-        QFile::remove(m_tempZipPath);
-        m_tempZipPath.clear();
-    }
-
     cleanupDownload();
 
-    if (m_fileManager) {
-        delete m_fileManager;
+    if (m_isZipDownload && !m_downloadPath.isEmpty()) {
+        QFile::remove(m_downloadPath);
     }
 
     if (m_socket) {
+        m_socket->close();
         m_socket->deleteLater();
     }
 }
@@ -250,93 +234,59 @@ void ClientConnection::handleAuthenticate(const QJsonObject &params)
 void ClientConnection::handleDownloadMultiple(const QJsonObject &params)
 {
     QJsonArray pathsArray = params["paths"].toArray();
-    QString zipName = params["zipName"].toString();
+    QStringList paths;
 
-    if (pathsArray.isEmpty()) {
-        sendError("No paths provided");
+    for (const QJsonValue &val : pathsArray) {
+        QString path = val.toString();
+        if (m_fileManager->isValidPath(path)) {
+            paths.append(path);
+        }
+    }
+
+    if (paths.isEmpty()) {
+        sendError("No valid paths to download");
         return;
     }
 
-    QStringList paths;
-    for (int i = 0; i < pathsArray.size(); ++i) {
-        paths.append(pathsArray[i].toString());
-    }
-
+    // Notify client that zipping has started
     QJsonObject zipData;
     zipData["status"] = "zipping";
-    zipData["name"] = zipName;
+    zipData["count"] = paths.size();
     sendResponse("download_zipping", zipData);
 
-    if (m_zipProcess) {
-        m_zipProcess->kill();
-        m_zipProcess->deleteLater();
-        m_zipProcess = nullptr;
-    }
-    if (!m_tempZipPath.isEmpty()) {
-        QFile::remove(m_tempZipPath);
-        m_tempZipPath.clear();
-    }
+    // Create temp directory for zip file
+    QString tempDir = QDir::temp().filePath("odzndrive-" + QString::number(QCoreApplication::applicationPid()));
+    QDir().mkpath(tempDir);
 
-    m_zipProcess = m_fileManager->createZipFromMultiplePaths(paths, zipName, m_tempZipPath);
+    QString zipFileName = "download.zip";
+    QString zipPath = QDir(tempDir).filePath(zipFileName);
 
-    if (!m_zipProcess || m_tempZipPath.isEmpty()) {
-        sendError("Failed to start zip creation");
-        if (m_zipProcess) {
-            m_zipProcess->deleteLater();
-            m_zipProcess = nullptr;
-        }
+    // Remove any existing zip file
+    QFile::remove(zipPath);
+
+    int compressionLevel = Config::instance().getCompressionLevel();
+    bool success = m_fileManager->createZipFromMultiplePaths(paths, zipPath, compressionLevel);
+
+    if (!success) {
+        sendError("Failed to create zip file");
         return;
     }
 
-    connect(m_zipProcess, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished), this, [this, zipName](int exitCode, QProcess::ExitStatus exitStatus) {
-        Q_UNUSED(exitStatus)
-        m_zipProcess->deleteLater();
-        m_zipProcess = nullptr;
+    // Check if zip file was created
+    QFileInfo zipInfo(zipPath);
+    if (!zipInfo.exists()) {
+        sendError("Zip file was not created");
+        return;
+    }
 
-        if (exitCode != 0) {
-            qWarning() << "Zip process failed with exit code" << exitCode;
-            sendError("Zip creation failed on server.");
-            QFile::remove(m_tempZipPath);
-            m_tempZipPath.clear();
-            return;
-        }
+    // Start download
+    m_downloadPath = zipPath;
+    m_isZipDownload = true;
 
-        qInfo() << "Zip creation successful for" << m_tempZipPath;
-        QFileInfo zipInfo(m_tempZipPath);
-        if (!zipInfo.exists()) {
-            sendError("Zip file not found after creation.");
-            return;
-        }
-
-        cleanupDownload();
-
-        m_downloadFile = new QFile(m_tempZipPath);
-        if (!m_downloadFile->open(QIODevice::ReadOnly)) {
-            sendError("Failed to open zip file: " + m_tempZipPath);
-            delete m_downloadFile;
-            m_downloadFile = nullptr;
-            QFile::remove(m_tempZipPath);
-            m_tempZipPath.clear();
-            return;
-        }
-
-        m_downloadPath = m_tempZipPath;
-        m_downloadTotalSize = zipInfo.size();
-        m_downloadSentSize = 0;
-        m_isZipDownload = true;
-
-        QJsonObject metadata;
-        metadata["path"] = zipName + ".zip";
-        metadata["name"] = zipName + ".zip";
-        metadata["size"] = m_downloadTotalSize;
-        metadata["isDirectory"] = false;
-        metadata["isMultiple"] = true;
-        sendResponse("download_start", metadata);
-
-        for (int i = 0; i < 3 && m_downloadSentSize < m_downloadTotalSize; ++i) {
-            sendNextDownloadChunk();
-        }
-    });
+    QJsonObject response;
+    response["name"] = zipFileName;
+    response["size"] = zipInfo.size();
+    sendResponse("download_ready", response);
 }
 
 void ClientConnection::handleDownloadDirectory(const QJsonObject &params)
@@ -361,100 +311,61 @@ void ClientConnection::handleDownloadDirectory(const QJsonObject &params)
         dirName = "root";
     }
 
+    // Notify client that zipping has started
     QJsonObject zipData;
     zipData["status"] = "zipping";
     zipData["name"] = dirName;
     sendResponse("download_zipping", zipData);
 
-    if (m_zipProcess) {
-        m_zipProcess->kill();
-        m_zipProcess->deleteLater();
-        m_zipProcess = nullptr;
-    }
-    if (!m_tempZipPath.isEmpty()) {
-        QFile::remove(m_tempZipPath);
-        m_tempZipPath.clear();
-    }
+    // Create temp directory for zip file
+    QString tempDir = QDir::temp().filePath("odzndrive-" + QString::number(QCoreApplication::applicationPid()));
+    QDir().mkpath(tempDir);
 
-    m_zipProcess = m_fileManager->createZipFromDirectory(path, dirName, m_tempZipPath);
+    QString zipFileName = dirName + ".zip";
+    QString zipPath = QDir(tempDir).filePath(zipFileName);
 
-    if (!m_zipProcess || m_tempZipPath.isEmpty()) {
-        sendError("Failed to start zip creation");
-        if (m_zipProcess) {
-            m_zipProcess->deleteLater();
-            m_zipProcess = nullptr;
-        }
+    // Remove any existing zip file
+    QFile::remove(zipPath);
+
+    int compressionLevel = Config::instance().getCompressionLevel();
+    bool success = m_fileManager->createZipFromDirectory(path, zipPath, compressionLevel);
+
+    if (!success) {
+        sendError("Failed to create zip file");
         return;
     }
 
-    connect(m_zipProcess, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished), this, [this, dirName](int exitCode, QProcess::ExitStatus exitStatus) {
-        Q_UNUSED(exitStatus)
-        m_zipProcess->deleteLater();
-        m_zipProcess = nullptr;
+    // Check if zip file was created
+    QFileInfo zipInfo(zipPath);
+    if (!zipInfo.exists()) {
+        sendError("Zip file was not created");
+        return;
+    }
 
-        if (exitCode != 0) {
-            qWarning() << "Zip process failed with exit code" << exitCode;
-            sendError("Zip creation failed on server.");
-            QFile::remove(m_tempZipPath);
-            m_tempZipPath.clear();
-            return;
-        }
+    // Start download
+    m_downloadPath = zipPath;
+    m_isZipDownload = true;
 
-        qInfo() << "Zip creation successful for" << m_tempZipPath;
-        QFileInfo zipInfo(m_tempZipPath);
-        if (!zipInfo.exists()) {
-            sendError("Zip file not found after creation.");
-            return;
-        }
-
-        cleanupDownload();
-
-        m_downloadFile = new QFile(m_tempZipPath);
-        if (!m_downloadFile->open(QIODevice::ReadOnly)) {
-            sendError("Failed to open zip file: " + m_tempZipPath);
-            delete m_downloadFile;
-            m_downloadFile = nullptr;
-            QFile::remove(m_tempZipPath);
-            m_tempZipPath.clear();
-            return;
-        }
-
-        m_downloadPath = m_tempZipPath;
-        m_downloadTotalSize = zipInfo.size();
-        m_downloadSentSize = 0;
-        m_isZipDownload = true;
-
-        QJsonObject metadata;
-        metadata["path"] = dirName + ".zip";
-        metadata["name"] = dirName + ".zip";
-        metadata["size"] = m_downloadTotalSize;
-        metadata["isDirectory"] = true;
-        sendResponse("download_start", metadata);
-
-        for (int i = 0; i < 3 && m_downloadSentSize < m_downloadTotalSize; ++i) {
-            sendNextDownloadChunk();
-        }
-    });
+    QJsonObject response;
+    response["name"] = zipFileName;
+    response["size"] = zipInfo.size();
+    sendResponse("download_ready", response);
 }
 
 void ClientConnection::handleCancelDownload(const QJsonObject &params)
 {
     Q_UNUSED(params)
 
-    if (m_zipProcess && m_zipProcess->state() == QProcess::Running) {
-        qInfo() << "Canceling zip process for download.";
-        m_zipProcess->kill();
-        m_zipProcess->waitForFinished(1000);
-        m_zipProcess->deleteLater();
-        m_zipProcess = nullptr;
-    }
-
-    if (!m_tempZipPath.isEmpty()) {
-        QFile::remove(m_tempZipPath);
-        m_tempZipPath.clear();
-    }
-
+    // Clean up download state
     cleanupDownload();
+
+    // Clean up temp zip file if it exists
+    if (m_isZipDownload && !m_downloadPath.isEmpty()) {
+        QFile::remove(m_downloadPath);
+    }
+
+    m_downloadPath.clear();
+    m_isZipDownload = false;
 
     QJsonObject data;
     data["success"] = true;

@@ -27,17 +27,6 @@ int main(int argc, char *argv[])
     parser.addHelpOption();
     parser.addVersionOption();
 
-    QProcess checkZip;
-    checkZip.start("which", QStringList() << "zip");
-    checkZip.waitForFinished();
-
-#ifdef Q_OS_LINUX
-    if (checkZip.exitCode() != 0) {
-        qCritical() << "Error: 'zip' command not found. Please install it and make sure it's in PATH.";
-        return 1;
-    }
-#endif
-
     QCommandLineOption createUserOption(QStringList() << "create-user",
                                         "Create new user (requires 4-5 args: username password limitMB [path])");
     parser.addOption(createUserOption);

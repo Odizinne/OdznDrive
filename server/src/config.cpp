@@ -31,9 +31,33 @@ void Config::initSettings()
         m_settings.setValue("server/httpUrl", getDefaultLocalNetworkUrl());
         m_settings.setValue("server/domain", "");
         m_settings.setValue("server/shortUrl", false);
+        m_settings.setValue("server/compressionLevel", 0);
+    }
+
+    if (!m_settings.contains("server/port")) {
+        m_settings.setValue("server/port", 8888);
+    }
+
+    if (!m_settings.contains("server/httpPort")) {
+        m_settings.setValue("server/httpPort", 8889);
+    }
+
+    if (!m_settings.contains("server/httpUrl")) {
+        m_settings.setValue("server/httpUrl", getDefaultLocalNetworkUrl());
+    }
+
+    if (!m_settings.contains("server/domain")) {
+        m_settings.setValue("server/domain", "");
+    }
+
+    if (!m_settings.contains("server/shortUrl")) {
+        m_settings.setValue("server/shortUrl", false);
+    }
+
+    if (!m_settings.contains("server/compressionLevel")) {
+        m_settings.setValue("server/compressionLevel", 0);
     }
 }
-
 
 QString Config::hashPassword(const QString &password, const QByteArray &salt)
 {
@@ -404,4 +428,16 @@ QString Config::getDefaultLocalNetworkUrl()
     }
 
     return "http://127.0.0.1";
+}
+
+int Config::getCompressionLevel() const
+{
+    int level = m_settings.value("server/compressionLevel", 0).toInt();
+    return qBound(0, level, 9);
+}
+
+void Config::setCompressionLevel(int level)
+{
+    level = qBound(0, level, 9);
+    m_settings.setValue("server/compressionLevel", level);
 }

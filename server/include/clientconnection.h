@@ -100,9 +100,6 @@ private:
 
     static const qint64 CHUNK_SIZE = 1024 * 1024;
 
-    QProcess* m_zipProcess = nullptr;
-    QString m_tempZipPath;
-
     QTimer *m_pingTimer;
     QTimer *m_pongTimeoutTimer;
     bool m_waitingForPong;

@@ -4,12 +4,16 @@
 #include <QString>
 #include <QFileInfo>
 #include <QJsonArray>
-#include <QProcess>
+#include <QObject>
+#include <quazip/quazip.h>
+#include <quazip/quazipfile.h>
 
-class FileManager
+class FileManager : public QObject
 {
+    Q_OBJECT
+
 public:
-    FileManager(const QString &rootPath);
+    FileManager(const QString &rootPath, QObject *parent = nullptr);
 
     bool isValidPath(const QString &relativePath) const;
     QString getAbsolutePath(const QString &relativePath) const;
@@ -28,15 +32,17 @@ public:
     QByteArray readFile(const QString &relativePath);
     qint64 getFileSize(const QString &relativePath) const;
 
-    QProcess* createZipFromDirectory(const QString &relativePath, const QString &zipName, QString& outZipPath);
-    QProcess* createZipFromMultiplePaths(const QStringList &paths, const QString &zipName, QString& outZipPath);
+    bool createZipFromDirectory(const QString &relativePath, const QString &zipPath, int compressionLevel = 0);
+    bool createZipFromMultiplePaths(const QStringList &paths, const QString &zipPath, int compressionLevel = 0);
 
     QJsonObject getFolderTree(const QString &relativePath, int maxDepth = -1);
 
 private:
     QString m_rootPath;
-
     qint64 calculateDirectorySize(const QString &path) const;
+
+    bool addDirectoryToZip(QuaZip &zip, const QString &dirPath, const QString &baseDir, int compressionLevel);
+    bool addFileToZip(QuaZip &zip, const QString &filePath, const QString &zipPath, int compressionLevel);
 };
 
 #endif // FILEMANAGER_H

@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.21)
 
-project(OdznDriveServer VERSION 0.14.0 LANGUAGES CXX)
+project(OdznDriveServer VERSION 0.14.1 LANGUAGES CXX)
 
 set(CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}/install" CACHE PATH "Installation directory" FORCE)
 set(CMAKE_CXX_STANDARD 17)
@@ -10,6 +10,41 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 find_package(Qt6 REQUIRED COMPONENTS Core Gui Network WebSockets HttpServer)
 
 qt_standard_project_setup()
+
+include(FetchContent)
+
+# Fetch zlib
+FetchContent_Declare(
+    zlib
+    GIT_REPOSITORY https://github.com/madler/zlib.git
+    GIT_TAG v1.3.1
+)
+FetchContent_MakeAvailable(zlib)
+
+# Create ZLIB::ZLIB alias that QuaZip expects
+if(NOT TARGET ZLIB::ZLIB)
+    add_library(ZLIB::ZLIB ALIAS zlibstatic)
+endif()
+
+# Set variables for find_package(ZLIB) to succeed
+set(ZLIB_INCLUDE_DIRS "${zlib_SOURCE_DIR};${zlib_BINARY_DIR}" CACHE PATH "zlib include" FORCE)
+set(ZLIB_INCLUDE_DIR "${zlib_SOURCE_DIR};${zlib_BINARY_DIR}" CACHE PATH "zlib include" FORCE)
+set(ZLIB_LIBRARIES ZLIB::ZLIB CACHE STRING "zlib library" FORCE)
+set(ZLIB_LIBRARY ZLIB::ZLIB CACHE STRING "zlib library" FORCE)
+set(ZLIB_FOUND TRUE CACHE BOOL "zlib found" FORCE)
+set(ZLIB_VERSION_STRING "1.3.1" CACHE STRING "zlib version" FORCE)
+
+# Fetch QuaZip
+FetchContent_Declare(
+    QuaZip
+    GIT_REPOSITORY https://github.com/stachenov/quazip.git
+    GIT_TAG v1.4
+)
+
+set(QUAZIP_QT_MAJOR_VERSION 6 CACHE STRING "Qt version" FORCE)
+set(QUAZIP_INSTALL OFF CACHE BOOL "Install QuaZip" FORCE)
+
+FetchContent_MakeAvailable(QuaZip)
 
 set(SOURCES
     src/main.cpp
@@ -65,6 +100,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     Qt6::Network
     Qt6::WebSockets
     Qt6::HttpServer
+    QuaZip::QuaZip
 )
 
 install(TARGETS ${PROJECT_NAME}

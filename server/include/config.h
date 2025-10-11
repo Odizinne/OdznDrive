@@ -31,6 +31,9 @@ public:
     QString storageRoot() const { return m_storageRoot; }
     void setStorageRoot(const QString &path) { m_storageRoot = path; }
 
+    int getCompressionLevel() const;
+    void setCompressionLevel(int level);
+
     bool isIPBanned(const QString &ip);
     void recordFailedAttempt(const QString &ip);
     void clearFailedAttempts(const QString &ip);
