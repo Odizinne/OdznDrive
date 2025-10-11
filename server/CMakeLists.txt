@@ -4,7 +4,7 @@ set(CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}/install" CACHE PATH "Installation 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-find_package(Qt6 REQUIRED COMPONENTS Core Gui Network WebSockets HttpServer)
+find_package(Qt6 REQUIRED COMPONENTS Core Gui Network WebSockets HttpServer Core5Compat)
 qt_standard_project_setup()
 include(FetchContent)
 
@@ -17,13 +17,11 @@ FetchContent_Declare(
 
 # Force zlib to build with -fPIC
 set(CMAKE_POSITION_INDEPENDENT_CODE ON CACHE BOOL "Build with -fPIC" FORCE)
-
 FetchContent_MakeAvailable(zlib)
 
 # Create ZLIB::ZLIB alias that QuaZip expects
 if(NOT TARGET ZLIB::ZLIB)
     add_library(ZLIB::ZLIB ALIAS zlibstatic)
-    # Ensure zlibstatic is built with -fPIC
     set_target_properties(zlibstatic PROPERTIES POSITION_INDEPENDENT_CODE ON)
 endif()
 
@@ -39,7 +37,7 @@ set(ZLIB_VERSION_STRING "1.3.1" CACHE STRING "zlib version" FORCE)
 FetchContent_Declare(
     QuaZip
     GIT_REPOSITORY https://github.com/stachenov/quazip.git
-    GIT_TAG v1.4
+    GIT_TAG v1.5
 )
 set(QUAZIP_QT_MAJOR_VERSION 6 CACHE STRING "Qt version" FORCE)
 set(QUAZIP_INSTALL OFF CACHE BOOL "Install QuaZip" FORCE)
@@ -99,6 +97,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     Qt6::Network
     Qt6::WebSockets
     Qt6::HttpServer
+    Qt6::Core5Compat
     QuaZip::QuaZip
 )
 

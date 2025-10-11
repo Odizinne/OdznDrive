@@ -126,6 +126,50 @@ bool FileManager::deleteDirectory(const QString &relativePath)
     return dir.removeRecursively();
 }
 
+QJsonObject FileManager::getFolderTree(const QString &relativePath, int maxDepth)
+{
+    QJsonObject result;
+
+    if (!isValidPath(relativePath)) {
+        return result;
+    }
+
+    QString absPath = getAbsolutePath(relativePath);
+    QFileInfo dirInfo(absPath);
+
+    if (!dirInfo.exists() || !dirInfo.isDir()) {
+        return result;
+    }
+
+    result["name"] = dirInfo.fileName().isEmpty() ? "Root" : dirInfo.fileName();
+    result["path"] = relativePath;
+    result["isDir"] = true;
+
+    if (maxDepth == 0) {
+        return result;
+    }
+
+    QDir dir(absPath);
+    QFileInfoList entries = dir.entryInfoList(QDir::Dirs | QDir::NoDotAndDotDot, QDir::Name);
+
+    QJsonArray children;
+    for (const QFileInfo &info : std::as_const(entries)) {
+        QString relPath = relativePath;
+        if (!relPath.isEmpty() && !relPath.endsWith('/')) {
+            relPath += '/';
+        }
+        relPath += info.fileName();
+
+        QJsonObject child = getFolderTree(relPath, maxDepth > 0 ? maxDepth - 1 : -1);
+        children.append(child);
+    }
+
+    result["children"] = children;
+    result["hasChildren"] = !children.isEmpty();
+
+    return result;
+}
+
 bool FileManager::moveItem(const QString &fromPath, const QString &toPath)
 {
     if (!isValidPath(fromPath) || !isValidPath(toPath)) {
@@ -136,17 +180,18 @@ bool FileManager::moveItem(const QString &fromPath, const QString &toPath)
     QString absTo = getAbsolutePath(toPath);
 
     QFileInfo fromInfo(absFrom);
+    QFileInfo toInfo(absTo);
+
     if (!fromInfo.exists()) {
         return false;
     }
 
-    QFileInfo toInfo(absTo);
-    if (toInfo.exists()) {
-        return false;
+    if (toInfo.isDir()) {
+        QString fileName = fromInfo.fileName();
+        absTo = QDir(absTo).filePath(fileName);
     }
 
-    QString toDir = toInfo.absolutePath();
-    QDir().mkpath(toDir);
+    QDir().mkpath(QFileInfo(absTo).absolutePath());
 
     return QFile::rename(absFrom, absTo);
 }
@@ -237,50 +282,6 @@ qint64 FileManager::getFileSize(const QString &relativePath) const
 
     QString absPath = getAbsolutePath(relativePath);
     return QFileInfo(absPath).size();
-}
-
-QJsonObject FileManager::getFolderTree(const QString &relativePath, int maxDepth)
-{
-    QJsonObject result;
-
-    if (!isValidPath(relativePath)) {
-        return result;
-    }
-
-    QString absPath = getAbsolutePath(relativePath);
-    QFileInfo dirInfo(absPath);
-
-    if (!dirInfo.exists() || !dirInfo.isDir()) {
-        return result;
-    }
-
-    result["name"] = dirInfo.fileName().isEmpty() ? "Root" : dirInfo.fileName();
-    result["path"] = relativePath;
-    result["isDir"] = true;
-
-    if (maxDepth == 0) {
-        return result;
-    }
-
-    QDir dir(absPath);
-    QFileInfoList entries = dir.entryInfoList(QDir::Dirs | QDir::NoDotAndDotDot, QDir::Name);
-
-    QJsonArray children;
-    for (const QFileInfo &info : std::as_const(entries)) {
-        QString relPath = relativePath;
-        if (!relPath.isEmpty() && !relPath.endsWith('/')) {
-            relPath += '/';
-        }
-        relPath += info.fileName();
-
-        QJsonObject child = getFolderTree(relPath, maxDepth - 1);
-        children.append(child);
-    }
-
-    result["children"] = children;
-    result["hasChildren"] = !children.isEmpty();
-
-    return result;
 }
 
 bool FileManager::addFileToZip(QuaZip &zip, const QString &filePath, const QString &zipPath, int compressionLevel)
