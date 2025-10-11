@@ -150,6 +150,12 @@ jobs:
           EOF
           chmod +x build/install/install.sh
 
+      - name: Verify CMakeLists.txt
+        run: |
+          echo "--- Verifying server/CMakeLists.txt ---"
+          cat server/CMakeLists.txt
+          echo "--- End of CMakeLists.txt verification ---"
+
       - name: Configure Server
         run: |
           mkdir build-server
@@ -160,6 +166,17 @@ jobs:
         run: |
           cd build-server
           cmake --build .
+
+      # --- ADD THIS STEP ---
+      - name: Verify Built Binary
+        run: |
+          echo "--- Verifying dependencies of built OdznDriveServer ---"
+          readelf -d build-server/OdznDriveServer | grep NEEDED
+          echo "--- End of binary verification ---"
+
+      - name: Install Server
+        run: |
+          cd build-server
           cmake --install .
 
       - name: Zip Client binaries
