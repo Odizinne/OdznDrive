@@ -19,13 +19,14 @@ QtObject {
     property var navigationHistory: []
     property int navigationIndex: -1
     property bool isNavigating: false
+    property bool dropAreaVisible: false
+    property bool isDraggingMultiple: false
+    property var draggedItems: []
 
     signal focusSearch()
     signal showAdvancedSettingsDialog()
     signal showUserManagmentDialog()
     signal requestMultiDeleteConfirmDialog()
-
-    property bool dropAreaVisible: false
 
     function getFileIcon(fileName) {
         if (!fileName || fileName === "")
@@ -336,5 +337,31 @@ QtObject {
         navigationHistory = []
         navigationIndex = -1
         isNavigating = false
+    }
+
+    function startDrag(itemPath, itemName) {
+        if (isItemChecked(itemPath) && checkedCount > 1) {
+            // Dragging multiple items
+            isDraggingMultiple = true
+            draggedItemPath = itemPath
+            draggedItemName = itemName
+            draggedItems = getCheckedPaths()
+            return checkedCount + " items"
+        } else {
+            // Single item drag
+            isDraggingMultiple = false
+            draggedItemPath = itemPath
+            draggedItemName = itemName
+            draggedItems = [itemPath]
+            return "Move " + itemName
+        }
+    }
+
+    function endDrag() {
+        isDraggingMultiple = false
+        draggedItemPath = ""
+        draggedItemName = ""
+        draggedItems = []
+        currentDropTarget = null
     }
 }

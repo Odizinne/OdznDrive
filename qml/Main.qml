@@ -65,6 +65,12 @@ ApplicationWindow {
             }
         }
 
+        function onMultipleMoved(fromPaths, toPath) {
+            ConnectionManager.listDirectory(FileModel.currentPath, UserSettings.foldersFirst)
+            storageUpdateTimer.restart()
+            root.refreshTreeView()
+        }
+
         function onFolderTreeReceived(tree) {
             TreeModel.loadTree(tree)
 

@@ -392,9 +392,8 @@ ColumnLayout {
 
                             onActiveChanged: {
                                 if (active) {
-                                    Utils.draggedItemPath = delegateRoot.itemPath
-                                    Utils.draggedItemName = delegateRoot.itemName
-                                    fileListView.setDragIndicatorText("Move " + delegateRoot.itemName)
+                                    let dragText = Utils.startDrag(delegateRoot.itemPath, delegateRoot.itemName)
+                                    fileListView.setDragIndicatorText(dragText)
                                     fileListView.setDragIndicatorVisible(true)
                                 } else {
                                     fileListView.setDragIndicatorVisible(false)
@@ -402,20 +401,29 @@ ColumnLayout {
                                     if (Utils.currentDropTarget) {
                                         let targetPath = Utils.currentDropTarget.itemPath
 
-                                        if (Utils.currentDropTarget.itemIsDir &&
-                                            targetPath !== Utils.draggedItemPath) {
+                                        if (Utils.currentDropTarget.itemIsDir) {
+                                            if (Utils.isDraggingMultiple) {
+                                                // Move all selected items
+                                                let itemsToMove = Utils.draggedItems.filter(path => {
+                                                    let sourceParent = path.substring(0, path.lastIndexOf('/'))
+                                                    return path !== targetPath && sourceParent !== targetPath
+                                                })
 
-                                            // Check if source is already in the target directory
-                                            let sourceParent = Utils.draggedItemPath.substring(0, Utils.draggedItemPath.lastIndexOf('/'))
-                                            if (sourceParent !== targetPath) {
-                                                ConnectionManager.moveItem(Utils.draggedItemPath, targetPath)
+                                                if (itemsToMove.length > 0) {
+                                                    ConnectionManager.moveMultiple(itemsToMove, targetPath)
+                                                    Utils.uncheckAll()
+                                                }
+                                            } else {
+                                                // Single item move (existing logic)
+                                                let sourceParent = Utils.draggedItemPath.substring(0, Utils.draggedItemPath.lastIndexOf('/'))
+                                                if (sourceParent !== targetPath && Utils.draggedItemPath !== targetPath) {
+                                                    ConnectionManager.moveItem(Utils.draggedItemPath, targetPath)
+                                                }
                                             }
                                         }
                                     }
 
-                                    Utils.draggedItemPath = ""
-                                    Utils.draggedItemName = ""
-                                    Utils.currentDropTarget = null
+                                    Utils.endDrag()
                                 }
                             }
 
@@ -429,30 +437,57 @@ ColumnLayout {
 
                                     Utils.currentDropTarget = null
 
-                                    // Check parent directory item first
-                                    if (FileModel.canGoUp && parentDirItem.visible) {
-                                        let parentPos = parentDirItem.mapFromItem(null, globalPos.x, globalPos.y)
-                                        if (parentPos.x >= 0 && parentPos.x <= parentDirItem.width &&
-                                            parentPos.y >= 0 && parentPos.y <= parentDirItem.height) {
+                                    // Check parent directory item first (if it exists as header)
+                                    if (FileModel.canGoUp && listView.headerItem) {
+                                        let parentItem = listView.headerItem
+                                        let parentPos = parentItem.mapFromItem(listView, listPos.x, listPos.y)
+                                        if (parentPos.x >= 0 && parentPos.x <= parentItem.width &&
+                                            parentPos.y >= 0 && parentPos.y <= parentItem.height) {
 
-                                            // Check if it's a valid drop target
-                                            let sourceParent = Utils.draggedItemPath.substring(0, Utils.draggedItemPath.lastIndexOf('/'))
-                                            if (sourceParent !== parentDirItem.itemPath) {
-                                                Utils.currentDropTarget = parentDirItem
+                                            let validTarget = true
+                                            if (Utils.isDraggingMultiple) {
+                                                // Check if any item can be moved to parent
+                                                validTarget = Utils.draggedItems.some(path => {
+                                                    let sourceParent = path.substring(0, path.lastIndexOf('/'))
+                                                    return sourceParent !== FileModel.getParentPath()
+                                                })
+                                            } else {
+                                                let sourceParent = Utils.draggedItemPath.substring(0, Utils.draggedItemPath.lastIndexOf('/'))
+                                                validTarget = sourceParent !== FileModel.getParentPath()
+                                            }
+
+                                            if (validTarget) {
+                                                Utils.currentDropTarget = parentItem
                                             }
                                             return
                                         }
                                     }
 
+                                    // Check list items
                                     for (let i = 0; i < listView.count; i++) {
                                         let item = listView.itemAtIndex(i)
                                         if (item) {
                                             let itemPos = item.mapFromItem(listView, listPos.x, listPos.y)
                                             if (itemPos.x >= 0 && itemPos.x <= item.width &&
                                                 itemPos.y >= 0 && itemPos.y <= item.height) {
-                                                if (item.itemIsDir && item.itemPath !== Utils.draggedItemPath) {
-                                                    let sourceParent = Utils.draggedItemPath.substring(0, Utils.draggedItemPath.lastIndexOf('/'))
-                                                    if (sourceParent !== item.itemPath) {
+
+                                                // Only folders are valid drop targets
+                                                if (item.itemIsDir) {
+                                                    let validTarget = true
+                                                    if (Utils.isDraggingMultiple) {
+                                                        // Don't allow if dragging the target itself or if all items already in target
+                                                        validTarget = !Utils.draggedItems.includes(item.itemPath) &&
+                                                                     Utils.draggedItems.some(path => {
+                                                            let sourceParent = path.substring(0, path.lastIndexOf('/'))
+                                                            return sourceParent !== item.itemPath
+                                                        })
+                                                    } else {
+                                                        let sourceParent = Utils.draggedItemPath.substring(0, Utils.draggedItemPath.lastIndexOf('/'))
+                                                        validTarget = item.itemPath !== Utils.draggedItemPath &&
+                                                                    sourceParent !== item.itemPath
+                                                    }
+
+                                                    if (validTarget) {
                                                         Utils.currentDropTarget = item
                                                     }
                                                 }

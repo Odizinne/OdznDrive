@@ -75,7 +75,7 @@ public:
     Q_INVOKABLE void cancelAllUploads();
     Q_INVOKABLE void cancelDownload();
     Q_INVOKABLE void getServerInfo();
-
+    Q_INVOKABLE void moveMultiple(const QStringList &fromPaths, const QString &toPath);
     Q_INVOKABLE void createNewUser(const QString &userName, const QString &userPassword, const int &maxStorage, const bool &isAdmin);
     Q_INVOKABLE void editExistingUser(const QString &userName, const QString &userPassword, const int &maxStorage, const bool &isAdmin);
     Q_INVOKABLE void deleteUser(const QString &userName);
@@ -116,6 +116,7 @@ signals:
     void userListReceived(const QVariantList &users);
     void shareLinkGenerated(const QString &path, const QString &shareLink);
     void folderTreeReceived(const QVariantMap &tree);
+    void multipleMoved(const QStringList &fromPaths, const QString &toPath);
 
 private slots:
     void onConnected();

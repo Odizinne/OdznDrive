@@ -210,6 +210,8 @@ void ClientConnection::handleCommand(const QJsonObject &command)
         handleGenerateShareLink(params);
     } else if (type == "get_folder_tree") {
         handleGetFolderTree(params);
+    } else if (type == "move_multiple") {
+        handleMoveMultiple(params);
     } else {
         sendError("Unknown command type");
     }
@@ -1160,4 +1162,41 @@ void ClientConnection::handleGetFolderTree(const QJsonObject &params)
 void ClientConnection::handlePong(const QJsonObject &params)
 {
     Q_UNUSED(params);
+}
+
+void ClientConnection::handleMoveMultiple(const QJsonObject &params)
+{
+    QJsonArray fromPathsArray = params["fromPaths"].toArray();
+    QString toPath = params["to"].toString();
+
+    if (fromPathsArray.isEmpty()) {
+        sendError("No paths provided");
+        return;
+    }
+
+    QStringList movedItems;
+    QStringList failed;
+
+    for (int i = 0; i < fromPathsArray.size(); ++i) {
+        QString fromPath = fromPathsArray[i].toString();
+
+        if (!m_fileManager->isValidPath(fromPath) || !m_fileManager->isValidPath(toPath)) {
+            failed.append(fromPath);
+            continue;
+        }
+
+        if (m_fileManager->moveItem(fromPath, toPath)) {
+            movedItems.append(fromPath);
+        } else {
+            failed.append(fromPath);
+        }
+    }
+
+    QJsonObject data;
+    data["movedItems"] = QJsonArray::fromStringList(movedItems);
+    data["failed"] = QJsonArray::fromStringList(failed);
+    data["to"] = toPath;
+    data["success"] = failed.isEmpty();
+
+    sendResponse("move_multiple", data);
 }

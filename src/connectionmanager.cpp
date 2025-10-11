@@ -825,6 +825,15 @@ void ConnectionManager::handleResponse(const QJsonObject &response)
     } else if (type == "folder_tree") {
         QJsonObject tree = data["tree"].toObject();
         emit folderTreeReceived(tree.toVariantMap());
+    } else if (type == "move_multiple") {
+        QJsonArray movedArray = data["movedItems"].toArray();
+        QStringList movedItems;
+        for (int i = 0; i < movedArray.size(); ++i) {
+            movedItems.append(movedArray[i].toString());
+        }
+
+        QString toPath = data["to"].toString();
+        emit multipleMoved(movedItems, toPath);
     }
 }
 
@@ -1142,4 +1151,27 @@ void ConnectionManager::getFolderTree(const QString &path, int maxDepth)
     params["path"] = path;
     params["maxDepth"] = maxDepth;
     sendCommand("get_folder_tree", params);
+}
+
+void ConnectionManager::moveMultiple(const QStringList &fromPaths, const QString &toPath)
+{
+    if (!m_authenticated) {
+        emit errorOccurred("Not authenticated");
+        return;
+    }
+
+    if (fromPaths.isEmpty()) {
+        emit errorOccurred("No paths provided");
+        return;
+    }
+
+    QJsonObject params;
+    QJsonArray pathsArray;
+    for (const QString &path : fromPaths) {
+        pathsArray.append(path);
+    }
+    params["fromPaths"] = pathsArray;
+    params["to"] = toPath;
+
+    sendCommand("move_multiple", params);
 }

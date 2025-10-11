@@ -360,9 +360,8 @@ Item {
                                 if (active) {
                                     tooltipTimer.stop()
                                     tileTooltip.visible = false
-                                    Utils.draggedItemPath = tileDelegateRoot.itemPath
-                                    Utils.draggedItemName = tileDelegateRoot.itemName
-                                    root.setDragIndicatorText("Move " + tileDelegateRoot.model.name)
+                                    let dragText = Utils.startDrag(tileDelegateRoot.itemPath, tileDelegateRoot.itemName)
+                                    root.setDragIndicatorText(dragText)
                                     root.setDragIndicatorVisible(true)
                                 } else {
                                     root.setDragIndicatorVisible(false)
@@ -370,20 +369,29 @@ Item {
                                     if (Utils.currentDropTarget) {
                                         let targetPath = Utils.currentDropTarget.itemPath
 
-                                        if (Utils.currentDropTarget.itemIsDir &&
-                                            targetPath !== Utils.draggedItemPath) {
+                                        if (Utils.currentDropTarget.itemIsDir) {
+                                            if (Utils.isDraggingMultiple) {
+                                                // Move all selected items
+                                                let itemsToMove = Utils.draggedItems.filter(path => {
+                                                    let sourceParent = path.substring(0, path.lastIndexOf('/'))
+                                                    return path !== targetPath && sourceParent !== targetPath
+                                                })
 
-                                            // Check if source is already in the target directory
-                                            let sourceParent = Utils.draggedItemPath.substring(0, Utils.draggedItemPath.lastIndexOf('/'))
-                                            if (sourceParent !== targetPath) {
-                                                ConnectionManager.moveItem(Utils.draggedItemPath, targetPath)
+                                                if (itemsToMove.length > 0) {
+                                                    ConnectionManager.moveMultiple(itemsToMove, targetPath)
+                                                    Utils.uncheckAll()
+                                                }
+                                            } else {
+                                                // Single item move (existing logic)
+                                                let sourceParent = Utils.draggedItemPath.substring(0, Utils.draggedItemPath.lastIndexOf('/'))
+                                                if (sourceParent !== targetPath && Utils.draggedItemPath !== targetPath) {
+                                                    ConnectionManager.moveItem(Utils.draggedItemPath, targetPath)
+                                                }
                                             }
                                         }
                                     }
 
-                                    Utils.draggedItemPath = ""
-                                    Utils.draggedItemName = ""
-                                    Utils.currentDropTarget = null
+                                    Utils.endDrag()
                                 }
                             }
 
@@ -404,11 +412,21 @@ Item {
                                             if (itemPos.x >= 0 && itemPos.x <= item.width &&
                                                 itemPos.y >= 0 && itemPos.y <= item.height) {
 
-                                                // Check if it's a valid drop target
-                                                if (item.itemIsDir && item.itemPath !== Utils.draggedItemPath) {
-                                                    let sourceParent = Utils.draggedItemPath.substring(0, Utils.draggedItemPath.lastIndexOf('/'))
-                                                    // Only set as drop target if it's a different folder
-                                                    if (sourceParent !== item.itemPath) {
+                                                if (item.itemIsDir) {
+                                                    let validTarget = true
+                                                    if (Utils.isDraggingMultiple) {
+                                                        validTarget = !Utils.draggedItems.includes(item.itemPath) &&
+                                                                     Utils.draggedItems.some(path => {
+                                                            let sourceParent = path.substring(0, path.lastIndexOf('/'))
+                                                            return sourceParent !== item.itemPath
+                                                        })
+                                                    } else {
+                                                        let sourceParent = Utils.draggedItemPath.substring(0, Utils.draggedItemPath.lastIndexOf('/'))
+                                                        validTarget = item.itemPath !== Utils.draggedItemPath &&
+                                                                    sourceParent !== item.itemPath
+                                                    }
+
+                                                    if (validTarget) {
                                                         Utils.currentDropTarget = item
                                                     }
                                                 }

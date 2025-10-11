@@ -45,6 +45,30 @@ Item {
                 return false
             }
 
+            function isValidDropTarget(item, targetPath) {
+                if (!item || targetPath === null || targetPath === undefined) {
+                    return false
+                }
+
+                if (Utils.isDraggingMultiple) {
+                    if (Utils.draggedItems.includes(targetPath)) {
+                        return false
+                    }
+                    let result = Utils.draggedItems.some(path => {
+                        let sourceParent = path.substring(0, path.lastIndexOf('/'))
+                        return path !== targetPath && sourceParent !== targetPath
+                    })
+                    return result
+                } else {
+                    if (targetPath === Utils.draggedItemPath) {
+                        return false
+                    }
+                    let sourceParent = Utils.draggedItemPath.substring(0, Utils.draggedItemPath.lastIndexOf('/'))
+                    let result = sourceParent !== targetPath
+                    return result
+                }
+            }
+
             onPositionChanged: (mouse) => {
                 if (Utils.draggedItemPath === "") {
                     return
@@ -61,11 +85,8 @@ Item {
                             itemPos.y >= 0 && itemPos.y <= item.height) {
 
                             let itemPath = getItemPath(item)
-                            if (itemPath !== Utils.draggedItemPath) {
-                                let sourceParent = Utils.draggedItemPath.substring(0, Utils.draggedItemPath.lastIndexOf('/'))
-                                if (sourceParent !== itemPath) {
-                                    foundTarget = item
-                                }
+                            if (isValidDropTarget(item, itemPath)) {
+                                foundTarget = item
                             }
                             break
                         }
