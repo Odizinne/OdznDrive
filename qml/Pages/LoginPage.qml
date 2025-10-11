@@ -59,13 +59,20 @@ Page {
         function onConnectedChanged() {
             if (!ConnectionManager.connected) {
                 busyIndicator.reset()
+                // Reset the UI back to login form
+                loginPage.animEnabled = false
+                busyContainer.opacity = 0
+                loginContent.opacity = 1
+                loginPage.animEnabled = true
             }
         }
 
         function onErrorOccurred(error) {
             busyIndicator.reset()
+            loginPage.animEnabled = false
             busyContainer.opacity = 0
             loginContent.opacity = 1
+            loginPage.animEnabled = true
         }
 
         function onAuthenticatedChanged() {
@@ -73,6 +80,10 @@ Page {
                 busyIndicator.startFilling()
             } else if (!ConnectionManager.connected) {
                 busyIndicator.reset()
+                loginPage.animEnabled = false
+                busyContainer.opacity = 0
+                loginContent.opacity = 1
+                loginPage.animEnabled = true
             }
         }
     }
