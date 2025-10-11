@@ -150,12 +150,6 @@ jobs:
           EOF
           chmod +x build/install/install.sh
 
-      - name: Verify CMakeLists.txt
-        run: |
-          echo "--- Verifying server/CMakeLists.txt ---"
-          cat server/CMakeLists.txt
-          echo "--- End of CMakeLists.txt verification ---"
-
       - name: Configure Server
         run: |
           mkdir build-server
@@ -167,17 +161,40 @@ jobs:
           cd build-server
           cmake --build .
 
-      # --- ADD THIS STEP ---
-      - name: Verify Built Binary
-        run: |
-          echo "--- Verifying dependencies of built OdznDriveServer ---"
-          readelf -d build-server/OdznDriveServer | grep NEEDED
-          echo "--- End of binary verification ---"
-
       - name: Install Server
         run: |
           cd build-server
           cmake --install .
+
+      - name: Create Run Script
+        run: |
+          cat > build-server/install/bin/run.sh << 'EOF'
+          #!/bin/bash
+          
+          # Exit immediately if a command exits with a non-zero status.
+          set -e
+          
+          # Get the directory where this script is located.
+          SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+          
+          # Define the library directory relative to the script's location.
+          LIB_DIR="$SCRIPT_DIR/../lib"
+          
+          # Define the executable path.
+          EXECUTABLE="$SCRIPT_DIR/OdznDriveServer"
+          
+          # Check if the executable exists.
+          if [ ! -f "$EXECUTABLE" ]; then
+              echo "Error: Executable not found at $EXECUTABLE"
+              exit 1
+          fi
+          
+          # Set the library path and run the executable, passing all arguments to it.
+          LD_LIBRARY_PATH="$LIB_DIR" "$EXECUTABLE" "$@"
+          EOF
+          
+          # Make the script executable
+          chmod +x build-server/install/bin/run.sh
 
       - name: Zip Client binaries
         run: |
