@@ -346,7 +346,7 @@ QtObject {
             draggedItemPath = itemPath
             draggedItemName = itemName
             draggedItems = getCheckedPaths()
-            return checkedCount + " items"
+            return "Move " + checkedCount + " items"
         } else {
             // Single item drag
             isDraggingMultiple = false

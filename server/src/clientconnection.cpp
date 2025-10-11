@@ -1086,7 +1086,6 @@ void ClientConnection::sendPing()
     if (!m_authenticated) {
         return;
     }
-    qDebug() << "Sending ping to client" << m_currentUsername;
     sendResponse("ping", QJsonObject());
     m_waitingForPong = true;
     m_pongTimeoutTimer->start();
@@ -1096,7 +1095,7 @@ void ClientConnection::onPongTimeout()
 {
     if (m_waitingForPong) {
         qInfo() << "Client" << m_currentUsername << "failed to pong, disconnecting.";
-        m_socket->close(); // This will trigger onDisconnected
+        m_socket->close();
     }
 }
 
