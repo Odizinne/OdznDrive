@@ -1,29 +1,30 @@
 cmake_minimum_required(VERSION 3.21)
-
 project(OdznDriveServer VERSION 0.14.1 LANGUAGES CXX)
-
 set(CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}/install" CACHE PATH "Installation directory" FORCE)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
 find_package(Qt6 REQUIRED COMPONENTS Core Gui Network WebSockets HttpServer)
-
 qt_standard_project_setup()
-
 include(FetchContent)
 
-# Fetch zlib
+# Fetch zlib WITH -fPIC
 FetchContent_Declare(
     zlib
     GIT_REPOSITORY https://github.com/madler/zlib.git
     GIT_TAG v1.3.1
 )
+
+# Force zlib to build with -fPIC
+set(CMAKE_POSITION_INDEPENDENT_CODE ON CACHE BOOL "Build with -fPIC" FORCE)
+
 FetchContent_MakeAvailable(zlib)
 
 # Create ZLIB::ZLIB alias that QuaZip expects
 if(NOT TARGET ZLIB::ZLIB)
     add_library(ZLIB::ZLIB ALIAS zlibstatic)
+    # Ensure zlibstatic is built with -fPIC
+    set_target_properties(zlibstatic PROPERTIES POSITION_INDEPENDENT_CODE ON)
 endif()
 
 # Set variables for find_package(ZLIB) to succeed
@@ -40,10 +41,8 @@ FetchContent_Declare(
     GIT_REPOSITORY https://github.com/stachenov/quazip.git
     GIT_TAG v1.4
 )
-
 set(QUAZIP_QT_MAJOR_VERSION 6 CACHE STRING "Qt version" FORCE)
 set(QUAZIP_INSTALL OFF CACHE BOOL "Install QuaZip" FORCE)
-
 FetchContent_MakeAvailable(QuaZip)
 
 set(SOURCES
