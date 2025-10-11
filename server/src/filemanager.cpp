@@ -73,9 +73,16 @@ QJsonArray FileManager::listDirectory(const QString &relativePath, bool foldersF
     for (const QFileInfo &entry : std::as_const(entries)) {
         QJsonObject item;
         item["name"] = entry.fileName();
-        item["isDirectory"] = entry.isDir();
+        item["isDir"] = entry.isDir();
         item["size"] = entry.size();
         item["modified"] = entry.lastModified().toString(Qt::ISODate);
+
+        QString relPath = relativePath;
+        if (!relPath.isEmpty() && !relPath.endsWith('/')) {
+            relPath += '/';
+        }
+        relPath += entry.fileName();
+        item["path"] = relPath;
 
         result.append(item);
     }
@@ -234,53 +241,46 @@ qint64 FileManager::getFileSize(const QString &relativePath) const
 
 QJsonObject FileManager::getFolderTree(const QString &relativePath, int maxDepth)
 {
-    QJsonObject tree;
+    QJsonObject result;
 
     if (!isValidPath(relativePath)) {
-        return tree;
+        return result;
     }
 
     QString absPath = getAbsolutePath(relativePath);
-    QFileInfo rootInfo(absPath);
+    QFileInfo dirInfo(absPath);
 
-    if (!rootInfo.exists() || !rootInfo.isDir()) {
-        return tree;
+    if (!dirInfo.exists() || !dirInfo.isDir()) {
+        return result;
     }
 
-    tree["name"] = rootInfo.fileName().isEmpty() ? "root" : rootInfo.fileName();
-    tree["isDirectory"] = true;
-    tree["path"] = relativePath;
+    result["name"] = dirInfo.fileName().isEmpty() ? "Root" : dirInfo.fileName();
+    result["path"] = relativePath;
+    result["isDir"] = true;
 
     if (maxDepth == 0) {
-        return tree;
+        return result;
     }
 
-    QJsonArray children;
     QDir dir(absPath);
-    QFileInfoList entries = dir.entryInfoList(QDir::AllEntries | QDir::NoDotAndDotDot);
+    QFileInfoList entries = dir.entryInfoList(QDir::Dirs | QDir::NoDotAndDotDot, QDir::Name);
 
-    for (const QFileInfo &entry : std::as_const(entries)) {
-        QJsonObject child;
-        QString childRelPath = relativePath.isEmpty()
-                                   ? entry.fileName()
-                                   : relativePath + "/" + entry.fileName();
-
-        child["name"] = entry.fileName();
-        child["isDirectory"] = entry.isDir();
-        child["path"] = childRelPath;
-
-        if (entry.isDir() && maxDepth != 1) {
-            QJsonObject subTree = getFolderTree(childRelPath, maxDepth > 0 ? maxDepth - 1 : -1);
-            if (subTree.contains("children")) {
-                child["children"] = subTree["children"];
-            }
+    QJsonArray children;
+    for (const QFileInfo &info : std::as_const(entries)) {
+        QString relPath = relativePath;
+        if (!relPath.isEmpty() && !relPath.endsWith('/')) {
+            relPath += '/';
         }
+        relPath += info.fileName();
 
+        QJsonObject child = getFolderTree(relPath, maxDepth - 1);
         children.append(child);
     }
 
-    tree["children"] = children;
-    return tree;
+    result["children"] = children;
+    result["hasChildren"] = !children.isEmpty();
+
+    return result;
 }
 
 bool FileManager::addFileToZip(QuaZip &zip, const QString &filePath, const QString &zipPath, int compressionLevel)
