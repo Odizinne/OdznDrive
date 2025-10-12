@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.21)
 
-project(OdznDrive VERSION 0.14.2 LANGUAGES CXX)
+project(OdznDrive VERSION 0.15.0 LANGUAGES CXX)
 
 set(CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}/install" CACHE PATH "Installation directory" FORCE)
 set(CMAKE_CXX_STANDARD 17)
@@ -22,6 +22,7 @@ set(SOURCES
     src/windowsplatform.cpp
     src/usermodel.cpp
     src/versionhelper.cpp
+    src/treemodel.cpp
 )
 
 set(HEADERS
@@ -33,6 +34,7 @@ set(HEADERS
     include/windowsplatform.h
     include/usermodel.h
     include/versionhelper.h
+    include/treemodel.h
 )
 
 set(QML_FILES
@@ -48,6 +50,9 @@ set(QML_FILES
     qml/Components/LoginArt.qml
     qml/Components/TransferStatus.qml
     qml/Components/ParentItemMenu.qml
+    qml/Components/FolderTreeView.qml
+    qml/Components/MainMenu.qml
+    qml/Components/DropIndicator.qml
 
     qml/CustomComponents/CustomButton.qml
     qml/CustomComponents/CustomDialog.qml
@@ -56,6 +61,8 @@ set(QML_FILES
     qml/CustomComponents/CustomScrollView.qml
     qml/CustomComponents/CustomBusyIndicator.qml
     qml/CustomComponents/CustomStackView.qml
+    qml/CustomComponents/CustomSplitView.qml
+    qml/CustomComponents/CustomTextField.qml
 
     qml/Dialogs/DeleteConfirmDialog.qml
     qml/Dialogs/DownloadProgressDialog.qml
@@ -149,13 +156,6 @@ qt_add_qml_module(${PROJECT_NAME}
     URI Odizinne.OdznDrive
     VERSION 1.0
     QML_FILES ${QML_FILES} ${QML_SINGLETONS}
-    SOURCES include/treemodel.h src/treemodel.cpp
-    QML_FILES qml/Components/FolderTreeView.qml
-    QML_FILES qml/CustomComponents/CustomSplitView.qml
-    QML_FILES qml/CustomComponents/CustomTextField.qml
-    QML_FILES qml/Components/MainMenu.qml
-    QML_FILES qml/Components/DropIndicator.qml
-    QML_FILES qml/Dialogs/OverrideWarningDialog.qml
 )
 
 target_link_libraries(${PROJECT_NAME} PRIVATE
