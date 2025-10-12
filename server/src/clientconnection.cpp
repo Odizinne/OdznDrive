@@ -1,5 +1,6 @@
 #include "clientconnection.h"
 #include "config.h"
+#include "protocol.h"
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QJsonArray>
@@ -107,7 +108,7 @@ void ClientConnection::onBinaryMessageReceived(const QByteArray &message)
         QJsonObject data;
         data["path"] = m_uploadPath;
         data["size"] = m_uploadReceivedSize;
-        sendResponse("upload_complete", data);
+        sendResponse(Protocol::Responses::UPLOAD_COMPLETE, data);
 
         m_uploadPath.clear();
         m_uploadExpectedSize = 0;
@@ -138,64 +139,66 @@ void ClientConnection::handleCommand(const QJsonObject &command)
     QString type = command["type"].toString();
     QJsonObject params = command["params"].toObject();
 
-    if (type == "authenticate") {
+    if (type == Protocol::Commands::AUTHENTICATE) {
         handleAuthenticate(params);
         return;
     }
-    else if (type == "pong") {
+    else if (type == Protocol::Commands::PONG) {
         handlePong(params);
         return;
     }
+
     if (!m_authenticated) {
         sendError("Not authenticated");
         return;
     }
-    if (type == "list_directory") {
+
+    if (type == Protocol::Commands::LIST_DIRECTORY) {
         handleListDirectory(params);
-    } else if (type == "create_directory") {
+    } else if (type == Protocol::Commands::CREATE_DIRECTORY) {
         handleCreateDirectory(params);
-    } else if (type == "delete_file") {
+    } else if (type == Protocol::Commands::DELETE_FILE) {
         handleDeleteFile(params);
-    } else if (type == "delete_directory") {
+    } else if (type == Protocol::Commands::DELETE_DIRECTORY) {
         handleDeleteDirectory(params);
-    } else if (type == "delete_multiple") {
+    } else if (type == Protocol::Commands::DELETE_MULTIPLE) {
         handleDeleteMultiple(params);
-    } else if (type == "download_file") {
+    } else if (type == Protocol::Commands::DOWNLOAD_FILE) {
         handleDownloadFile(params);
-    } else if (type == "download_directory") {
+    } else if (type == Protocol::Commands::DOWNLOAD_DIRECTORY) {
         handleDownloadDirectory(params);
-    } else if (type == "upload_file") {
-        handleUploadFile(params);
-    } else if (type == "cancel_upload") {
-        handleCancelUpload(params);
-    } else if (type == "cancel_download") {
-        handleCancelDownload(params);
-    } else if (type == "move_item") {
-        handleMoveItem(params);
-    } else if (type == "get_storage_info") {
-        handleGetStorageInfo();
-    } else if (type == "get_server_info") {
-        handleGetServerInfo();
-    } else if (type == "get_thumbnail") {
-        handleGetThumbnail(params);
-    } else if (type == "download_multiple") {
+    } else if (type == Protocol::Commands::DOWNLOAD_MULTIPLE) {
         handleDownloadMultiple(params);
-    } else if (type == "rename_item") {
-        handleRenameItem(params);
-    } else if (type == "create_user") {
-        handleCreateUser(params);
-    } else if (type == "edit_user") {
-        handleEditUser(params);
-    } else if (type == "delete_user") {
-        handleDeleteUser(params);
-    } else if (type == "get_user_list") {
-        handleGetUserList(params);
-    } else if (type == "generate_share_link") {
-        handleGenerateShareLink(params);
-    } else if (type == "get_folder_tree") {
-        handleGetFolderTree(params);
-    } else if (type == "move_multiple") {
+    } else if (type == Protocol::Commands::UPLOAD_FILE) {
+        handleUploadFile(params);
+    } else if (type == Protocol::Commands::CANCEL_UPLOAD) {
+        handleCancelUpload(params);
+    } else if (type == Protocol::Commands::CANCEL_DOWNLOAD) {
+        handleCancelDownload(params);
+    } else if (type == Protocol::Commands::MOVE_ITEM) {
+        handleMoveItem(params);
+    } else if (type == Protocol::Commands::MOVE_MULTIPLE) {
         handleMoveMultiple(params);
+    } else if (type == Protocol::Commands::RENAME_ITEM) {
+        handleRenameItem(params);
+    } else if (type == Protocol::Commands::GET_STORAGE_INFO) {
+        handleGetStorageInfo();
+    } else if (type == Protocol::Commands::GET_SERVER_INFO) {
+        handleGetServerInfo();
+    } else if (type == Protocol::Commands::GET_THUMBNAIL) {
+        handleGetThumbnail(params);
+    } else if (type == Protocol::Commands::GET_FOLDER_TREE) {
+        handleGetFolderTree(params);
+    } else if (type == Protocol::Commands::CREATE_USER) {
+        handleCreateUser(params);
+    } else if (type == Protocol::Commands::EDIT_USER) {
+        handleEditUser(params);
+    } else if (type == Protocol::Commands::DELETE_USER) {
+        handleDeleteUser(params);
+    } else if (type == Protocol::Commands::GET_USER_LIST) {
+        handleGetUserList(params);
+    } else if (type == Protocol::Commands::GENERATE_SHARE_LINK) {
+        handleGenerateShareLink(params);
     } else {
         sendError("Unknown command type");
     }
@@ -220,7 +223,7 @@ void ClientConnection::handleAuthenticate(const QJsonObject &params)
         data["success"] = true;
         data["serverVersion"] = APP_VERSION_STRING;
         data["isAdmin"] = user ? user->isAdmin : false;
-        sendResponse("authenticate", data);
+        sendResponse(Protocol::Responses::AUTHENTICATE, data);
 
         m_pingTimer->start();
         m_pendingAuthUsername.clear();
@@ -253,13 +256,13 @@ void ClientConnection::handleDownloadMultiple(const QJsonObject &params)
     QJsonObject zipData;
     zipData["status"] = "zipping";
     zipData["count"] = paths.size();
-    sendResponse("download_zipping", zipData);
+    sendResponse(Protocol::Responses::DOWNLOAD_ZIPPING, zipData);
 
     // Create temp directory for zip file
     QString tempDir = QDir::temp().filePath("odzndrive-" + QString::number(QCoreApplication::applicationPid()));
     QDir().mkpath(tempDir);
 
-    QString zipFileName = params["zipName"].toString() + ".zip";  // Get zip name from params
+    QString zipFileName = params["zipName"].toString() + ".zip";
     QString zipPath = QDir(tempDir).filePath(zipFileName);
 
     // Remove any existing zip file
@@ -303,7 +306,7 @@ void ClientConnection::handleDownloadMultiple(const QJsonObject &params)
     QJsonObject metadata;
     metadata["name"] = zipFileName;
     metadata["size"] = m_downloadTotalSize;
-    sendResponse("download_start", metadata);
+    sendResponse(Protocol::Responses::DOWNLOAD_START, metadata);
 
     // Start sending chunks
     for (int i = 0; i < 3 && m_downloadSentSize < m_downloadTotalSize; ++i) {
@@ -337,7 +340,7 @@ void ClientConnection::handleDownloadDirectory(const QJsonObject &params)
     QJsonObject zipData;
     zipData["status"] = "zipping";
     zipData["name"] = dirName;
-    sendResponse("download_zipping", zipData);
+    sendResponse(Protocol::Responses::DOWNLOAD_ZIPPING, zipData);
 
     // Create temp directory for zip file
     QString tempDir = QDir::temp().filePath("odzndrive-" + QString::number(QCoreApplication::applicationPid()));
@@ -387,7 +390,7 @@ void ClientConnection::handleDownloadDirectory(const QJsonObject &params)
     QJsonObject metadata;
     metadata["name"] = zipFileName;
     metadata["size"] = m_downloadTotalSize;
-    sendResponse("download_start", metadata);
+    sendResponse(Protocol::Responses::DOWNLOAD_START, metadata);
 
     // Start sending chunks
     for (int i = 0; i < 3 && m_downloadSentSize < m_downloadTotalSize; ++i) {
@@ -412,7 +415,7 @@ void ClientConnection::handleCancelDownload(const QJsonObject &params)
 
     QJsonObject data;
     data["success"] = true;
-    sendResponse("download_cancelled", data);
+    sendResponse(Protocol::Responses::DOWNLOAD_CANCELLED, data);
 }
 
 void ClientConnection::handleRenameItem(const QJsonObject &params)
@@ -435,7 +438,7 @@ void ClientConnection::handleRenameItem(const QJsonObject &params)
         data["path"] = path;
         data["newName"] = newName;
         data["success"] = true;
-        sendResponse("rename_item", data);
+        sendResponse(Protocol::Responses::RENAME_ITEM, data);
     } else {
         sendError("Failed to rename item");
     }
@@ -491,7 +494,7 @@ void ClientConnection::handleDeleteMultiple(const QJsonObject &params)
     data["failed"] = QJsonArray::fromStringList(failed);
     data["success"] = failed.isEmpty();
 
-    sendResponse("delete_multiple", data);
+    sendResponse(Protocol::Responses::DELETE_MULTIPLE, data);
 }
 
 void ClientConnection::handleGetThumbnail(const QJsonObject &params)
@@ -524,7 +527,7 @@ void ClientConnection::handleGetThumbnail(const QJsonObject &params)
     data["path"] = path;
     data["data"] = QString::fromUtf8(imageData.toBase64());
 
-    sendResponse("thumbnail_data", data);
+    sendResponse(Protocol::Responses::THUMBNAIL_DATA, data);
 }
 
 void ClientConnection::handleGetServerInfo()
@@ -533,7 +536,7 @@ void ClientConnection::handleGetServerInfo()
     data["name"] = m_currentUsername;
     data["version"] = APP_VERSION_STRING;
 
-    sendResponse("server_info", data);
+    sendResponse(Protocol::Responses::SERVER_INFO, data);
 }
 
 void ClientConnection::handleCancelUpload(const QJsonObject &params)
@@ -554,7 +557,7 @@ void ClientConnection::handleCancelUpload(const QJsonObject &params)
 
         QJsonObject data;
         data["success"] = true;
-        sendResponse("upload_cancelled", data);
+        sendResponse(Protocol::Responses::UPLOAD_CANCELLED, data);
     }
 }
 
@@ -572,7 +575,7 @@ void ClientConnection::sendError(const QString &message)
 {
     QJsonObject error;
     error["error"] = message;
-    sendResponse("error", error);
+    sendResponse(Protocol::Responses::ERROR, error);
 }
 
 ClientConnection::AuthResult ClientConnection::authenticate(const QString &username, const QString &password, const QString &clientVersion, QString &errorMessage)
@@ -647,7 +650,7 @@ void ClientConnection::handleListDirectory(const QJsonObject &params)
     data["path"] = path;
     data["files"] = files;
 
-    sendResponse("list_directory", data);
+    sendResponse(Protocol::Responses::LIST_DIRECTORY, data);
 }
 
 void ClientConnection::handleCreateDirectory(const QJsonObject &params)
@@ -658,7 +661,7 @@ void ClientConnection::handleCreateDirectory(const QJsonObject &params)
         QJsonObject data;
         data["path"] = path;
         data["success"] = true;
-        sendResponse("create_directory", data);
+        sendResponse(Protocol::Responses::CREATE_DIRECTORY, data);
     } else {
         sendError("Failed to create directory");
     }
@@ -672,7 +675,7 @@ void ClientConnection::handleDeleteFile(const QJsonObject &params)
         QJsonObject data;
         data["path"] = path;
         data["success"] = true;
-        sendResponse("delete_file", data);
+        sendResponse(Protocol::Responses::DELETE_FILE, data);
     } else {
         sendError("Failed to delete file");
     }
@@ -686,7 +689,7 @@ void ClientConnection::handleDeleteDirectory(const QJsonObject &params)
         QJsonObject data;
         data["path"] = path;
         data["success"] = true;
-        sendResponse("delete_directory", data);
+        sendResponse(Protocol::Responses::DELETE_DIRECTORY, data);
     } else {
         sendError("Failed to delete directory");
     }
@@ -729,7 +732,7 @@ void ClientConnection::handleDownloadFile(const QJsonObject &params)
     metadata["name"] = fileInfo.fileName();
     metadata["size"] = m_downloadTotalSize;
     metadata["isDirectory"] = false;
-    sendResponse("download_start", metadata);
+    sendResponse(Protocol::Responses::DOWNLOAD_START, metadata);
 
     for (int i = 0; i < 3 && m_downloadSentSize < m_downloadTotalSize; ++i) {
         sendNextDownloadChunk();
@@ -748,7 +751,7 @@ void ClientConnection::sendNextDownloadChunk()
         QJsonObject data;
         data["path"] = m_downloadPath;
         data["success"] = true;
-        sendResponse("download_complete", data);
+        sendResponse(Protocol::Responses::DOWNLOAD_COMPLETE, data);
 
         if (m_isZipDownload) {
             QFile::remove(m_downloadPath);
@@ -834,7 +837,7 @@ void ClientConnection::handleUploadFile(const QJsonObject &params)
 
     QJsonObject data;
     data["ready"] = true;
-    sendResponse("upload_ready", data);
+    sendResponse(Protocol::Responses::UPLOAD_READY, data);
 }
 
 void ClientConnection::handleGetStorageInfo()
@@ -854,7 +857,7 @@ void ClientConnection::handleGetStorageInfo()
     data["used"] = used;
     data["available"] = available;
 
-    sendResponse("storage_info", data);
+    sendResponse(Protocol::Responses::STORAGE_INFO, data);
 }
 
 void ClientConnection::handleMoveItem(const QJsonObject &params)
@@ -867,7 +870,7 @@ void ClientConnection::handleMoveItem(const QJsonObject &params)
         data["from"] = fromPath;
         data["to"] = toPath;
         data["success"] = true;
-        sendResponse("move_item", data);
+        sendResponse(Protocol::Responses::MOVE_ITEM, data);
     } else {
         sendError("Failed to move item");
     }
@@ -914,7 +917,7 @@ void ClientConnection::handleCreateUser(const QJsonObject &params)
         QJsonObject data;
         data["username"] = username;
         data["success"] = true;
-        sendResponse("user_created", data);
+        sendResponse(Protocol::Responses::USER_CREATED, data);
     } else {
         sendError("Failed to create user");
     }
@@ -963,7 +966,7 @@ void ClientConnection::handleEditUser(const QJsonObject &params)
     QJsonObject data;
     data["username"] = username;
     data["success"] = true;
-    sendResponse("user_edited", data);
+    sendResponse(Protocol::Responses::USER_EDITED, data);
 }
 
 void ClientConnection::handleDeleteUser(const QJsonObject &params)
@@ -995,7 +998,7 @@ void ClientConnection::handleDeleteUser(const QJsonObject &params)
         QJsonObject data;
         data["username"] = username;
         data["success"] = true;
-        sendResponse("user_deleted", data);
+        sendResponse(Protocol::Responses::USER_DELETED, data);
     } else {
         sendError("Failed to delete user");
     }
@@ -1030,7 +1033,7 @@ void ClientConnection::handleGetUserList(const QJsonObject &params)
 
     QJsonObject data;
     data["users"] = usersArray;
-    sendResponse("user_list", data);
+    sendResponse(Protocol::Responses::USER_LIST, data);
 }
 
 void ClientConnection::handleGenerateShareLink(const QJsonObject &params)
@@ -1075,7 +1078,7 @@ void ClientConnection::handleGenerateShareLink(const QJsonObject &params)
     QJsonObject data;
     data["path"] = path;
     data["shareLink"] = shareLink;
-    sendResponse("share_link_generated", data);
+    sendResponse(Protocol::Responses::SHARE_LINK_GENERATED, data);
 }
 
 void ClientConnection::setHttpServer(HttpServer *httpServer)
@@ -1088,7 +1091,7 @@ void ClientConnection::sendPing()
     if (!m_authenticated) {
         return;
     }
-    sendResponse("ping", QJsonObject());
+    sendResponse(Protocol::Responses::PING, QJsonObject());
     m_waitingForPong = true;
     m_pongTimeoutTimer->start();
 }
@@ -1110,7 +1113,7 @@ void ClientConnection::handleGetFolderTree(const QJsonObject &params)
 
     QJsonObject data;
     data["tree"] = tree;
-    sendResponse("folder_tree", data);
+    sendResponse(Protocol::Responses::FOLDER_TREE, data);
 }
 
 void ClientConnection::handlePong(const QJsonObject &params)
@@ -1152,5 +1155,5 @@ void ClientConnection::handleMoveMultiple(const QJsonObject &params)
     data["to"] = toPath;
     data["success"] = failed.isEmpty();
 
-    sendResponse("move_multiple", data);
+    sendResponse(Protocol::Responses::MOVE_MULTIPLE, data);
 }

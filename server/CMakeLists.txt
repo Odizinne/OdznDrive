@@ -84,6 +84,7 @@ qt_add_executable(${PROJECT_NAME}
     ${SOURCES}
     ${HEADERS}
     resources/resources.qrc
+    include/protocol.h
 )
 
 target_include_directories(${PROJECT_NAME} PRIVATE

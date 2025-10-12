@@ -1,5 +1,6 @@
 #include "connectionmanager.h"
 #include "imagepreviewprovider.h"
+#include "server/include/protocol.h"
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QJsonArray>
@@ -145,7 +146,7 @@ void ConnectionManager::listDirectory(const QString &path, bool foldersFirst)
     QJsonObject params;
     params["path"] = path;
     params["foldersFirst"] = foldersFirst;
-    sendCommand("list_directory", params);
+    sendCommand(Protocol::Commands::LIST_DIRECTORY, params);
 }
 
 void ConnectionManager::createDirectory(const QString &path)
@@ -157,7 +158,7 @@ void ConnectionManager::createDirectory(const QString &path)
 
     QJsonObject params;
     params["path"] = path;
-    sendCommand("create_directory", params);
+    sendCommand(Protocol::Commands::CREATE_DIRECTORY, params);
 }
 
 void ConnectionManager::deleteFile(const QString &path)
@@ -169,7 +170,7 @@ void ConnectionManager::deleteFile(const QString &path)
 
     QJsonObject params;
     params["path"] = path;
-    sendCommand("delete_file", params);
+    sendCommand(Protocol::Commands::DELETE_FILE, params);
 }
 
 void ConnectionManager::deleteDirectory(const QString &path)
@@ -181,7 +182,7 @@ void ConnectionManager::deleteDirectory(const QString &path)
 
     QJsonObject params;
     params["path"] = path;
-    sendCommand("delete_directory", params);
+    sendCommand(Protocol::Commands::DELETE_DIRECTORY, params);
 }
 
 void ConnectionManager::uploadFile(const QString &localPath, const QString &remotePath)
@@ -255,7 +256,7 @@ void ConnectionManager::downloadFile(const QString &remotePath, const QString &l
 
     QJsonObject params;
     params["path"] = remotePath;
-    sendCommand("download_file", params);
+    sendCommand(Protocol::Commands::DOWNLOAD_FILE, params);
 }
 
 void ConnectionManager::downloadDirectory(const QString &remotePath, const QString &localPath)
@@ -272,7 +273,7 @@ void ConnectionManager::downloadDirectory(const QString &remotePath, const QStri
 
     QJsonObject params;
     params["path"] = remotePath;
-    sendCommand("download_directory", params);
+    sendCommand(Protocol::Commands::DOWNLOAD_DIRECTORY, params);
 }
 
 void ConnectionManager::getStorageInfo()
@@ -282,7 +283,7 @@ void ConnectionManager::getStorageInfo()
         return;
     }
 
-    sendCommand("get_storage_info", QJsonObject());
+    sendCommand(Protocol::Commands::GET_STORAGE_INFO, QJsonObject());
 }
 
 void ConnectionManager::moveItem(const QString &fromPath, const QString &toPath)
@@ -295,7 +296,7 @@ void ConnectionManager::moveItem(const QString &fromPath, const QString &toPath)
     QJsonObject params;
     params["from"] = fromPath;
     params["to"] = toPath;
-    sendCommand("move_item", params);
+    sendCommand(Protocol::Commands::MOVE_ITEM, params);
 }
 
 void ConnectionManager::requestThumbnail(const QString &path)
@@ -311,7 +312,7 @@ void ConnectionManager::requestThumbnail(const QString &path)
     QJsonObject params;
     params["path"] = path;
     params["maxSize"] = 256;
-    sendCommand("get_thumbnail", params);
+    sendCommand(Protocol::Commands::GET_THUMBNAIL, params);
 }
 
 void ConnectionManager::onConnected()
@@ -324,7 +325,7 @@ void ConnectionManager::onConnected()
     params["username"] = m_username;
     params["password"] = m_password;
     params["version"] = APP_VERSION_STRING;
-    sendCommand("authenticate", params);
+    sendCommand(Protocol::Commands::AUTHENTICATE, params);
 }
 
 void ConnectionManager::onDisconnected()
@@ -497,7 +498,7 @@ void ConnectionManager::cancelUpload()
 
     QJsonObject params;
     params["path"] = m_uploadRemotePath;
-    sendCommand("cancel_upload", params);
+    sendCommand(Protocol::Commands::CANCEL_UPLOAD, params);
     m_uploadLocalPath.clear();
     m_uploadRemotePath.clear();
     m_uploadTotalSize = 0;
@@ -530,7 +531,7 @@ void ConnectionManager::cancelDownload()
 {
     if (!m_downloadRemotePath.isEmpty()) {
         QJsonObject params;
-        sendCommand("cancel_download", params);
+        sendCommand(Protocol::Commands::CANCEL_DOWNLOAD, params);
     }
 
     cleanupCurrentDownload();
@@ -571,7 +572,7 @@ void ConnectionManager::startNextUpload()
     QJsonObject params;
     params["path"] = item.remotePath;
     params["size"] = m_uploadTotalSize;
-    sendCommand("upload_file", params);
+    sendCommand(Protocol::Commands::UPLOAD_FILE, params);
 }
 
 void ConnectionManager::cleanupCurrentUpload()
@@ -643,7 +644,7 @@ void ConnectionManager::deleteMultiple(const QStringList &paths)
     }
     params["paths"] = pathsArray;
 
-    sendCommand("delete_multiple", params);
+    sendCommand(Protocol::Commands::DELETE_MULTIPLE, params);
 }
 
 void ConnectionManager::handleResponse(const QJsonObject &response)
@@ -651,7 +652,7 @@ void ConnectionManager::handleResponse(const QJsonObject &response)
     QString type = response["type"].toString();
     QJsonObject data = response["data"].toObject();
 
-    if (type == "error") {
+    if (type == Protocol::Responses::ERROR) {
         QString error = data["error"].toString();
         setStatusMessage("Error: " + error);
         emit errorOccurred(error);
@@ -672,11 +673,11 @@ void ConnectionManager::handleResponse(const QJsonObject &response)
         return;
     }
 
-    if (type == "ping") {
-        sendCommand("pong", QJsonObject());
+    if (type == Protocol::Responses::PING) {
+        sendCommand(Protocol::Commands::PONG, QJsonObject());
     }
 
-    if (type == "authenticate") {
+    if (type == Protocol::Responses::AUTHENTICATE) {
         if (data["success"].toBool()) {
             setAuthenticated(true);
             setStatusMessage("Authenticated");
@@ -684,7 +685,7 @@ void ConnectionManager::handleResponse(const QJsonObject &response)
         } else {
             m_socket->close();
         }
-    } else if (type == "list_directory") {
+    } else if (type == Protocol::Responses::LIST_DIRECTORY) {
         QString path = data["path"].toString();
         QJsonArray filesArray = data["files"].toArray();
         QVariantList files = filesArray.toVariantList();
@@ -711,7 +712,7 @@ void ConnectionManager::handleResponse(const QJsonObject &response)
                 }
             }
         }
-    } else if (type == "thumbnail_data") {
+    } else if (type == Protocol::Responses::THUMBNAIL_DATA) {
         if (m_imageProvider) {
             QString path = data["path"].toString();
             QString base64Data = data["data"].toString();
@@ -723,17 +724,17 @@ void ConnectionManager::handleResponse(const QJsonObject &response)
                 emit thumbnailReady(path);
             }
         }
-    } else if (type == "create_directory") {
+    } else if (type == Protocol::Responses::CREATE_DIRECTORY) {
         emit directoryCreated(data["path"].toString());
-    } else if (type == "delete_file") {
+    } else if (type == Protocol::Responses::DELETE_FILE) {
         emit fileDeleted(data["path"].toString());
-    } else if (type == "delete_directory") {
+    } else if (type == Protocol::Responses::DELETE_DIRECTORY) {
         emit directoryDeleted(data["path"].toString());
-    } else if (type == "delete_multiple") {
+    } else if (type == Protocol::Responses::DELETE_MULTIPLE) {
         emit multipleDeleted();
-    } else if (type == "move_item") {
+    } else if (type == Protocol::Responses::MOVE_ITEM) {
         emit itemMoved(data["from"].toString(), data["to"].toString());
-    } else if (type == "upload_ready") {
+    } else if (type == Protocol::Responses::UPLOAD_READY) {
         m_uploadFile = new QFile(m_uploadLocalPath);
         if (m_uploadFile->open(QIODevice::ReadOnly)) {
             if (m_currentTransferType == TransferType::None) {
@@ -749,7 +750,7 @@ void ConnectionManager::handleResponse(const QJsonObject &response)
             m_uploadFile = nullptr;
             startNextUpload();
         }
-    } else if (type == "upload_complete") {
+    } else if (type == Protocol::Responses::UPLOAD_COMPLETE) {
         emit uploadProgress(100);
         emit uploadComplete(data["path"].toString());
         m_uploadLocalPath.clear();
@@ -766,14 +767,14 @@ void ConnectionManager::handleResponse(const QJsonObject &response)
         } else {
             startNextUpload();
         }
-    } else if (type == "upload_cancelled") {
+    } else if (type == Protocol::Responses::UPLOAD_CANCELLED) {
         setStatusMessage("Upload cancelled");
-    } else if (type == "download_zipping") {
+    } else if (type == Protocol::Responses::DOWNLOAD_ZIPPING) {
         QString name = data["name"].toString();
         setCurrentDownloadFileName(name);
         setIsZipping(true);
         emit downloadZipping(name);
-    } else if (type == "download_start") {
+    } else if (type == Protocol::Responses::DOWNLOAD_START) {
         QString fileName = data["name"].toString();
         m_downloadExpectedSize = data["size"].toVariant().toLongLong();
         m_downloadReceivedSize = 0;
@@ -790,42 +791,42 @@ void ConnectionManager::handleResponse(const QJsonObject &response)
         }
         startEtaTracking(TransferType::Download, m_downloadExpectedSize);
         emit downloadProgress(0);
-    } else if (type == "download_complete") {
+    } else if (type == Protocol::Responses::DOWNLOAD_COMPLETE) {
         emit downloadComplete(m_downloadLocalPath);
         cleanupCurrentDownload();
         resetEtaTracking();
-    } else if (type == "download_cancelled") {
+    } else if (type == Protocol::Responses::DOWNLOAD_CANCELLED) {
         setStatusMessage("Download cancelled");
-    } else if (type == "storage_info") {
+    } else if (type == Protocol::Responses::STORAGE_INFO) {
         qint64 total = data["total"].toVariant().toLongLong();
         qint64 used = data["used"].toVariant().toLongLong();
         qint64 available = data["available"].toVariant().toLongLong();
         emit storageInfo(total, used, available);
-    } else if (type == "rename_item") {
+    } else if (type == Protocol::Responses::RENAME_ITEM) {
         emit itemRenamed(data["path"].toString(), data["newName"].toString());
-    } else if (type == "server_info") {
+    } else if (type == Protocol::Responses::SERVER_INFO) {
         setServerName(data["name"].toString());
-    } else if (type == "user_created") {
+    } else if (type == Protocol::Responses::USER_CREATED) {
         emit userCreated(data["username"].toString());
         getUserList();
-    } else if (type == "user_edited") {
+    } else if (type == Protocol::Responses::USER_EDITED) {
         emit userEdited(data["username"].toString());
         getUserList();
-    } else if (type == "user_deleted") {
+    } else if (type == Protocol::Responses::USER_DELETED) {
         emit userDeleted(data["username"].toString());
         getUserList();
-    } else if (type == "share_link_generated") {
+    } else if (type == Protocol::Responses::SHARE_LINK_GENERATED) {
         QString path = data["path"].toString();
         QString shareLink = data["shareLink"].toString();
         emit shareLinkGenerated(path, shareLink);
-    } else if (type == "user_list") {
+    } else if (type == Protocol::Responses::USER_LIST) {
         QJsonArray usersArray = data["users"].toArray();
         QVariantList users = usersArray.toVariantList();
         emit userListReceived(users);
-    } else if (type == "folder_tree") {
+    } else if (type == Protocol::Responses::FOLDER_TREE) {
         QJsonObject tree = data["tree"].toObject();
         emit folderTreeReceived(tree.toVariantMap());
-    } else if (type == "move_multiple") {
+    } else if (type == Protocol::Responses::MOVE_MULTIPLE) {
         QJsonArray movedArray = data["movedItems"].toArray();
         QStringList movedItems;
         for (int i = 0; i < movedArray.size(); ++i) {
@@ -868,7 +869,7 @@ void ConnectionManager::getServerInfo()
         return;
     }
 
-    sendCommand("get_server_info", QJsonObject());
+    sendCommand(Protocol::Commands::GET_SERVER_INFO, QJsonObject());
 }
 
 void ConnectionManager::setServerName(const QString &name)
@@ -913,7 +914,7 @@ void ConnectionManager::downloadMultiple(const QStringList &remotePaths, const Q
     }
     params["paths"] = pathsArray;
     params["zipName"] = zipName;
-    sendCommand("download_multiple", params);
+    sendCommand(Protocol::Commands::DOWNLOAD_MULTIPLE, params);
 }
 
 void ConnectionManager::renameItem(const QString &path, const QString &newName)
@@ -926,7 +927,7 @@ void ConnectionManager::renameItem(const QString &path, const QString &newName)
     QJsonObject params;
     params["path"] = path;
     params["newName"] = newName;
-    sendCommand("rename_item", params);
+    sendCommand(Protocol::Commands::RENAME_ITEM, params);
 }
 
 void ConnectionManager::createNewUser(const QString &userName, const QString &userPassword, const int &maxStorage, const bool &isAdmin)
@@ -946,7 +947,7 @@ void ConnectionManager::createNewUser(const QString &userName, const QString &us
     params["password"] = userPassword;
     params["storageLimit"] = maxStorage;
     params["isAdmin"] = isAdmin;
-    sendCommand("create_user", params);
+    sendCommand(Protocol::Commands::CREATE_USER, params);
 }
 
 void ConnectionManager::editExistingUser(const QString &userName, const QString &userPassword, const int &maxStorage, const bool &isAdmin)
@@ -966,7 +967,7 @@ void ConnectionManager::editExistingUser(const QString &userName, const QString 
     params["password"] = userPassword;
     params["storageLimit"] = maxStorage;
     params["isAdmin"] = isAdmin;
-    sendCommand("edit_user", params);
+    sendCommand(Protocol::Commands::EDIT_USER, params);
 }
 
 void ConnectionManager::deleteUser(const QString &userName)
@@ -983,7 +984,7 @@ void ConnectionManager::deleteUser(const QString &userName)
 
     QJsonObject params;
     params["username"] = userName;
-    sendCommand("delete_user", params);
+    sendCommand(Protocol::Commands::DELETE_USER, params);
 }
 
 void ConnectionManager::getUserList()
@@ -998,7 +999,7 @@ void ConnectionManager::getUserList()
         return;
     }
 
-    sendCommand("get_user_list", QJsonObject());
+    sendCommand(Protocol::Commands::GET_USER_LIST, QJsonObject());
 }
 
 void ConnectionManager::updateEta()
@@ -1027,7 +1028,7 @@ void ConnectionManager::updateEta()
 
     m_etaLastUpdateTime = now;
     m_etaLastBytesTransferred = m_totalBytesTransferred;
-        setSpeed(formatSpeed(medianSpeed));
+    setSpeed(formatSpeed(medianSpeed));
 
     if (medianSpeed > 0) {
         qint64 remainingBytes = m_totalTransferSize - m_totalBytesTransferred;
@@ -1137,7 +1138,7 @@ void ConnectionManager::generateShareLink(const QString &path)
 
     QJsonObject params;
     params["path"] = path;
-    sendCommand("generate_share_link", params);
+    sendCommand(Protocol::Commands::GENERATE_SHARE_LINK, params);
 }
 
 void ConnectionManager::getFolderTree(const QString &path, int maxDepth)
@@ -1150,7 +1151,7 @@ void ConnectionManager::getFolderTree(const QString &path, int maxDepth)
     QJsonObject params;
     params["path"] = path;
     params["maxDepth"] = maxDepth;
-    sendCommand("get_folder_tree", params);
+    sendCommand(Protocol::Commands::GET_FOLDER_TREE, params);
 }
 
 void ConnectionManager::moveMultiple(const QStringList &fromPaths, const QString &toPath)
@@ -1173,5 +1174,5 @@ void ConnectionManager::moveMultiple(const QStringList &fromPaths, const QString
     params["fromPaths"] = pathsArray;
     params["to"] = toPath;
 
-    sendCommand("move_multiple", params);
+    sendCommand(Protocol::Commands::MOVE_MULTIPLE, params);
 }
