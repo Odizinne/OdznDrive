@@ -52,16 +52,44 @@ Item {
                 rippleHoverColor: Constants.contrastedRippleHoverColor
             }
 
+//            CustomButton {
+//                icon.source: "qrc:/icons/upload.svg"
+//                icon.color: "black"
+//                icon.width: 16
+//                icon.height: 16
+//                enabled: ConnectionManager.authenticated
+//                onClicked: Utils.openUploadDialog()
+//                ToolTip.visible: hovered
+//                ToolTip.text: "Upload files"
+//                rippleHoverColor: Constants.contrastedRippleHoverColor
+//            }
+
             CustomButton {
+                id: uploadButton
                 icon.source: "qrc:/icons/upload.svg"
                 icon.color: "black"
                 icon.width: 16
                 icon.height: 16
                 enabled: ConnectionManager.authenticated
-                onClicked: Utils.openUploadDialog()
+                onClicked: uploadMenu.popup()
                 ToolTip.visible: hovered
-                ToolTip.text: "Upload files"
+                ToolTip.text: "Upload"
                 rippleHoverColor: Constants.contrastedRippleHoverColor
+
+                CustomMenu {
+                    id: uploadMenu
+                    width: 150
+
+                    MenuItem {
+                        text: "Upload Files"
+                        onClicked: Utils.openUploadFilesDialog()
+                    }
+
+                    MenuItem {
+                        text: "Upload Folder"
+                        onClicked: Utils.openUploadFolderDialog()
+                    }
+                }
             }
 
             CustomButton {

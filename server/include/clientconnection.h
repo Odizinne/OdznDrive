@@ -72,6 +72,8 @@ private:
     void handleGetFolderTree(const QJsonObject &params);
     void handlePong(const QJsonObject &params);
     void handleMoveMultiple(const QJsonObject &params);
+    void handleUploadFolder(const QJsonObject &params);
+    void handleUploadMixed(const QJsonObject &params);
 
     void sendNextDownloadChunk();
     void cleanupDownload();

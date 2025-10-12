@@ -155,6 +155,7 @@ qt_add_qml_module(${PROJECT_NAME}
     QML_FILES qml/CustomComponents/CustomTextField.qml
     QML_FILES qml/Components/MainMenu.qml
     QML_FILES qml/Components/DropIndicator.qml
+    QML_FILES qml/Dialogs/OverrideWarningDialog.qml
 )
 
 target_link_libraries(${PROJECT_NAME} PRIVATE

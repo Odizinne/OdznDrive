@@ -1,4 +1,4 @@
-// include/protocol.h
+// server/include/protocol.h
 #ifndef PROTOCOL_H
 #define PROTOCOL_H
 
@@ -20,6 +20,8 @@ constexpr const char* GET_FOLDER_TREE = "get_folder_tree";
 constexpr const char* DELETE_FILE = "delete_file";
 constexpr const char* DELETE_MULTIPLE = "delete_multiple";
 constexpr const char* UPLOAD_FILE = "upload_file";
+constexpr const char* UPLOAD_FOLDER = "upload_folder";      // NEW
+constexpr const char* UPLOAD_MIXED = "upload_mixed";        // NEW
 constexpr const char* DOWNLOAD_FILE = "download_file";
 constexpr const char* DOWNLOAD_DIRECTORY = "download_directory";
 constexpr const char* DOWNLOAD_MULTIPLE = "download_multiple";
@@ -58,6 +60,8 @@ constexpr const char* DELETE_MULTIPLE = "delete_multiple";
 constexpr const char* UPLOAD_READY = "upload_ready";
 constexpr const char* UPLOAD_COMPLETE = "upload_complete";
 constexpr const char* UPLOAD_CANCELLED = "upload_cancelled";
+constexpr const char* FOLDER_UPLOAD_STARTED = "folder_upload_started";   // NEW
+constexpr const char* MIXED_UPLOAD_STARTED = "mixed_upload_started";     // NEW
 constexpr const char* DOWNLOAD_START = "download_start";
 constexpr const char* DOWNLOAD_COMPLETE = "download_complete";
 constexpr const char* DOWNLOAD_CANCELLED = "download_cancelled";

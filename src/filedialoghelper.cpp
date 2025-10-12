@@ -1,6 +1,8 @@
+// src/filedialoghelper.cpp
 #include "filedialoghelper.h"
 #include <QFileDialog>
 #include <QStandardPaths>
+#include <QFileInfo>
 
 FileDialogHelper* FileDialogHelper::s_instance = nullptr;
 
@@ -37,6 +39,20 @@ QStringList FileDialogHelper::openFiles(const QString &title)
         );
 
     return files;
+}
+
+QString FileDialogHelper::openFolder(const QString &title)
+{
+    QString defaultDir = QStandardPaths::writableLocation(QStandardPaths::HomeLocation);
+
+    QString folder = QFileDialog::getExistingDirectory(
+        nullptr,
+        title,
+        defaultDir,
+        QFileDialog::ShowDirsOnly | QFileDialog::DontResolveSymlinks
+        );
+
+    return folder;
 }
 
 QString FileDialogHelper::saveFile(const QString &title, const QString &defaultName, const QString &filter)
@@ -91,4 +107,10 @@ QString FileDialogHelper::joinPath(const QString &basePath, const QString &fileN
 
     QDir baseDir(basePath);
     return baseDir.filePath(fileName);
+}
+
+bool FileDialogHelper::isDirectory(const QString &path)
+{
+    QFileInfo info(path);
+    return info.exists() && info.isDir();
 }

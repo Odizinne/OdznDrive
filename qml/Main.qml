@@ -117,12 +117,27 @@ ApplicationWindow {
             uploadProgressDialog.open()
         }
 
+        //function onUploadComplete(path) {
+        //    if (ConnectionManager.uploadQueueSize === 0) {
+        //        uploadProgressDialog.close()
+        //    }
+        //    ConnectionManager.listDirectory(FileModel.currentPath, UserSettings.foldersFirst)
+        //    storageUpdateTimer.restart()
+        //}
+
         function onUploadComplete(path) {
-            if (ConnectionManager.uploadQueueSize === 0) {
-                uploadProgressDialog.close()
-            }
+            // This is only emitted when ALL uploads are done
+            uploadProgressDialog.close()
             ConnectionManager.listDirectory(FileModel.currentPath, UserSettings.foldersFirst)
             storageUpdateTimer.restart()
+            root.refreshTreeView()
+        }
+
+        function onUploadQueueSizeChanged() {
+            // Close dialog if queue is empty and no current upload
+            if (ConnectionManager.uploadQueueSize === 0 && !ConnectionManager.currentUploadFileName) {
+                uploadProgressDialog.close()
+            }
         }
 
         function onDownloadProgress(progress) {
@@ -166,12 +181,6 @@ ApplicationWindow {
             Utils.storagePercentage = used / total
             Utils.storageOccupied = Utils.formatStorage(used)
             Utils.storageTotal = Utils.formatStorage(total)
-        }
-
-        function onUploadQueueSizeChanged() {
-            if (ConnectionManager.uploadQueueSize === 0 && !ConnectionManager.currentUploadFileName) {
-                uploadProgressDialog.close()
-            }
         }
     }
 

@@ -8,6 +8,7 @@
 #include <QFileInfo>
 #include <QUrl>
 #include <QBuffer>
+#include <QDirIterator>
 #include "version.h"
 #include "usermodel.h"
 
@@ -737,10 +738,15 @@ void ConnectionManager::handleResponse(const QJsonObject &response)
     } else if (type == Protocol::Responses::UPLOAD_READY) {
         m_uploadFile = new QFile(m_uploadLocalPath);
         if (m_uploadFile->open(QIODevice::ReadOnly)) {
+            // Only start ETA tracking for the first file
+            // Subsequent files will continue using the existing tracking
             if (m_currentTransferType == TransferType::None) {
-                startEtaTracking(TransferType::Upload, m_uploadTotalSize);
+                // This should have been set by uploadFolder/uploadMixed already
+                // But just in case, start tracking here
+                startEtaTracking(TransferType::Upload, m_totalTransferSize);
             }
-            emit uploadProgress(0);
+
+            // Don't emit 0% progress here, let onBytesWritten handle it
             for (int i = 0; i < 3 && m_uploadSentSize < m_uploadTotalSize; ++i) {
                 sendNextChunk();
             }
@@ -751,8 +757,9 @@ void ConnectionManager::handleResponse(const QJsonObject &response)
             startNextUpload();
         }
     } else if (type == Protocol::Responses::UPLOAD_COMPLETE) {
-        emit uploadProgress(100);
-        emit uploadComplete(data["path"].toString());
+        // Individual file completed
+        QString completedPath = data["path"].toString();
+
         m_uploadLocalPath.clear();
         m_uploadRemotePath.clear();
         m_uploadTotalSize = 0;
@@ -763,8 +770,15 @@ void ConnectionManager::handleResponse(const QJsonObject &response)
         }
 
         if (m_uploadQueue.isEmpty()) {
+            // All uploads done - emit 100% and signal completion
+            emit uploadProgress(100);
+            setCurrentUploadFileName("");
             resetEtaTracking();
+
+            // Emit the completion signal that triggers UI refresh
+            emit uploadComplete(completedPath);
         } else {
+            // More files to upload - continue without emitting uploadComplete
             startNextUpload();
         }
     } else if (type == Protocol::Responses::UPLOAD_CANCELLED) {
@@ -1175,4 +1189,128 @@ void ConnectionManager::moveMultiple(const QStringList &fromPaths, const QString
     params["to"] = toPath;
 
     sendCommand(Protocol::Commands::MOVE_MULTIPLE, params);
+}
+
+void ConnectionManager::uploadFolder(const QString &localFolderPath, const QString &remoteBasePath)
+{
+    if (!m_authenticated) {
+        emit errorOccurred("Not authenticated");
+        return;
+    }
+
+    QFileInfo folderInfo(localFolderPath);
+    if (!folderInfo.exists() || !folderInfo.isDir()) {
+        emit errorOccurred("Invalid folder path: " + localFolderPath);
+        return;
+    }
+
+    QString folderName = folderInfo.fileName();
+    QString targetBase = remoteBasePath;
+    if (!targetBase.isEmpty() && !targetBase.endsWith('/')) {
+        targetBase += '/';
+    }
+    targetBase += folderName;
+
+    QStringList filesToUpload;
+    qint64 totalSize = 0;
+
+    QDirIterator it(localFolderPath, QDir::Files | QDir::NoDotAndDotDot, QDirIterator::Subdirectories);
+    while (it.hasNext()) {
+        QString filePath = it.next();
+        QFileInfo fileInfo(filePath);
+
+        QString relativePath = QDir(localFolderPath).relativeFilePath(filePath);
+        QString remotePath = targetBase;
+        if (!remotePath.isEmpty() && !remotePath.endsWith('/')) {
+            remotePath += '/';
+        }
+        remotePath += relativePath;
+
+        UploadQueueItem item;
+        item.localPath = filePath;
+        item.remotePath = remotePath;
+        m_uploadQueue.enqueue(item);
+
+        totalSize += fileInfo.size();
+    }
+
+    emit uploadQueueSizeChanged();
+
+    if (!m_uploadFile && m_uploadLocalPath.isEmpty()) {
+        startEtaTracking(TransferType::Upload, totalSize);
+        QTimer::singleShot(0, this, &ConnectionManager::startNextUpload);
+    } else if (m_currentTransferType == TransferType::Upload) {
+        m_totalTransferSize += totalSize;
+    }
+}
+
+void ConnectionManager::uploadMixed(const QStringList &localPaths, const QString &remoteBasePath)
+{
+    if (!m_authenticated) {
+        emit errorOccurred("Not authenticated");
+        return;
+    }
+
+    qint64 totalSize = 0;
+
+    for (const QString &localPath : localPaths) {
+        QFileInfo info(localPath);
+
+        if (!info.exists()) {
+            qWarning() << "Path does not exist:" << localPath;
+            continue;
+        }
+
+        if (info.isDir()) {
+            QString folderName = info.fileName();
+            QString targetBase = remoteBasePath;
+            if (!targetBase.isEmpty() && !targetBase.endsWith('/')) {
+                targetBase += '/';
+            }
+            targetBase += folderName;
+
+            QDirIterator it(localPath, QDir::Files | QDir::NoDotAndDotDot, QDirIterator::Subdirectories);
+            while (it.hasNext()) {
+                QString filePath = it.next();
+                QFileInfo fileInfo(filePath);
+
+                QString relativePath = QDir(localPath).relativeFilePath(filePath);
+                QString remotePath = targetBase;
+                if (!remotePath.isEmpty() && !remotePath.endsWith('/')) {
+                    remotePath += '/';
+                }
+                remotePath += relativePath;
+
+                UploadQueueItem item;
+                item.localPath = filePath;
+                item.remotePath = remotePath;
+                m_uploadQueue.enqueue(item);
+
+                totalSize += fileInfo.size();
+            }
+        } else {
+            QString fileName = info.fileName();
+            QString remotePath = remoteBasePath;
+            if (!remotePath.isEmpty() && !remotePath.endsWith('/')) {
+                remotePath += '/';
+            }
+            remotePath += fileName;
+
+            UploadQueueItem item;
+            item.localPath = localPath;
+            item.remotePath = remotePath;
+            m_uploadQueue.enqueue(item);
+
+            totalSize += info.size();
+        }
+    }
+
+    emit uploadQueueSizeChanged();
+
+    if (!m_uploadFile && m_uploadLocalPath.isEmpty()) {
+        startEtaTracking(TransferType::Upload, totalSize);
+        QTimer::singleShot(0, this, &ConnectionManager::startNextUpload);
+    } else if (m_currentTransferType == TransferType::Upload) {
+        m_totalTransferSize += totalSize;
+    }
 }

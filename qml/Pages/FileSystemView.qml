@@ -155,10 +155,12 @@ Page {
 
                     if (drop.hasUrls && ConnectionManager.authenticated) {
                         let files = []
+                        let hasFolders = false
+
                         for (let i = 0; i < drop.urls.length; i++) {
                             let fileUrl = drop.urls[i].toString()
-
                             let localPath = fileUrl
+
                             if (localPath.startsWith("file://")) {
                                 localPath = localPath.substring(7)
                             }
@@ -168,10 +170,20 @@ Page {
                             }
 
                             files.push(localPath)
+
+                            if (FileDialogHelper.isDirectory(localPath)) {
+                                hasFolders = true
+                            }
                         }
 
                         if (files.length > 0) {
-                            ConnectionManager.uploadFiles(files, FileModel.currentPath)
+                            if (hasFolders || files.length > 1) {
+                                // Mixed upload or multiple items
+                                ConnectionManager.uploadMixed(files, FileModel.currentPath)
+                            } else {
+                                // Single file
+                                ConnectionManager.uploadFiles(files, FileModel.currentPath)
+                            }
                         }
 
                         drop.accept(Qt.CopyAction)

@@ -12,6 +12,7 @@ Settings {
     property bool foldersFirst: true
     property bool darkMode: true
     property bool askWhereToDownload: false
+    property bool warnOnOverride: true
     property string downloadFolderPath:
         (Qt.platform.os === "linux" ? StandardPaths.HomeLocation : StandardPaths.writableLocation(StandardPaths.DocumentsLocation)) + "/OdznDrive Downloads"
 }

@@ -199,6 +199,10 @@ void ClientConnection::handleCommand(const QJsonObject &command)
         handleGetUserList(params);
     } else if (type == Protocol::Commands::GENERATE_SHARE_LINK) {
         handleGenerateShareLink(params);
+    } else if (type == Protocol::Commands::UPLOAD_FOLDER) {
+        handleUploadFolder(params);
+    } else if (type == Protocol::Commands::UPLOAD_MIXED) {
+        handleUploadMixed(params);
     } else {
         sendError("Unknown command type");
     }
@@ -1156,4 +1160,20 @@ void ClientConnection::handleMoveMultiple(const QJsonObject &params)
     data["success"] = failed.isEmpty();
 
     sendResponse(Protocol::Responses::MOVE_MULTIPLE, data);
+}
+
+void ClientConnection::handleUploadFolder(const QJsonObject &params)
+{
+    // For now, just acknowledge - the actual uploads come as individual UPLOAD_FILE commands
+    QJsonObject data;
+    data["success"] = true;
+    sendResponse(Protocol::Responses::FOLDER_UPLOAD_STARTED, data);
+}
+
+void ClientConnection::handleUploadMixed(const QJsonObject &params)
+{
+    // For now, just acknowledge - the actual uploads come as individual UPLOAD_FILE commands
+    QJsonObject data;
+    data["success"] = true;
+    sendResponse(Protocol::Responses::MIXED_UPLOAD_STARTED, data);
 }

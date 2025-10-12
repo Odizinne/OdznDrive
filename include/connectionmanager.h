@@ -80,7 +80,8 @@ public:
     Q_INVOKABLE void editExistingUser(const QString &userName, const QString &userPassword, const int &maxStorage, const bool &isAdmin);
     Q_INVOKABLE void deleteUser(const QString &userName);
     Q_INVOKABLE void getUserList();
-
+    Q_INVOKABLE void uploadFolder(const QString &localFolderPath, const QString &remoteBasePath);
+    Q_INVOKABLE void uploadMixed(const QStringList &localPaths, const QString &remoteBasePath);
 
 signals:
     void connectedChanged();

@@ -364,4 +364,18 @@ QtObject {
         draggedItems = []
         currentDropTarget = null
     }
+
+    function openUploadFolderDialog() {
+        let folder = FileDialogHelper.openFolder("Select Folder to Upload")
+        if (folder && folder !== "") {
+            ConnectionManager.uploadFolder(toNativeFilePath(folder), FileModel.currentPath)
+        }
+    }
+
+    function openUploadFilesDialog() {
+        let files = FileDialogHelper.openFiles("Select Files to Upload")
+        if (files.length > 0) {
+            ConnectionManager.uploadFiles(files, FileModel.currentPath)
+        }
+    }
 }
