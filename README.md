@@ -40,3 +40,6 @@ A default admin user will be created on server first run:
 
 it is STRONGLY recommended to log in with this account, create your account with a secure password (with the bottom left menu - > user managment), login to your newly created account, and delete the admin account.
 
+Todo:
+- Account registration system
+- E2E encryption (maybe)
