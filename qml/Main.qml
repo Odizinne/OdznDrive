@@ -117,14 +117,6 @@ ApplicationWindow {
             uploadProgressDialog.open()
         }
 
-        //function onUploadComplete(path) {
-        //    if (ConnectionManager.uploadQueueSize === 0) {
-        //        uploadProgressDialog.close()
-        //    }
-        //    ConnectionManager.listDirectory(FileModel.currentPath, UserSettings.foldersFirst)
-        //    storageUpdateTimer.restart()
-        //}
-
         function onUploadComplete(path) {
             // This is only emitted when ALL uploads are done
             uploadProgressDialog.close()

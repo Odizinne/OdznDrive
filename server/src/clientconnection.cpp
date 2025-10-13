@@ -256,12 +256,6 @@ void ClientConnection::handleDownloadMultiple(const QJsonObject &params)
         return;
     }
 
-    // Notify client that zipping has started
-    QJsonObject zipData;
-    zipData["status"] = "zipping";
-    zipData["count"] = paths.size();
-    sendResponse(Protocol::Responses::DOWNLOAD_ZIPPING, zipData);
-
     // Create temp directory for zip file
     QString tempDir = QDir::temp().filePath("odzndrive-" + QString::number(QCoreApplication::applicationPid()));
     QDir().mkpath(tempDir);
@@ -269,53 +263,67 @@ void ClientConnection::handleDownloadMultiple(const QJsonObject &params)
     QString zipFileName = params["zipName"].toString() + ".zip";
     QString zipPath = QDir(tempDir).filePath(zipFileName);
 
+    // Notify client that zipping has started
+    QJsonObject zipData;
+    zipData["status"] = "zipping";
+    zipData["name"] = zipFileName;
+    zipData["count"] = paths.size();
+    sendResponse(Protocol::Responses::DOWNLOAD_ZIPPING, zipData);
+
     // Remove any existing zip file
     QFile::remove(zipPath);
 
     int compressionLevel = Config::instance().getCompressionLevel();
-    bool success = m_fileManager->createZipFromMultiplePaths(paths, zipPath, compressionLevel);
 
-    if (!success) {
-        sendError("Failed to create zip file");
-        return;
-    }
+    // Connect to completion signal (use single-shot connection)
+    connect(m_fileManager, &FileManager::zipCreationComplete, this,
+            [this, zipFileName](bool success, const QString &zipPath) {
+                if (!success) {
+                    sendError("Failed to create zip file");
+                    QFile::remove(zipPath);
+                    return;
+                }
 
-    // Check if zip file was created
-    QFileInfo zipInfo(zipPath);
-    if (!zipInfo.exists()) {
-        sendError("Zip file was not created");
-        return;
-    }
+                // Check if zip file was created
+                QFileInfo zipInfo(zipPath);
+                if (!zipInfo.exists()) {
+                    sendError("Zip file was not created");
+                    return;
+                }
 
-    // Clean up any existing download
-    cleanupDownload();
+                // Clean up any existing download
+                cleanupDownload();
 
-    // Open the zip file for download
-    m_downloadFile = new QFile(zipPath);
-    if (!m_downloadFile->open(QIODevice::ReadOnly)) {
-        sendError("Failed to open zip file");
-        delete m_downloadFile;
-        m_downloadFile = nullptr;
-        QFile::remove(zipPath);
-        return;
-    }
+                // Open the zip file for download
+                m_downloadFile = new QFile(zipPath);
+                if (!m_downloadFile->open(QIODevice::ReadOnly)) {
+                    sendError("Failed to open zip file");
+                    delete m_downloadFile;
+                    m_downloadFile = nullptr;
+                    QFile::remove(zipPath);
+                    return;
+                }
 
-    // Set download state
-    m_downloadPath = zipPath;
-    m_downloadTotalSize = zipInfo.size();
-    m_downloadSentSize = 0;
-    m_isZipDownload = true;
+                // Set download state
+                m_downloadPath = zipPath;
+                m_downloadTotalSize = zipInfo.size();
+                m_downloadSentSize = 0;
+                m_isZipDownload = true;
 
-    // Send download start metadata
-    QJsonObject metadata;
-    metadata["name"] = zipFileName;
-    metadata["size"] = m_downloadTotalSize;
-    sendResponse(Protocol::Responses::DOWNLOAD_START, metadata);
+                // Send download start metadata
+                QJsonObject metadata;
+                metadata["name"] = zipFileName;
+                metadata["size"] = m_downloadTotalSize;
+                sendResponse(Protocol::Responses::DOWNLOAD_START, metadata);
 
-    // Start sending chunks
-    for (int i = 0; i < 3 && m_downloadSentSize < m_downloadTotalSize; ++i) {
-        sendNextDownloadChunk();
-    }
+                // Start sending chunks
+                for (int i = 0; i < 3 && m_downloadSentSize < m_downloadTotalSize; ++i) {
+                    sendNextDownloadChunk();
+                }
+            }, Qt::SingleShotConnection);
+
+    // Start async compression
+    m_fileManager->createZipFromMultiplePathsAsync(paths, zipPath, compressionLevel);
 }
 
 void ClientConnection::handleDownloadDirectory(const QJsonObject &params)
@@ -340,12 +348,6 @@ void ClientConnection::handleDownloadDirectory(const QJsonObject &params)
         dirName = "root";
     }
 
-    // Notify client that zipping has started
-    QJsonObject zipData;
-    zipData["status"] = "zipping";
-    zipData["name"] = dirName;
-    sendResponse(Protocol::Responses::DOWNLOAD_ZIPPING, zipData);
-
     // Create temp directory for zip file
     QString tempDir = QDir::temp().filePath("odzndrive-" + QString::number(QCoreApplication::applicationPid()));
     QDir().mkpath(tempDir);
@@ -353,53 +355,66 @@ void ClientConnection::handleDownloadDirectory(const QJsonObject &params)
     QString zipFileName = dirName + ".zip";
     QString zipPath = QDir(tempDir).filePath(zipFileName);
 
+    // Notify client that zipping has started
+    QJsonObject zipData;
+    zipData["status"] = "zipping";
+    zipData["name"] = zipFileName;
+    sendResponse(Protocol::Responses::DOWNLOAD_ZIPPING, zipData);
+
     // Remove any existing zip file
     QFile::remove(zipPath);
 
     int compressionLevel = Config::instance().getCompressionLevel();
-    bool success = m_fileManager->createZipFromDirectory(path, zipPath, compressionLevel);
 
-    if (!success) {
-        sendError("Failed to create zip file");
-        return;
-    }
+    // Connect to completion signal (use single-shot connection)
+    connect(m_fileManager, &FileManager::zipCreationComplete, this,
+            [this, zipFileName](bool success, const QString &zipPath) {
+                if (!success) {
+                    sendError("Failed to create zip file");
+                    QFile::remove(zipPath);
+                    return;
+                }
 
-    // Check if zip file was created
-    QFileInfo zipInfo(zipPath);
-    if (!zipInfo.exists()) {
-        sendError("Zip file was not created");
-        return;
-    }
+                // Check if zip file was created
+                QFileInfo zipInfo(zipPath);
+                if (!zipInfo.exists()) {
+                    sendError("Zip file was not created");
+                    return;
+                }
 
-    // Clean up any existing download
-    cleanupDownload();
+                // Clean up any existing download
+                cleanupDownload();
 
-    // Open the zip file for download
-    m_downloadFile = new QFile(zipPath);
-    if (!m_downloadFile->open(QIODevice::ReadOnly)) {
-        sendError("Failed to open zip file");
-        delete m_downloadFile;
-        m_downloadFile = nullptr;
-        QFile::remove(zipPath);
-        return;
-    }
+                // Open the zip file for download
+                m_downloadFile = new QFile(zipPath);
+                if (!m_downloadFile->open(QIODevice::ReadOnly)) {
+                    sendError("Failed to open zip file");
+                    delete m_downloadFile;
+                    m_downloadFile = nullptr;
+                    QFile::remove(zipPath);
+                    return;
+                }
 
-    // Set download state
-    m_downloadPath = zipPath;
-    m_downloadTotalSize = zipInfo.size();
-    m_downloadSentSize = 0;
-    m_isZipDownload = true;
+                // Set download state
+                m_downloadPath = zipPath;
+                m_downloadTotalSize = zipInfo.size();
+                m_downloadSentSize = 0;
+                m_isZipDownload = true;
 
-    // Send download start metadata
-    QJsonObject metadata;
-    metadata["name"] = zipFileName;
-    metadata["size"] = m_downloadTotalSize;
-    sendResponse(Protocol::Responses::DOWNLOAD_START, metadata);
+                // Send download start metadata
+                QJsonObject metadata;
+                metadata["name"] = zipFileName;
+                metadata["size"] = m_downloadTotalSize;
+                sendResponse(Protocol::Responses::DOWNLOAD_START, metadata);
 
-    // Start sending chunks
-    for (int i = 0; i < 3 && m_downloadSentSize < m_downloadTotalSize; ++i) {
-        sendNextDownloadChunk();
-    }
+                // Start sending chunks
+                for (int i = 0; i < 3 && m_downloadSentSize < m_downloadTotalSize; ++i) {
+                    sendNextDownloadChunk();
+                }
+            }, Qt::SingleShotConnection);
+
+    // Start async compression
+    m_fileManager->createZipFromDirectoryAsync(path, zipPath, compressionLevel);
 }
 
 void ClientConnection::handleCancelDownload(const QJsonObject &params)

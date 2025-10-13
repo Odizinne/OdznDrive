@@ -6,6 +6,7 @@
 #include <QDateTime>
 #include <QDirIterator>
 #include <QStorageInfo>
+#include <QThreadPool>
 
 FileManager::FileManager(const QString &rootPath, QObject *parent)
     : QObject(parent)
@@ -381,6 +382,10 @@ bool FileManager::createZipFromDirectory(const QString &relativePath, const QStr
 
     // Create zip file
     QuaZip zip(zipPath);
+
+    // ADDED: Enable UTF-8 support
+    zip.setUtf8Enabled(true);
+
     if (!zip.open(QuaZip::mdCreate)) {
         qWarning() << "Failed to create zip file:" << zipPath;
         return false;
@@ -411,6 +416,10 @@ bool FileManager::createZipFromMultiplePaths(const QStringList &paths, const QSt
     QFile::remove(zipPath);
 
     QuaZip zip(zipPath);
+
+    // ADDED: Enable UTF-8 support
+    zip.setUtf8Enabled(true);
+
     if (!zip.open(QuaZip::mdCreate)) {
         qWarning() << "Failed to create zip file:" << zipPath;
         return false;
@@ -454,6 +463,31 @@ bool FileManager::createZipFromMultiplePaths(const QStringList &paths, const QSt
         return false;
     }
 
-    qInfo() << "Successfully created zip:" << zipPath << "with compression level:" << compressionLevel;
     return true;
+}
+
+void FileManager::createZipFromDirectoryAsync(const QString &relativePath, const QString &zipPath, int compressionLevel)
+{
+    // Run in background thread
+    QThreadPool::globalInstance()->start([this, relativePath, zipPath, compressionLevel]() {
+        bool success = createZipFromDirectory(relativePath, zipPath, compressionLevel);
+
+        // Emit signal on main thread
+        QMetaObject::invokeMethod(this, [this, success, zipPath]() {
+            emit zipCreationComplete(success, zipPath);
+        }, Qt::QueuedConnection);
+    });
+}
+
+void FileManager::createZipFromMultiplePathsAsync(const QStringList &paths, const QString &zipPath, int compressionLevel)
+{
+    // Run in background thread
+    QThreadPool::globalInstance()->start([this, paths, zipPath, compressionLevel]() {
+        bool success = createZipFromMultiplePaths(paths, zipPath, compressionLevel);
+
+        // Emit signal on main thread
+        QMetaObject::invokeMethod(this, [this, success, zipPath]() {
+            emit zipCreationComplete(success, zipPath);
+        }, Qt::QueuedConnection);
+    });
 }

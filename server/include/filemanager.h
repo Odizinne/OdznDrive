@@ -5,6 +5,7 @@
 #include <QFileInfo>
 #include <QJsonArray>
 #include <QObject>
+#include <QTextCodec>
 #include <quazip/quazip.h>
 #include <quazip/quazipfile.h>
 
@@ -32,10 +33,18 @@ public:
     QByteArray readFile(const QString &relativePath);
     qint64 getFileSize(const QString &relativePath) const;
 
+    // Synchronous versions (kept for compatibility)
     bool createZipFromDirectory(const QString &relativePath, const QString &zipPath, int compressionLevel = 0);
     bool createZipFromMultiplePaths(const QStringList &paths, const QString &zipPath, int compressionLevel = 0);
 
+    // NEW: Asynchronous versions
+    void createZipFromDirectoryAsync(const QString &relativePath, const QString &zipPath, int compressionLevel = 0);
+    void createZipFromMultiplePathsAsync(const QStringList &paths, const QString &zipPath, int compressionLevel = 0);
+
     QJsonObject getFolderTree(const QString &relativePath, int maxDepth = -1);
+
+signals:
+    void zipCreationComplete(bool success, const QString &zipPath);
 
 private:
     QString m_rootPath;

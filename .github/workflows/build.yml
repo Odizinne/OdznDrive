@@ -146,6 +146,10 @@ jobs:
           cd build-server
           cmake --install .
 
+      - name: Check Server Dependencies
+        run: |
+          ldd build-server/install/bin/OdznDriveServer
+
       - name: Zip Client binaries
         run: |
           cd build

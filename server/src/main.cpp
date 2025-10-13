@@ -13,12 +13,15 @@ static void forceCore5CompatLink() {
     // otherwise qt mess with deploying Core5Compat which
     // is required for quazip. :shrug:
 }
+
 int main(int argc, char *argv[])
 {
     QCoreApplication app(argc, argv);
     QCoreApplication::setOrganizationName("Odizinne");
     QCoreApplication::setApplicationName("OdznDriveServer");
     QCoreApplication::setApplicationVersion(APP_VERSION_STRING);
+
+    forceCore5CompatLink();
 
     qInfo() << "========================================";
     qInfo() << "          OdznDrive Server" ;
