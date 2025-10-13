@@ -41,35 +41,11 @@ Item {
             spacing: 8
 
             CustomButton {
-                icon.source: "qrc:/icons/plus.svg"
-                icon.color: "black"
-                icon.width: 16
-                icon.height: 16
-                enabled: ConnectionManager.authenticated
-                onClicked: root.requestNewFolderDialog()
-                ToolTip.visible: hovered
-                ToolTip.text: "New folder"
-                rippleHoverColor: Constants.contrastedRippleHoverColor
-            }
-
-//            CustomButton {
-//                icon.source: "qrc:/icons/upload.svg"
-//                icon.color: "black"
-//                icon.width: 16
-//                icon.height: 16
-//                enabled: ConnectionManager.authenticated
-//                onClicked: Utils.openUploadDialog()
-//                ToolTip.visible: hovered
-//                ToolTip.text: "Upload files"
-//                rippleHoverColor: Constants.contrastedRippleHoverColor
-//            }
-
-            CustomButton {
                 id: uploadButton
                 icon.source: "qrc:/icons/upload.svg"
                 icon.color: "black"
-                icon.width: 16
-                icon.height: 16
+                icon.width: 18
+                icon.height: 18
                 enabled: ConnectionManager.authenticated
                 onClicked: uploadMenu.popup()
                 ToolTip.visible: hovered
@@ -93,10 +69,22 @@ Item {
             }
 
             CustomButton {
+                icon.source: "qrc:/icons/plus.svg"
+                icon.color: "black"
+                icon.width: 18
+                icon.height: 18
+                enabled: ConnectionManager.authenticated
+                onClicked: root.requestNewFolderDialog()
+                ToolTip.visible: hovered
+                ToolTip.text: "New folder"
+                rippleHoverColor: Constants.contrastedRippleHoverColor
+            }
+
+            CustomButton {
                 icon.source: "qrc:/icons/refresh.svg"
                 icon.color: "black"
-                icon.width: 16
-                icon.height: 16
+                icon.width: 18
+                icon.height: 18
                 rippleHoverColor: Constants.contrastedRippleHoverColor
                 enabled: ConnectionManager.authenticated
                 onClicked: {
@@ -116,8 +104,8 @@ Item {
             CustomButton {
                 icon.source: "qrc:/icons/home.svg"
                 icon.color: enabled ? "black" : "#60000000"
-                icon.width: 16
-                icon.height: 16
+                icon.width: 18
+                icon.height: 18
                 onClicked: ConnectionManager.listDirectory("", UserSettings.foldersFirst)
                 rippleHoverColor: Constants.contrastedRippleHoverColor
             }
