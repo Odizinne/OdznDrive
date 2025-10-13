@@ -14,7 +14,7 @@ QtObject {
     property color scrollBarHoveredColor: UserSettings.darkMode ? "#5f6871" : "#95a5ba"
     property color scrollBarPressedColor: UserSettings.darkMode ? "#6f7881" : "#8595aa"
     property color rippleHoverColor: "#AA5f6871"
-    property color contrastedRippleHoverColor: "#B1FFFFFF"
+    property color contrastedRippleHoverColor: Qt.lighter(Constants.headerGradientStart, 1.3)
     property color headerGradientStart: UserSettings.darkMode ? "#F0A860" : "#E07830"
     property color headerGradientStop: UserSettings.darkMode ? "#FFB880" : "#F0A060"
 
