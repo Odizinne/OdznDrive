@@ -1,10 +1,11 @@
 cmake_minimum_required(VERSION 3.21)
-project(OdznDriveServer VERSION 0.15.0 LANGUAGES CXX)
+project(OdznDriveServer VERSION 0.15.1 LANGUAGES CXX)
 
 set(CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}/install" CACHE PATH "Installation directory" FORCE)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
 find_package(Qt6 REQUIRED COMPONENTS Core Gui Network WebSockets HttpServer Core5Compat)
 qt_standard_project_setup()
 include(FetchContent)

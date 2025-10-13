@@ -5,7 +5,14 @@
 #include "config.h"
 #include "version.h"
 #include <QStandardPaths>
+#include <QLinkedList>
 
+static void forceCore5CompatLink() {
+    QLinkedList<int> dummy;
+    (void)dummy.size();
+    // otherwise qt mess with deploying Core5Compat which
+    // is required for quazip. :shrug:
+}
 int main(int argc, char *argv[])
 {
     QCoreApplication app(argc, argv);
