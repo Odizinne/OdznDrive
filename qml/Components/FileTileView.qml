@@ -10,6 +10,7 @@ Item {
     id: root
     signal requestRename(string path, string name)
     signal requestDelete(string path, bool isDir)
+    signal requestPreview(string path, string name)
     signal setDragIndicatorX(int x)
     signal setDragIndicatorY(int y)
     signal setDragIndicatorVisible(bool visible)
@@ -452,6 +453,8 @@ Item {
                                     ConnectionManager.listDirectory(FileModel.getParentPath(), UserSettings.foldersFirst)
                                 } else if (tileDelegateRoot.itemIsDir) {
                                     ConnectionManager.listDirectory(tileDelegateRoot.itemPath, UserSettings.foldersFirst)
+                                } else if (Utils.isImageFile(tileDelegateRoot.itemName) || Utils.isEditableTextFile(tileDelegateRoot.itemName)) {
+                                    root.requestPreview(tileDelegateRoot.itemPath, tileDelegateRoot.itemName)
                                 }
                             }
                         }
@@ -475,6 +478,7 @@ Item {
                             onRenameClicked: root.requestRename(tileContextMenu.itemPath, tileContextMenu.itemName)
                             onDeleteClicked: root.requestDelete(tileContextMenu.itemPath, tileContextMenu.itemIsDir)
                             onShareClicked: ConnectionManager.generateShareLink(tileContextMenu.itemPath)
+                            onPreviewClicked: root.requestPreview(tileContextMenu.itemPath, tileContextMenu.itemName)
                         }
 
                         ParentItemMenu {

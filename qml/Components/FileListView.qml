@@ -10,6 +10,7 @@ ColumnLayout {
     spacing: 0
     signal requestRename(string path, string name)
     signal requestDelete(string path, bool isDir)
+    signal requestPreview(string path, string name)
     signal setDragIndicatorX(int x)
     signal setDragIndicatorY(int y)
     signal setDragIndicatorVisible(bool visible)
@@ -249,6 +250,7 @@ ColumnLayout {
                         onRenameClicked: fileListView.requestRename(contextMenu.itemPath, contextMenu.itemName)
                         onDeleteClicked: fileListView.requestDelete(contextMenu.itemPath, contextMenu.itemIsDir)
                         onShareClicked: ConnectionManager.generateShareLink(contextMenu.itemPath)
+                        onPreviewClicked: fileListView.requestPreview(contextMenu.itemPath, contextMenu.itemName)
                     }
 
                     Rectangle {
@@ -505,6 +507,8 @@ ColumnLayout {
                             onDoubleTapped: {
                                 if (delegateRoot.model.isDir) {
                                     ConnectionManager.listDirectory(delegateRoot.model.path, UserSettings.foldersFirst)
+                                } else if (Utils.isImageFile(delegateRoot.itemName) || Utils.isEditableTextFile(delegateRoot.itemName)) {
+                                    fileListView.requestPreview(delegateRoot.itemPath, delegateRoot.itemName)
                                 }
                             }
                         }

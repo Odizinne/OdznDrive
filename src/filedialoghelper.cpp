@@ -3,6 +3,9 @@
 #include <QFileDialog>
 #include <QStandardPaths>
 #include <QFileInfo>
+#include <QFile>
+#include <QTextStream>
+#include <QDateTime>
 
 FileDialogHelper* FileDialogHelper::s_instance = nullptr;
 
@@ -113,4 +116,50 @@ bool FileDialogHelper::isDirectory(const QString &path)
 {
     QFileInfo info(path);
     return info.exists() && info.isDir();
+}
+
+QString FileDialogHelper::getTempFilePath(const QString &fileName)
+{
+    QString tempDir = QDir::tempPath();
+    QString uniqueName = QString("odz_preview_%1_%2").arg(QDateTime::currentMSecsSinceEpoch()).arg(fileName);
+    return QDir(tempDir).filePath(uniqueName);
+}
+
+QString FileDialogHelper::readTextFile(const QString &filePath)
+{
+    QFile file(filePath);
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        qWarning() << "Failed to open file for reading:" << filePath;
+        return QString();
+    }
+
+    QTextStream in(&file);
+    in.setEncoding(QStringConverter::Utf8);
+    QString content = in.readAll();
+    file.close();
+    return content;
+}
+
+bool FileDialogHelper::writeTextFile(const QString &filePath, const QString &content)
+{
+    QFile file(filePath);
+    if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+        qWarning() << "Failed to open file for writing:" << filePath;
+        return false;
+    }
+
+    QTextStream out(&file);
+    out.setEncoding(QStringConverter::Utf8);
+    out << content;
+    file.close();
+    return true;
+}
+
+bool FileDialogHelper::deleteFile(const QString &filePath)
+{
+    QFile file(filePath);
+    if (file.exists()) {
+        return file.remove();
+    }
+    return true; // Already deleted
 }

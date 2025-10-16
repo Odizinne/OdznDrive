@@ -48,7 +48,9 @@ Page {
                multiDeleteConfirmDialog.visible ||
                userAddDialog.visible ||
                userManagmentDialog.visible ||
-               confirmDeleteUserDialog.visible
+               confirmDeleteUserDialog.visible ||
+               imagePreviewDialog.visible ||
+               textPreviewDialog.visible
     }
 
     Connections {
@@ -101,6 +103,18 @@ Page {
 
     MultiDeleteConfirmDialog {
         id: multiDeleteConfirmDialog
+        anchors.centerIn: parent
+    }
+
+    ImagePreviewDialog {
+        id: imagePreviewDialog
+        anchors.centerIn: parent
+        width: parent.width - 80
+        height: parent.height - 80
+    }
+
+    TextPreviewDialog {
+        id: textPreviewDialog
         anchors.centerIn: parent
     }
 
@@ -268,6 +282,18 @@ Page {
                 deleteConfirmDialog.open()
             }
 
+            onRequestPreview: function(path, name) {
+                if (Utils.isImageFile(name)) {
+                    imagePreviewDialog.filePath = path
+                    imagePreviewDialog.fileName = name
+                    imagePreviewDialog.open()
+                } else if (Utils.isEditableTextFile(name)) {
+                    textPreviewDialog.filePath = path
+                    textPreviewDialog.fileName = name
+                    textPreviewDialog.open()
+                }
+            }
+
             onSetDragIndicatorX: function(x) {
                 dragIndicator.x = x
             }
@@ -303,6 +329,18 @@ Page {
                 deleteConfirmDialog.itemPath = path
                 deleteConfirmDialog.isDirectory = isDir
                 deleteConfirmDialog.open()
+            }
+
+            onRequestPreview: function(path, name) {
+                if (Utils.isImageFile(name)) {
+                    imagePreviewDialog.filePath = path
+                    imagePreviewDialog.fileName = name
+                    imagePreviewDialog.open()
+                } else if (Utils.isEditableTextFile(name)) {
+                    textPreviewDialog.filePath = path
+                    textPreviewDialog.fileName = name
+                    textPreviewDialog.open()
+                }
             }
 
             onSetDragIndicatorX: function(x) {

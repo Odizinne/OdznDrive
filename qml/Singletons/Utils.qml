@@ -59,6 +59,23 @@ QtObject {
         return "qrc:/icons/types/unknow.svg"
     }
 
+    function isImageFile(fileName) {
+        if (!fileName || fileName === "") return false
+        const ext = fileName.split('.').pop().toLowerCase()
+        const imageExt = ["png", "jpg", "jpeg", "gif", "bmp", "webp"]
+        return imageExt.indexOf(ext) !== -1
+    }
+
+    function isEditableTextFile(fileName) {
+        if (!fileName || fileName === "") return false
+        const ext = fileName.split('.').pop().toLowerCase()
+        const editableExt = ["txt", "md", "ini", "cfg", "json", "xml", "yml", "yaml", "log",
+                             "c", "cpp", "cxx", "h", "hpp", "hxx", "cs", "java", "js", "ts",
+                             "py", "rb", "php", "go", "rs", "swift", "kt", "sh", "bat", "ps1",
+                             "html", "css", "scss", "csv"]
+        return editableExt.indexOf(ext) !== -1
+    }
+
     function isItemChecked(path) {
         return checkedItems[path] === true
     }

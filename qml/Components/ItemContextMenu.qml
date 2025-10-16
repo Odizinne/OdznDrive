@@ -13,13 +13,28 @@ CustomMenu {
     signal renameClicked()
     signal deleteClicked()
     signal shareClicked()
+    signal previewClicked()
 
     property bool shareEnabled: true
+    property bool showPreview: !itemIsDir && (Utils.isImageFile(itemName) || Utils.isEditableTextFile(itemName))
 
     MenuItem {
         text: contextMenu.itemName
         enabled: false
         font.bold: true
+    }
+
+    MenuItem {
+        text: Utils.isImageFile(contextMenu.itemName) ? "Preview" : "Edit"
+        visible: contextMenu.showPreview
+        icon.source: Utils.isImageFile(contextMenu.itemName) ? "qrc:/icons/types/picture.svg" : "qrc:/icons/types/text.svg"
+        icon.width: 16
+        icon.height: 16
+        onClicked: contextMenu.previewClicked()
+    }
+
+    MenuSeparator {
+        visible: contextMenu.showPreview
     }
 
     MenuItem {
