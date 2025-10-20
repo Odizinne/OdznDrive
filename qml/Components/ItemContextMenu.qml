@@ -27,15 +27,14 @@ CustomMenu {
     MenuItem {
         text: Utils.isImageFile(contextMenu.itemName) ? "Preview" : "Edit"
         visible: contextMenu.showPreview
+        height: contextMenu.showPreview ? implicitHeight : 0
         icon.source: Utils.isImageFile(contextMenu.itemName) ? "qrc:/icons/types/picture.svg" : "qrc:/icons/types/text.svg"
         icon.width: 16
         icon.height: 16
         onClicked: contextMenu.previewClicked()
     }
 
-    MenuSeparator {
-        visible: contextMenu.showPreview
-    }
+    MenuSeparator {}
 
     MenuItem {
         text: "Share"

@@ -1061,37 +1061,42 @@ void ClientConnection::handleGenerateShareLink(const QJsonObject &params)
         sendError("Not authenticated");
         return;
     }
-
     if (!m_httpServer) {
         sendError("HTTP server not available");
         return;
     }
-
     QString path = params["path"].toString();
-
     if (!m_fileManager->isValidPath(path)) {
         sendError("Invalid file path");
         return;
     }
-
     QString absPath = m_fileManager->getAbsolutePath(path);
     QFileInfo fileInfo(absPath);
-
     if (!fileInfo.exists() || !fileInfo.isFile()) {
         sendError("File not found");
         return;
     }
-
     QSettings settings(QCoreApplication::organizationName(), QCoreApplication::applicationName());
     QString httpUrl = settings.value("server/httpUrl", "http://127.0.0.1").toString();
     QString domain = settings.value("server/domain", "").toString();
     bool shortUrl = settings.value("server/shortUrl", false).toBool();
 
     QString shareLink = m_httpServer->generateShareLink(absPath, httpUrl, domain, shortUrl);
-
     if (shareLink.isEmpty()) {
         sendError("Failed to generate share link");
         return;
+    }
+
+    if (!shareLink.startsWith("http://") && !shareLink.startsWith("https://")) {
+        if (!domain.isEmpty()) {
+            shareLink = "https://" + shareLink;
+        } else {
+            QString protocol = "http://";
+            if (httpUrl.startsWith("https://")) {
+                protocol = "https://";
+            }
+            shareLink = protocol + shareLink;
+        }
     }
 
     QJsonObject data;
