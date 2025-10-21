@@ -307,7 +307,8 @@ Page {
                     Material.roundedScale: Material.ExtraSmallScale
                     enabled: urlField.text.trim() !== "" &&
                              usernameField.text.trim() !== "" &&
-                             passwordField.text.trim() !== ""
+                             passwordField.text.trim() !== "" &&
+                             !ConnectionManager.authenticating
 
                     onClicked: {
                         if (urlField.text.trim() !== "" &&

@@ -13,7 +13,7 @@ Rectangle {
     visible: menuHeight !== 0
     layer.enabled: visible
     layer.effect: RoundedElevationEffect {
-        elevation: 6
+        elevation: 3
         roundedScale: 0
     }
 

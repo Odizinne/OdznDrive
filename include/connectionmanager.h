@@ -34,12 +34,14 @@ class ConnectionManager : public QObject
     Q_PROPERTY(bool isAdmin READ isAdmin NOTIFY isAdminChanged)
     Q_PROPERTY(QString eta READ eta NOTIFY etaChanged)
     Q_PROPERTY(QString speed READ speed NOTIFY speedChanged)
+    Q_PROPERTY(bool authenticating READ authenticating NOTIFY authenticatingChanged)
 
 public:
     static ConnectionManager* create(QQmlEngine *qmlEngine, QJSEngine *jsEngine);
     static ConnectionManager* instance();
 
     bool connected() const { return m_connected; }
+    bool authenticating() const { return m_authenticating; }
     bool authenticated() const { return m_authenticated; }
     QString statusMessage() const { return m_statusMessage; }
     int uploadQueueSize() const { return m_uploadQueue.size(); }
@@ -85,6 +87,7 @@ public:
 
 signals:
     void connectedChanged();
+    void authenticatingChanged();
     void authenticatedChanged();
     void statusMessageChanged();
     void uploadQueueSizeChanged();
@@ -140,6 +143,7 @@ private:
     void sendCommand(const QString &type, const QJsonObject &params);
     void handleResponse(const QJsonObject &response);
     void setConnected(bool connected);
+    void setAuthenticating(bool authenticating);
     void setAuthenticated(bool authenticated);
     void setStatusMessage(const QString &message);
     void sendNextChunk();
@@ -187,6 +191,7 @@ private:
     QString m_currentUploadFileName;
     QString m_serverName;
     bool m_isAdmin;
+    bool m_authenticating;
 
     ImagePreviewProvider *m_imageProvider;
 

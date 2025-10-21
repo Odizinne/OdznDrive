@@ -52,6 +52,7 @@ set(QML_FILES
     qml/Components/ParentItemMenu.qml
     qml/Components/FolderTreeView.qml
     qml/Components/MainMenu.qml
+    qml/Components/MainMenuPopup.qml
     qml/Components/DropIndicator.qml
 
     qml/CustomComponents/CustomButton.qml

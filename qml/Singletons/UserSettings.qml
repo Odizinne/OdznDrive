@@ -14,4 +14,5 @@ Settings {
     property bool askWhereToDownload: false
     property string downloadFolderPath:
         (Qt.platform.os === "linux" ? StandardPaths.writableLocation(StandardPaths.HomeLocation) : StandardPaths.writableLocation(StandardPaths.DocumentsLocation)) + "/OdznDrive Downloads"
+    property bool compactSidePane: false
 }

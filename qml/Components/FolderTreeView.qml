@@ -105,32 +105,69 @@ Item {
 
         ColumnLayout {
             anchors.fill: parent
-            anchors.margins: 8
+            anchors.margins: UserSettings.compactSidePane ? 0 : 8
 
             Rectangle {
                 color: Constants.treeDelegateHoverColor
-                Layout.preferredHeight: 45
-                Layout.fillWidth: true
+                Layout.topMargin: UserSettings.compactSidePane ? 0 : -8
+                Layout.leftMargin: UserSettings.compactSidePane ? 0 : -8
+                Layout.rightMargin: UserSettings.compactSidePane ? 0 : -8
+                Layout.preferredHeight: UserSettings.compactSidePane ? -1 : 45
+                Layout.preferredWidth: UserSettings.compactSidePane ? 45 : -1
+                Layout.fillWidth: UserSettings.compactSidePane ? false : true
+                Layout.fillHeight: UserSettings.compactSidePane ? true : false
                 topLeftRadius: 4
                 topRightRadius: 4
-                bottomLeftRadius: menu.opened ? 0 : 4
-                bottomRightRadius: menu.opened ? 0 : 4
+                bottomLeftRadius: UserSettings.compactSidePane ? 4 : 0//menu.opened ? 0 : 4
+                bottomRightRadius: UserSettings.compactSidePane ? 4 : 0// menu.opened ? 0 : 4
 
                 layer.enabled: true
                 layer.effect: RoundedElevationEffect {
-                    elevation: 6
+                    elevation: 3
                     roundedScale: 0
                 }
-                RowLayout {
+                GridLayout {
                     anchors.fill: parent
                     anchors.leftMargin: 6
 
+                    flow: UserSettings.compactSidePane ? GridLayout.TopToBottom : GridLayout.LeftToRight
+
+                    CustomButton {
+                        icon.source: UserSettings.compactSidePane ? "qrc:/icons/show_sidebar.svg" : "qrc:/icons/hide_sidebar.svg"
+                        icon.width: 16
+                        icon.height: 16
+                        onClicked: {
+                            if (menu.open) {
+                                menu.close()
+                            }
+
+                            UserSettings.compactSidePane = !UserSettings.compactSidePane
+                        }
+                    }
+
                     CustomButton {
                         id: menuButton
+                        visible: !UserSettings.compactSidePane
                         onClicked: menu.visible ? menu.close() : menu.open()
                         icon.source: "qrc:/icons/cog.svg"
                         icon.width: 16
                         icon.height: 16
+                    }
+
+                    Rectangle {
+                        visible: opacity !== 0
+                        Layout.preferredWidth: UserSettings.compactSidePane ? 24 : 1
+                        Layout.preferredHeight: UserSettings.compactSidePane ? 1 : 24
+                        Layout.alignment: Qt.AlignCenter
+                        Layout.leftMargin: UserSettings.compactSidePane ? -6 : 0
+                        color: Material.foreground
+                        opacity: Utils.checkedCount > 0 ? 0.3 : 0
+                        Behavior on opacity {
+                            NumberAnimation {
+                                duration: 200
+                                easing.type: Easing.OutQuad
+                            }
+                        }
                     }
 
                     CustomButton {
@@ -183,26 +220,15 @@ Item {
                         }
                     }
 
-                    Rectangle {
-                        visible: opacity !== 0
-                        Layout.preferredWidth: 1
-                        Layout.preferredHeight: 24
-                        color: Material.foreground
-                        opacity: Utils.checkedCount > 0 ? 0.3 : 0
-                        Behavior on opacity {
-                            NumberAnimation {
-                                duration: 200
-                                easing.type: Easing.OutQuad
-                            }
-                        }
-                    }
-
                     Label {
                         visible: opacity !== 0
-                        Layout.leftMargin: 8
-                        opacity: Utils.checkedCount > 0 ? 0.7 : 0
-                        text: Utils.checkedCount + (Utils.checkedCount === 1 ? " item" : " items")
-
+                        Layout.leftMargin: UserSettings.compactSidePane ? -6 : 8
+                        Layout.topMargin: UserSettings.compactSidePane ? 8 : 0
+                        color: Material.accent
+                        Layout.alignment: Qt.AlignCenter
+                        font.bold: UserSettings.compactSidePane
+                        opacity: Utils.checkedCount > 0 ? 1 : 0
+                        text: Utils.checkedCount
                         Behavior on opacity {
                             NumberAnimation {
                                 duration: 200
@@ -212,7 +238,28 @@ Item {
                     }
 
                     Item {
-                        Layout.fillWidth: true
+                        Layout.fillWidth: UserSettings.compactSidePane ? false : true
+                        Layout.fillHeight: UserSettings.compactSidePane ? true : false
+                    }
+
+                    CustomButton {
+                        onClicked: {
+                            UserSettings.compactSidePane = false
+                            filterField.forceActiveFocus()
+                        }
+                        visible: UserSettings.compactSidePane
+                        icon.source: "qrc:/icons/search.svg"
+                        icon.width: 16
+                        icon.height: 16
+                    }
+
+                    CustomButton {
+                        id: popupMenuButton
+                        visible: UserSettings.compactSidePane
+                        onClicked: popupMenu.visible ? popupMenu.close() : popupMenu.popup()
+                        icon.source: "qrc:/icons/cog.svg"
+                        icon.width: 16
+                        icon.height: 16
                     }
                 }
             }
@@ -221,10 +268,17 @@ Item {
                 id: menu
                 Layout.fillWidth: true
                 Layout.preferredHeight: menuHeight
-                Layout.topMargin: -6
+                Layout.topMargin: -5
+                Layout.leftMargin: -8
+                Layout.rightMargin: -8
+            }
+
+            MainMenuPopup {
+                id: popupMenu
             }
 
             CustomScrollView {
+                visible: !UserSettings.compactSidePane
                 opacity: !menu.visible ? 1 : 0
                 id: scroll
                 Layout.fillWidth: true
@@ -407,6 +461,8 @@ Item {
             }
 
             TextField {
+                id: filterField
+                visible: !UserSettings.compactSidePane
                 Layout.fillWidth: true
                 Layout.preferredHeight: 35
                 placeholderText: "Filter..."
@@ -417,6 +473,7 @@ Item {
             }
 
             ColumnLayout {
+                visible: !UserSettings.compactSidePane
                 spacing: 6
                 Layout.leftMargin: 10
                 Layout.rightMargin: 10

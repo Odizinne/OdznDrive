@@ -18,6 +18,7 @@ ConnectionManager::ConnectionManager(QObject *parent)
     : QObject(parent)
     , m_socket(new QWebSocket(QString(), QWebSocketProtocol::VersionLatest, this))
     , m_connected(false)
+    , m_authenticating(false)
     , m_authenticated(false)
     , m_downloadFile(nullptr)
     , m_downloadExpectedSize(0)
@@ -94,6 +95,7 @@ void ConnectionManager::connectToServer(const QString &url, const QString &usern
     }
 
     setConnected(false);
+    setAuthenticating(true);
     setAuthenticated(false);
 
     m_username = username;
@@ -333,6 +335,7 @@ void ConnectionManager::onDisconnected()
 {
     m_connectionTimer->stop();
     setConnected(false);
+    setAuthenticating(false);
     setAuthenticated(false);
     setStatusMessage("Disconnected");
 
@@ -409,6 +412,7 @@ void ConnectionManager::onError(QAbstractSocket::SocketError error)
     m_connectionTimer->stop();
     Q_UNUSED(error)
     setConnected(false);
+    setAuthenticating(false);
     setAuthenticated(false);
     qDebug() << m_socket->errorString();
     emit errorOccurred(m_socket->errorString());
@@ -420,6 +424,7 @@ void ConnectionManager::onConnectionTimeout()
     if (!m_connected) {
         m_socket->abort();
         setConnected(false);
+        setAuthenticating(false);
         setAuthenticated(false);
         setStatusMessage("Connection timeout");
         emit errorOccurred("Connection timeout - server did not respond");
@@ -681,6 +686,7 @@ void ConnectionManager::handleResponse(const QJsonObject &response)
     if (type == Protocol::Responses::AUTHENTICATE) {
         if (data["success"].toBool()) {
             setAuthenticated(true);
+            setAuthenticating(false);
             setStatusMessage("Authenticated");
             setIsAdmin(data["isAdmin"].toBool());
         } else {
@@ -858,6 +864,13 @@ void ConnectionManager::setConnected(bool connected)
     if (m_connected != connected) {
         m_connected = connected;
         emit connectedChanged();
+    }
+}
+
+void ConnectionManager::setAuthenticating(bool authenticating) {
+    if (m_authenticating != authenticating) {
+        m_authenticating = authenticating;
+        emit authenticatingChanged();
     }
 }
 

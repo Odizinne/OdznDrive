@@ -132,9 +132,9 @@ Page {
         handleSpacing: 12
 
         FolderTreeView {
-            SplitView.minimumWidth: 250
-            SplitView.preferredWidth: 250
-            SplitView.maximumWidth: 400
+            SplitView.minimumWidth: UserSettings.compactSidePane ? 45 : 250
+            SplitView.preferredWidth: UserSettings.compactSidePane ? 45 : 250
+            SplitView.maximumWidth: UserSettings.compactSidePane ? 45 : 400
         }
 
         Loader {

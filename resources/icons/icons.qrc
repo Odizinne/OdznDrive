@@ -1,6 +1,9 @@
 <RCC>
     <qresource prefix="icons">
         <file>cog.svg</file>
+        <file>search.svg</file>
+        <file>hide_sidebar.svg</file>
+        <file>show_sidebar.svg</file>
         <file>plus.svg</file>
         <file>refresh.svg</file>
         <file>up.svg</file>
