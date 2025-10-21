@@ -2,6 +2,8 @@ pragma Singleton
 import QtQuick
 
 QtObject {
+    property color accentColor: "#FF9F5A"
+    property color primaryColor: "#E67E22"
     property color backgroundColor: UserSettings.darkMode ? "#2a3239" : "#d5dce8"
     property color altBackgroundColor: UserSettings.darkMode ? "#323a42" : "#d5dce8"
     property color surfaceColor: UserSettings.darkMode ? "#363f48" : "#e3ebf5"

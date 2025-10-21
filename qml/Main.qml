@@ -13,8 +13,8 @@ ApplicationWindow {
     minimumHeight: 720
     title: "OdznDrive Client"
     color: Constants.backgroundColor
-    Material.accent: "#FF9F5A"
-    Material.primary: "#E67E22"
+    Material.accent: Constants.accentColor
+    Material.primary: Constants.primaryColor
     Material.theme: UserSettings.darkMode ? Material.Dark : Material.Light
 
     signal requestLoginReset()
