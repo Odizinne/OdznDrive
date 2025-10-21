@@ -22,11 +22,7 @@ ColumnLayout {
 
     Item {
         Layout.fillWidth: true
-        Layout.preferredHeight: 55// + (FileModel.canGoUp ? 60 : 0)
-        height: 55// + (FileModel.canGoUp ? 60 : 0)
-        //width: parent.width - (scrollView.ScrollBar.vertical.policy === ScrollBar.AlwaysOn ? 12 + 8 : 12)
-
-        //z: 2
+        Layout.preferredHeight: 55
 
         Rectangle {
             id: columnHeader
@@ -69,17 +65,17 @@ ColumnLayout {
                 Label {
                     text: "Size"
                     font.bold: true
-                    Layout.preferredWidth: 100
+                    Layout.preferredWidth: 90
                 }
 
                 Label {
                     text: "Modified"
                     font.bold: true
-                    Layout.preferredWidth: 180
+                    Layout.preferredWidth: 140
                 }
 
                 Item {
-                    Layout.preferredWidth: 80
+                    Layout.preferredWidth: 40
                 }
             }
         }
@@ -195,18 +191,18 @@ ColumnLayout {
 
                         Label {
                             text: "-"
-                            Layout.preferredWidth: 100
+                            Layout.preferredWidth: 90
                             opacity: 0.7
                         }
 
                         Label {
                             text: ""
-                            Layout.preferredWidth: 180
+                            Layout.preferredWidth: 140
                             opacity: 0.7
                         }
 
                         Item {
-                            Layout.preferredWidth: 80
+                            Layout.preferredWidth: 40
                         }
                     }
 
@@ -350,18 +346,18 @@ ColumnLayout {
 
                             Label {
                                 text: delegateRoot.model.isDir ? "-" : Utils.formatSize(delegateRoot.model.size)
-                                Layout.preferredWidth: 100
+                                Layout.preferredWidth: 90
                                 opacity: 0.7
                             }
 
                             Label {
                                 text: Utils.formatDate(delegateRoot.model.modified)
-                                Layout.preferredWidth: 180
+                                Layout.preferredWidth: 140
                                 opacity: 0.7
                             }
 
                             RowLayout {
-                                Layout.preferredWidth: 80
+                                Layout.preferredWidth: 40
                                 spacing: 2
 
                                 CustomButton {

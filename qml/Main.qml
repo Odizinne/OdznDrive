@@ -9,7 +9,7 @@ ApplicationWindow {
     visible: true
     width: 1280
     height: 720
-    minimumWidth: 1280
+    minimumWidth: 920
     minimumHeight: 720
     title: "OdznDrive Client"
     color: Constants.backgroundColor
