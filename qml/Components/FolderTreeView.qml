@@ -242,6 +242,24 @@ Item {
                         Layout.fillHeight: UserSettings.compactSidePane ? true : false
                     }
 
+                    Label {
+                        visible: UserSettings.compactSidePane
+                        Layout.leftMargin: -6
+                        text: Math.round(Utils.storagePercentage * 100) + "%"
+                        Layout.alignment: Qt.AlignCenter
+                    }
+
+                    CustomProgressBar {
+                        visible: UserSettings.compactSidePane
+                        Layout.leftMargin: -6
+                        Layout.preferredWidth: 8
+                        vertical: true
+                        Material.accent: Utils.storagePercentage < 0.5 ? Material.Green : Utils.storagePercentage < 0.85 ? Material.Orange : Material.Red
+                        value: Utils.storagePercentage
+                        Material.background: Constants.backgroundColor
+                        Layout.alignment: Qt.AlignCenter
+                    }
+
                     CustomButton {
                         onClicked: {
                             UserSettings.compactSidePane = false

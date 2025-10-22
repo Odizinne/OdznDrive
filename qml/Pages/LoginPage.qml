@@ -308,7 +308,8 @@ Page {
                     enabled: urlField.text.trim() !== "" &&
                              usernameField.text.trim() !== "" &&
                              passwordField.text.trim() !== "" &&
-                             !ConnectionManager.authenticating
+                             !ConnectionManager.authenticating &&
+                             !busyContainer.visible
 
                     onClicked: {
                         if (urlField.text.trim() !== "" &&
