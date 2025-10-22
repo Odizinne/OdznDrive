@@ -175,8 +175,11 @@ Page {
                             let fileUrl = drop.urls[i].toString()
                             let localPath = fileUrl
 
+                            // Use Qt's built-in URL decoding for proper handling of encoded characters
                             if (localPath.startsWith("file://")) {
                                 localPath = localPath.substring(7)
+                                // Decode URL-encoded characters like %5B -> [ and %5D -> ]
+                                localPath = decodeURIComponent(localPath)
                             }
 
                             if (localPath.match(/^\/[A-Za-z]:\//)) {

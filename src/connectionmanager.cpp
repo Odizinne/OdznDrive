@@ -793,7 +793,6 @@ void ConnectionManager::handleResponse(const QJsonObject &response)
         QString name = data["name"].toString();
         setCurrentDownloadFileName(name);
         setIsZipping(true);
-        qDebug() << "zipping";
         emit downloadZipping(name);
     } else if (type == Protocol::Responses::DOWNLOAD_START) {
         QString fileName = data["name"].toString();
