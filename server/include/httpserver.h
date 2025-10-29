@@ -23,6 +23,13 @@ public:
 
     QString generateShareLink(const QString &filePath, const QString &baseUrl, const QString &domain, const bool &shortUrl);
     QString registerFileForSharing(const QString &filePath, const bool &shortUrl);
+    QString getExistingShareToken(const QString &filePath) const;
+
+    void loadShareLinksFromFile(const QString &filePath);
+    void saveShareLinksToFile(const QString &filePath) const;
+    void updateFilePathInShareLinks(const QString &oldPath, const QString &newPath);
+    void removeShareLink(const QString &filePath);
+    void removeShareLinksInDirectory(const QString &dirPath);
 
 signals:
     void started();
@@ -41,6 +48,8 @@ private:
     QTcpServer *m_tcpServer;
     QHash<QString, QString> m_sharedFiles;
     QString m_baseUrl;
+    QString m_shareLinksFilePath;
+    void persistShareLinks() const;
     static const QRegularExpression s_rangeRegex;
 };
 

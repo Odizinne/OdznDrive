@@ -13,6 +13,10 @@
 #include <QSettings>
 #include <QTemporaryFile>
 #include <QRandomGenerator>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QJsonArray>
+#include <QFile>
 
 const QRegularExpression HttpServer::s_rangeRegex(R"(bytes=(\d+)-(\d*))");
 
@@ -132,8 +136,15 @@ QString HttpServer::registerFileForSharing(const QString &filePath, const bool &
         return QString();
     }
 
+    // Check if file is already shared
+    QString existingToken = getExistingShareToken(filePath);
+    if (!existingToken.isEmpty()) {
+        return existingToken;
+    }
+
     QString token = generateShareToken(shortUrl);
     m_sharedFiles[token] = filePath;
+    persistShareLinks();
     return token;
 }
 
@@ -418,4 +429,130 @@ QString HttpServer::generateShareToken(const bool &shortUrl)
     }
 
     return QUuid::createUuid().toString(QUuid::WithoutBraces);
+}
+
+QString HttpServer::getExistingShareToken(const QString &filePath) const
+{
+    for (auto it = m_sharedFiles.begin(); it != m_sharedFiles.end(); ++it) {
+        if (it.value() == filePath) {
+            return it.key();
+        }
+    }
+    return QString();
+}
+
+void HttpServer::loadShareLinksFromFile(const QString &filePath)
+{
+    m_shareLinksFilePath = filePath;
+
+    QFile file(filePath);
+    if (!file.open(QIODevice::ReadOnly)) {
+        qWarning() << "Could not open share links file:" << filePath;
+        return;
+    }
+
+    QByteArray data = file.readAll();
+    file.close();
+
+    QJsonDocument doc = QJsonDocument::fromJson(data);
+    if (!doc.isObject()) {
+        qWarning() << "Invalid share links JSON format";
+        return;
+    }
+
+    QJsonObject root = doc.object();
+    QJsonArray shareLinks = root.value("shareLinks").toArray();
+
+    for (const QJsonValue &value : shareLinks) {
+        QJsonObject linkObj = value.toObject();
+        QString token = linkObj.value("token").toString();
+        QString path = linkObj.value("path").toString();
+
+        if (!token.isEmpty() && !path.isEmpty()) {
+            // Verify the file still exists before loading
+            QFileInfo fileInfo(path);
+            if (fileInfo.exists() && fileInfo.isFile()) {
+                m_sharedFiles[token] = path;
+            } else {
+                qWarning() << "Shared file no longer exists, skipping:" << path;
+            }
+        }
+    }
+
+    qInfo() << "Loaded" << m_sharedFiles.size() << "share links from file";
+}
+
+void HttpServer::saveShareLinksToFile(const QString &filePath) const
+{
+    QJsonArray shareLinksArray;
+
+    for (auto it = m_sharedFiles.begin(); it != m_sharedFiles.end(); ++it) {
+        QJsonObject linkObj;
+        linkObj.insert("token", it.key());
+        linkObj.insert("path", it.value());
+        shareLinksArray.append(linkObj);
+    }
+
+    QJsonObject root;
+    root.insert("shareLinks", shareLinksArray);
+
+    QJsonDocument doc(root);
+    QFile file(filePath);
+    if (!file.open(QIODevice::WriteOnly)) {
+        qWarning() << "Could not open share links file for writing:" << filePath;
+        return;
+    }
+
+    file.write(doc.toJson());
+    file.close();
+
+    qDebug() << "Share links saved to file:" << filePath;
+}
+
+void HttpServer::updateFilePathInShareLinks(const QString &oldPath, const QString &newPath)
+{
+    QString token = getExistingShareToken(oldPath);
+    if (!token.isEmpty()) {
+        m_sharedFiles[token] = newPath;
+        qInfo() << "Updated share link path from" << oldPath << "to" << newPath;
+        persistShareLinks();
+    }
+}
+
+void HttpServer::removeShareLink(const QString &filePath)
+{
+    QString token = getExistingShareToken(filePath);
+    if (!token.isEmpty()) {
+        m_sharedFiles.remove(token);
+        qInfo() << "Removed share link for" << filePath;
+        persistShareLinks();
+    }
+}
+
+void HttpServer::removeShareLinksInDirectory(const QString &dirPath)
+{
+    QStringList tokensToRemove;
+
+    // Find all share links that start with the directory path
+    for (auto it = m_sharedFiles.begin(); it != m_sharedFiles.end(); ++it) {
+        if (it.value().startsWith(dirPath + "/") || it.value().startsWith(dirPath + "\\")) {
+            tokensToRemove.append(it.key());
+        }
+    }
+
+    // Remove the found share links
+    for (const QString &token : tokensToRemove) {
+        QString removedPath = m_sharedFiles[token];
+        m_sharedFiles.remove(token);
+        qInfo() << "Removed share link for" << removedPath << "(in deleted directory)";
+    }
+
+    persistShareLinks();
+}
+
+void HttpServer::persistShareLinks() const
+{
+    if (!m_shareLinksFilePath.isEmpty()) {
+        saveShareLinksToFile(m_shareLinksFilePath);
+    }
 }

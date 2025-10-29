@@ -501,6 +501,8 @@ void ClientConnection::handleDeleteMultiple(const QJsonObject &params)
         } else {
             if (m_fileManager->deleteFile(path)) {
                 deletedFiles.append(path);
+                // Remove share link if the file was shared
+                m_httpServer->removeShareLink(absPath);
             } else {
                 failed.append(path);
             }
@@ -689,8 +691,12 @@ void ClientConnection::handleCreateDirectory(const QJsonObject &params)
 void ClientConnection::handleDeleteFile(const QJsonObject &params)
 {
     QString path = params["path"].toString();
+    QString absPath = m_fileManager->getAbsolutePath(path);
 
     if (m_fileManager->deleteFile(path)) {
+        // Remove share link if the file was shared
+        m_httpServer->removeShareLink(absPath);
+
         QJsonObject data;
         data["path"] = path;
         data["success"] = true;
@@ -703,8 +709,12 @@ void ClientConnection::handleDeleteFile(const QJsonObject &params)
 void ClientConnection::handleDeleteDirectory(const QJsonObject &params)
 {
     QString path = params["path"].toString();
+    QString absPath = m_fileManager->getAbsolutePath(path);
 
     if (m_fileManager->deleteDirectory(path)) {
+        // Remove share links for all files in the deleted directory
+        m_httpServer->removeShareLinksInDirectory(absPath);
+
         QJsonObject data;
         data["path"] = path;
         data["success"] = true;
@@ -885,6 +895,19 @@ void ClientConnection::handleMoveItem(const QJsonObject &params)
     QString toPath = params["to"].toString();
 
     if (m_fileManager->moveItem(fromPath, toPath)) {
+        // Update share links if the file was moved
+        QString fromAbsPath = m_fileManager->getAbsolutePath(fromPath);
+        QString toAbsPath = m_fileManager->getAbsolutePath(toPath);
+
+        // If toPath is a directory, append the filename
+        QFileInfo toFileInfo(toAbsPath);
+        if (toFileInfo.isDir()) {
+            QFileInfo fromFileInfo(fromAbsPath);
+            toAbsPath = toAbsPath + "/" + fromFileInfo.fileName();
+        }
+
+        m_httpServer->updateFilePathInShareLinks(fromAbsPath, toAbsPath);
+
         QJsonObject data;
         data["from"] = fromPath;
         data["to"] = toPath;
@@ -1167,6 +1190,18 @@ void ClientConnection::handleMoveMultiple(const QJsonObject &params)
         }
 
         if (m_fileManager->moveItem(fromPath, toPath)) {
+            // Update share links if the file was moved
+            QString fromAbsPath = m_fileManager->getAbsolutePath(fromPath);
+            QString toAbsPath = m_fileManager->getAbsolutePath(toPath);
+
+            // If toPath is a directory, append the filename
+            QFileInfo toFileInfo(toAbsPath);
+            if (toFileInfo.isDir()) {
+                QFileInfo fromFileInfo(fromAbsPath);
+                toAbsPath = toAbsPath + "/" + fromFileInfo.fileName();
+            }
+
+            m_httpServer->updateFilePathInShareLinks(fromAbsPath, toAbsPath);
             movedItems.append(fromPath);
         } else {
             failed.append(fromPath);

@@ -5,6 +5,8 @@
 #include <QCoreApplication>
 #include <QHostAddress>
 #include <QNetworkInterface>
+#include <QStandardPaths>
+#include <QDir>
 
 FileServer::FileServer(QObject *parent)
     : QObject(parent)
@@ -28,13 +30,21 @@ bool FileServer::start()
     QString httpUrl = settings.value("server/httpUrl", getDefaultLocalNetworkUrl()).toString();
     int httpPort = settings.value("server/httpPort", 8889).toInt();
 
+    // Load share links from file
+    QString appDataPath = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
+    QDir(appDataPath).mkpath(".");
+    QString shareLinksPath = appDataPath + "/sharelinks.json";
+    m_httpServer->loadShareLinksFromFile(shareLinksPath);
+
     if (m_server->listen(QHostAddress::Any, port)) {
         qInfo() << "WebSocket Server listening on port" << port;
 
         if (m_httpServer->start(httpUrl, httpPort)) {
+            m_shareLinksPath = shareLinksPath;
             return true;
         } else {
             qWarning() << "Failed to start HTTP server, but WebSocket server is running";
+            m_shareLinksPath = shareLinksPath;
             return true;
         }
     } else {
